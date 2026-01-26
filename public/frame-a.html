@@ -55,6 +55,11 @@
       user-select: none;
       touch-action: none;
       position: relative;
+      outline: none;
+    }
+
+    .draggable:focus {
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4), 0 0 0 3px rgba(255, 255, 255, 0.5);
     }
 
     .draggable:hover {
@@ -86,24 +91,24 @@
 </head>
 <body>
   <h2>📦 Draggable Items</h2>
-  <div class="draggable-items">
-    <div class="draggable" data-id="1">
+  <div class="draggable-items" tabindex="0">
+    <div class="draggable" data-id="1" tabindex="0">
       <span class="emoji">🎨</span>Design Asset
     </div>
-    <div class="draggable" data-id="2">
+    <div class="draggable" data-id="2" tabindex="0">
       <span class="emoji">📝</span>Documentation
     </div>
-    <div class="draggable" data-id="3">
+    <div class="draggable" data-id="3" tabindex="0">
       <span class="emoji">💻</span>Code Module
     </div>
-    <div class="draggable" data-id="4">
+    <div class="draggable" data-id="4" tabindex="0">
       <span class="emoji">🎯</span>Task Item
     </div>
-    <div class="draggable" data-id="5">
+    <div class="draggable" data-id="5" tabindex="0">
       <span class="emoji">🔧</span>Configuration
     </div>
   </div>
-  <div class="hint">Drag items to drop zones or drag items back here ↔️</div>
+  <div class="hint">Drag items to drop zones or use Tab+C/V to copy/paste ↔️</div>
 
   <script>
     let currentDragElement = null;
@@ -119,6 +124,68 @@
     }
 
     setupDraggables();
+
+    // Keyboard event handling for copy/paste
+    document.addEventListener('keydown', (e) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+      // Copy (Ctrl/Cmd+C)
+      if (modifier && e.key === 'c') {
+        const focusedElement = document.activeElement;
+        if (focusedElement && focusedElement.classList.contains('draggable')) {
+          e.preventDefault();
+          const copiedItem = {
+            text: focusedElement.textContent.trim(),
+            id: focusedElement.dataset.id,
+            source: 'frame-a'
+          };
+          // Notify parent about the copy
+          window.parent.postMessage({
+            type: 'keyboardCopy',
+            copiedItem: copiedItem
+          }, '*');
+          // Visual feedback
+          focusedElement.style.animation = 'pulse 0.3s ease';
+          setTimeout(() => {
+            focusedElement.style.animation = '';
+          }, 300);
+        }
+      }
+
+      // Paste (Ctrl/Cmd+V)
+      if (modifier && e.key === 'v') {
+        const focusedElement = document.activeElement;
+        const container = focusedElement?.closest('.draggable-items') || 
+                         (focusedElement?.classList.contains('draggable-items') ? focusedElement : null);
+        
+        if (container) {
+          e.preventDefault();
+          // Notify parent to handle the paste
+          window.parent.postMessage({
+            type: 'keyboardPaste',
+            target: 'frame-a'
+          }, '*');
+        }
+      }
+    });
+
+    // Listen for copy requests from parent (when copying from Frame A via parent)
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'requestCopy') {
+        const focusedElement = document.activeElement;
+        if (focusedElement && focusedElement.classList.contains('draggable')) {
+          window.parent.postMessage({
+            type: 'copyData',
+            copiedItem: {
+              text: focusedElement.textContent.trim(),
+              id: focusedElement.dataset.id,
+              source: 'frame-a'
+            }
+          }, '*');
+        }
+      }
+    });
 
     function handlePointerDown(e) {
       e.preventDefault();
@@ -284,7 +351,7 @@
       }
     });
 
-    // Add animation for dropped items
+    // Add animation for dropped items and copy feedback
     const style = document.createElement('style');
     style.textContent = `
       @keyframes dropIn {
@@ -295,6 +362,14 @@
         to {
           opacity: 1;
           transform: scale(1) translateY(0);
+        }
+      }
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
         }
       }
     `;

@@ -132,6 +132,7 @@
     let dragPreview = null;
     let frameA = null;
     let frameB = null;
+    let copiedItem = null; // Store copied item in parent
 
     /**
      * Check if a pointer position is over a specific iframe
@@ -189,6 +190,10 @@
         } else if (event.data.type === 'rowCopied') {
           // Relay copied row data to all frames
           handleRowCopied(event.data);
+        } else if (event.data.type === 'keyboardCopy') {
+          handleKeyboardCopy(event.data);
+        } else if (event.data.type === 'keyboardPaste') {
+          handleKeyboardPaste(event.data);
         }
       });
 
@@ -503,6 +508,63 @@
       }
 
       endDrag();
+    }
+
+    function handleKeyboardCopy(data) {
+      // Store the copied item in parent's context
+      copiedItem = data.copiedItem;
+      console.log('Parent stored copied item:', copiedItem);
+    }
+
+    function handleKeyboardPaste(data) {
+      const { target, targetZone } = data;
+
+      if (!copiedItem) {
+        console.log('No item copied yet');
+        return;
+      }
+
+      if (target === 'frame-b' && copiedItem.source === 'frame-a') {
+        // Pasting from Frame A to Frame B
+        try {
+          frameB.contentWindow.postMessage({
+            type: 'keyboardPaste',
+            targetZone: targetZone,
+            copiedItem: copiedItem
+          }, '*');
+
+          // Remove item from Frame A
+          frameA.contentWindow.postMessage({
+            type: 'removeItem',
+            id: copiedItem.id
+          }, '*');
+        } catch (err) {
+          console.error('Failed to paste to frame-b:', err);
+        }
+      } else if (target === 'frame-a' && copiedItem.source === 'frame-b') {
+        // Pasting from Frame B to Frame A
+        // Get center of Frame A for drop coordinates
+        const frameARect = frameA.getBoundingClientRect();
+        const centerX = frameARect.width / 2;
+        const centerY = frameARect.height / 2;
+
+        try {
+          frameA.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: centerX,
+            y: centerY,
+            dragData: copiedItem
+          }, '*');
+
+          // Remove item from Frame B
+          frameB.contentWindow.postMessage({
+            type: 'removeItem',
+            id: copiedItem.id
+          }, '*');
+        } catch (err) {
+          console.error('Failed to paste to frame-a:', err);
+        }
+      }
     }
 
     function endDrag() {
