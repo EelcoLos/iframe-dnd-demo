@@ -2,6 +2,10 @@
 
 A demonstration of drag-and-drop functionality between two same-origin iframes using custom Pointer Events (no HTML5 Drag & Drop API).
 
+## 🌐 Live Demo
+
+View the live demo at: **[https://eelcolos.github.io/iframe-dnd-demo/](https://eelcolos.github.io/iframe-dnd-demo/)**
+
 ## 📋 Overview
 
 This demo implements a cross-iframe drag-and-drop system with:
@@ -58,10 +62,14 @@ The dev server will start (typically on `http://localhost:5173`).
 
 ### Accessing the Demo
 
-Once the server is running, navigate to:
+**Online:** Visit the live demo at [https://eelcolos.github.io/iframe-dnd-demo/](https://eelcolos.github.io/iframe-dnd-demo/)
+
+**Locally:** Once the dev server is running, navigate to:
 ```
-http://localhost:5173/parent.html
+http://localhost:5173/
 ```
+
+The root index page will automatically redirect to `parent.html`.
 
 ## 🎮 How to Use
 
