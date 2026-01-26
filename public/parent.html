@@ -97,6 +97,7 @@
     let dragPreview = null;
     let frameA = null;
     let frameB = null;
+    let pendingDropRemoval = null; // Track pending item removal
 
     /**
      * Check if a pointer position is over a specific iframe
@@ -129,6 +130,12 @@
         } else if (event.data.type === 'dragMove') {
           // Handle drag move from iframes
           handleIframeDragMove(event.data);
+        } else if (event.data.type === 'dropSuccess') {
+          // Handle successful drop - remove item from source
+          handleDropSuccess(event.data.dragData);
+        } else if (event.data.type === 'dropFailed') {
+          // Handle failed drop - do not remove item from source
+          handleDropFailed(event.data.dragData);
         }
       });
 
@@ -207,14 +214,9 @@
             dragData: dragData
           }, '*');
           dropped = true;
-
-          // Remove item from source frame (Frame B)
-          if (dragData.source === 'frame-b') {
-            frameB.contentWindow.postMessage({
-              type: 'removeItem',
-              id: dragData.id
-            }, '*');
-          }
+          
+          // Store pending removal - will be executed only on dropSuccess message
+          pendingDropRemoval = { source: dragData.source, id: dragData.id };
         } catch (err) {
           console.error('Failed to send drop message to frame-a:', err);
         }
@@ -233,19 +235,9 @@
             dragData: dragData
           }, '*');
           dropped = true;
-
-          // Remove item from source frame
-          if (dragData.source === 'frame-a') {
-            frameA.contentWindow.postMessage({
-              type: 'removeItem',
-              id: dragData.id
-            }, '*');
-          } else if (dragData.source === 'frame-b') {
-            frameB.contentWindow.postMessage({
-              type: 'removeItem',
-              id: dragData.id
-            }, '*');
-          }
+          
+          // Store pending removal - will be executed only on dropSuccess message
+          pendingDropRemoval = { source: dragData.source, id: dragData.id };
         } catch (err) {
           console.error('Failed to send drop message to frame-b:', err);
         }
@@ -367,14 +359,9 @@
             dragData: dragData
           }, '*');
           dropped = true;
-
-          // Remove item from source frame (Frame B)
-          if (dragData.source === 'frame-b') {
-            frameB.contentWindow.postMessage({
-              type: 'removeItem',
-              id: dragData.id
-            }, '*');
-          }
+          
+          // Store pending removal - will be executed only on dropSuccess message
+          pendingDropRemoval = { source: dragData.source, id: dragData.id };
         } catch (err) {
           console.error('Failed to send drop message to frame-a:', err);
         }
@@ -393,19 +380,9 @@
             dragData: dragData
           }, '*');
           dropped = true;
-
-          // Remove item from source frame
-          if (dragData.source === 'frame-a') {
-            frameA.contentWindow.postMessage({
-              type: 'removeItem',
-              id: dragData.id
-            }, '*');
-          } else if (dragData.source === 'frame-b') {
-            frameB.contentWindow.postMessage({
-              type: 'removeItem',
-              id: dragData.id
-            }, '*');
-          }
+          
+          // Store pending removal - will be executed only on dropSuccess message
+          pendingDropRemoval = { source: dragData.source, id: dragData.id };
         } catch (err) {
           console.error('Failed to send drop message to frame-b:', err);
         }
@@ -417,6 +394,7 @@
     function endDrag() {
       isDragging = false;
       dragData = null;
+      pendingDropRemoval = null;
 
       if (dragPreview) {
         dragPreview.remove();
@@ -438,6 +416,28 @@
       } catch (err) {
         // Ignore
       }
+    }
+    
+    function handleDropSuccess(dragData) {
+      // Remove item from source frame after successful drop
+      if (dragData.source === 'frame-a') {
+        frameA.contentWindow.postMessage({
+          type: 'removeItem',
+          id: dragData.id
+        }, '*');
+      } else if (dragData.source === 'frame-b') {
+        frameB.contentWindow.postMessage({
+          type: 'removeItem',
+          id: dragData.id
+        }, '*');
+      }
+      pendingDropRemoval = null;
+    }
+    
+    function handleDropFailed(dragData) {
+      // Do nothing - item stays in source frame
+      console.log('Drop failed - item will remain in source frame');
+      pendingDropRemoval = null;
     }
   </script>
 </body>

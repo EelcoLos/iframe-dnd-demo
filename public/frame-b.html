@@ -278,6 +278,18 @@
         // Clear hover state
         dropZone.classList.remove('hover');
         currentHoverZone = null;
+        
+        // Notify parent that the drop was successful
+        window.parent.postMessage({
+          type: 'dropSuccess',
+          dragData: dragData
+        }, '*');
+      } else {
+        // Notify parent that the drop failed (not over a valid drop zone)
+        window.parent.postMessage({
+          type: 'dropFailed',
+          dragData: dragData
+        }, '*');
       }
     };
 
