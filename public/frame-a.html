@@ -273,7 +273,8 @@
         }
       } else if (event.data.type === 'removeItem') {
         // Remove item when it's successfully dropped elsewhere
-        const itemToRemove = document.querySelector(`[data-id="${event.data.id}"]`);
+        const itemToRemove = Array.from(document.querySelectorAll('[data-id]'))
+          .find(item => item.dataset.id === event.data.id);
         if (itemToRemove) {
           itemToRemove.style.transition = 'all 0.2s ease';
           itemToRemove.style.opacity = '0';

@@ -267,7 +267,8 @@
         // If dragging within the same frame (frame-b), remove the old item first
         // This prevents duplicate IDs when moving between zones
         if (dragData.source === 'frame-b') {
-          const oldItem = document.querySelector(`.dropped-item[data-id="${dragData.id}"]`);
+          const oldItem = Array.from(document.querySelectorAll('.dropped-item'))
+            .find(item => item.dataset.id === dragData.id);
           if (oldItem) {
             oldItem.remove();
           }
@@ -315,7 +316,8 @@
         }
       } else if (event.data.type === 'removeItem') {
         // Remove item when it's successfully dropped elsewhere
-        const itemToRemove = document.querySelector(`.dropped-item[data-id="${event.data.id}"]`);
+        const itemToRemove = Array.from(document.querySelectorAll('.dropped-item'))
+          .find(item => item.dataset.id === event.data.id);
         if (itemToRemove) {
           itemToRemove.style.transition = 'all 0.2s ease';
           itemToRemove.style.opacity = '0';
