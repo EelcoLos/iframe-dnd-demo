@@ -74,6 +74,21 @@
       background: #ede9fe;
     }
 
+    tbody tr.selected {
+      background: #dbeafe;
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
+
+    tbody tr.copied {
+      animation: copiedFlash 0.5s ease;
+    }
+
+    @keyframes copiedFlash {
+      0%, 100% { background: transparent; }
+      50% { background: #86efac; }
+    }
+
     tbody tr.drop-placeholder {
       height: 4px;
       background: #8b5cf6;
@@ -172,7 +187,7 @@
       </tbody>
     </table>
   </div>
-  <div class="hint">Drag rows from Frame B to insert them here</div>
+  <div class="hint">Drag rows from Frame B to insert them here | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
 
   <script>
     let currentDragElement = null;
@@ -182,6 +197,8 @@
     let previewRow = null;
     let placeholderRow = null;
     let previewData = null;
+    let selectedRow = null;
+    let copiedRowData = null;
 
     // Calculate totals
     function calculateTotals() {
@@ -209,10 +226,67 @@
     function setupDraggables() {
       document.querySelectorAll('.data-row').forEach(row => {
         row.addEventListener('pointerdown', handlePointerDown);
+        row.addEventListener('click', handleRowClick);
       });
     }
 
     setupDraggables();
+
+    // Handle row selection
+    function handleRowClick(e) {
+      // Don't select if we're dragging
+      if (isDragging) return;
+      
+      // Clear previous selection
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      
+      // Select this row
+      selectedRow = e.currentTarget;
+      selectedRow.classList.add('selected');
+    }
+
+    // Keyboard shortcuts for copy/paste
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+C or Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedRow) {
+          e.preventDefault();
+          copiedRowData = {
+            id: selectedRow.dataset.id,
+            description: selectedRow.dataset.description,
+            quantity: selectedRow.dataset.quantity,
+            unitPrice: selectedRow.dataset.unitPrice,
+            source: 'frame-a-table'
+          };
+          
+          // Visual feedback
+          selectedRow.classList.add('copied');
+          setTimeout(() => {
+            if (selectedRow) {
+              selectedRow.classList.remove('copied');
+            }
+          }, 500);
+          
+          console.log('Copied row:', copiedRowData.description);
+          
+          // Share copied data with parent to enable cross-frame paste
+          window.parent.postMessage({
+            type: 'rowCopied',
+            rowData: copiedRowData
+          }, '*');
+        }
+      }
+      
+      // Ctrl+V or Cmd+V
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if (copiedRowData) {
+          e.preventDefault();
+          pasteRow();
+        }
+      }
+    });
 
     function handlePointerDown(e) {
       // Allow dragging from drag handle or anywhere on the row
@@ -473,8 +547,72 @@
             calculateTotals();
           }, 200);
         }
+      } else if (event.data.type === 'rowCopied') {
+        // Receive copied data from other frames
+        copiedRowData = event.data.rowData;
+        console.log('Received copied row data from parent:', copiedRowData.description);
       }
     });
+
+    // Paste row function
+    function pasteRow() {
+      if (!copiedRowData) return;
+      
+      const tbody = document.getElementById('table-body');
+      const quantity = parseFloat(copiedRowData.quantity || 1);
+      const unitPrice = parseFloat(copiedRowData.unitPrice || 0);
+      const amount = quantity * unitPrice;
+      
+      const newRow = document.createElement('tr');
+      newRow.className = 'data-row highlight';
+      newRow.dataset.id = `pasted-${Date.now()}`;
+      newRow.dataset.description = copiedRowData.description;
+      newRow.dataset.quantity = quantity;
+      newRow.dataset.unitPrice = unitPrice;
+      newRow.innerHTML = `
+        <td><span class="drag-handle">⋮⋮</span></td>
+        <td>${copiedRowData.description}</td>
+        <td class="number">${quantity}</td>
+        <td class="number">${formatCurrency(unitPrice)}</td>
+        <td class="number">${formatCurrency(amount)}</td>
+      `;
+      
+      // Insert after selected row, or at end if no selection
+      const subtotalRow = tbody.querySelector('tr:not(.data-row)');
+      if (selectedRow && selectedRow.parentNode === tbody) {
+        // Insert after selected row
+        const nextSibling = selectedRow.nextElementSibling;
+        if (nextSibling && nextSibling.classList.contains('data-row')) {
+          tbody.insertBefore(newRow, nextSibling);
+        } else {
+          tbody.insertBefore(newRow, subtotalRow);
+        }
+      } else {
+        // Insert before subtotal
+        tbody.insertBefore(newRow, subtotalRow);
+      }
+      
+      // Set up event handlers
+      newRow.addEventListener('pointerdown', handlePointerDown);
+      newRow.addEventListener('click', handleRowClick);
+      
+      // Select the new row
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      selectedRow = newRow;
+      selectedRow.classList.add('selected');
+      
+      // Remove highlight after animation
+      setTimeout(() => {
+        if (newRow) {
+          newRow.classList.remove('highlight');
+        }
+      }, 1000);
+      
+      calculateTotals();
+      console.log('Pasted row:', copiedRowData.description);
+    }
 
     // Initial calculation
     calculateTotals();

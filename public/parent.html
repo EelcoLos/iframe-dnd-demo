@@ -167,6 +167,9 @@
         } else if (event.data.type === 'dragMove') {
           // Handle drag move from iframes
           handleIframeDragMove(event.data);
+        } else if (event.data.type === 'rowCopied') {
+          // Relay copied row data to all frames
+          handleRowCopied(event.data);
         }
       });
 
@@ -203,6 +206,26 @@
         frameB.src = 'frame-b.html';
         headerA.textContent = 'Frame A - Draggable Items';
         headerB.textContent = 'Frame B - Drop Zones';
+      }
+    }
+
+    function handleRowCopied(data) {
+      // Relay copied row data to both frames so they can paste
+      try {
+        if (frameA && frameA.contentWindow) {
+          frameA.contentWindow.postMessage({
+            type: 'rowCopied',
+            rowData: data.rowData
+          }, '*');
+        }
+        if (frameB && frameB.contentWindow) {
+          frameB.contentWindow.postMessage({
+            type: 'rowCopied',
+            rowData: data.rowData
+          }, '*');
+        }
+      } catch (err) {
+        console.error('Failed to relay copied row data:', err);
       }
     }
 

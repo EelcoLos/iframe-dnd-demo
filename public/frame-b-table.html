@@ -62,6 +62,21 @@
       opacity: 0.5;
     }
 
+    tbody tr.selected {
+      background: #dbeafe;
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
+
+    tbody tr.copied {
+      animation: copiedFlash 0.5s ease;
+    }
+
+    @keyframes copiedFlash {
+      0%, 100% { background: transparent; }
+      50% { background: #86efac; }
+    }
+
     td {
       padding: 12px;
       color: #334155;
@@ -149,13 +164,15 @@
       </tbody>
     </table>
   </div>
-  <div class="hint">Drag items to Frame A's calculation table</div>
+  <div class="hint">Drag items to Frame A's calculation table | Click to select, Ctrl+C to copy</div>
 
   <script>
     let currentDragElement = null;
     let dragStartX = 0;
     let dragStartY = 0;
     let isDragging = false;
+    let selectedRow = null;
+    let copiedRowData = null;
 
     function formatCurrency(amount) {
       return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
@@ -165,10 +182,62 @@
     function setupDraggables() {
       document.querySelectorAll('.candidate-row').forEach(row => {
         row.addEventListener('pointerdown', handlePointerDown);
+        row.addEventListener('click', handleRowClick);
       });
     }
 
     setupDraggables();
+
+    // Handle row selection
+    function handleRowClick(e) {
+      // Don't select if we're dragging
+      if (isDragging) return;
+      
+      // Clear previous selection
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      
+      // Select this row
+      selectedRow = e.currentTarget;
+      selectedRow.classList.add('selected');
+    }
+
+    // Keyboard shortcuts for copy/paste
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+C or Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedRow) {
+          e.preventDefault();
+          copiedRowData = {
+            id: selectedRow.dataset.id,
+            description: selectedRow.dataset.description,
+            quantity: selectedRow.dataset.quantity,
+            unitPrice: selectedRow.dataset.unitPrice,
+            source: 'frame-b-table'
+          };
+          
+          // Visual feedback
+          selectedRow.classList.add('copied');
+          setTimeout(() => {
+            if (selectedRow) {
+              selectedRow.classList.remove('copied');
+            }
+          }, 500);
+          
+          console.log('Copied row:', copiedRowData.description);
+          
+          // Share copied data with parent to enable cross-frame paste
+          window.parent.postMessage({
+            type: 'rowCopied',
+            rowData: copiedRowData
+          }, '*');
+        }
+      }
+      
+      // Ctrl+V or Cmd+V - not implemented for Frame B (candidate rows are fixed)
+      // Users can paste into Frame A
+    });
 
     function handlePointerDown(e) {
       // Allow dragging from drag handle or anywhere on the row
@@ -260,6 +329,10 @@
         // No action needed
       } else if (event.data.type === 'parentDragLeave') {
         // Clear any hover effects
+      } else if (event.data.type === 'rowCopied') {
+        // Receive copied data from other frames
+        copiedRowData = event.data.rowData;
+        console.log('Received copied row data from parent:', copiedRowData.description);
       }
       // Note: We don't handle 'removeItem' because rows stay in Frame B (copy semantics)
     });
