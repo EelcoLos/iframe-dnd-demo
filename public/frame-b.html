@@ -213,9 +213,13 @@
       document.removeEventListener('pointerup', handlePointerUp);
 
       if (isDragging) {
-        // Notify parent that drag has ended
+        // Send pointer position to parent for drop detection
+        const rect = document.body.getBoundingClientRect();
         window.parent.postMessage({
-          type: 'dragEnd'
+          type: 'dragEnd',
+          clientX: e.clientX + rect.left,
+          clientY: e.clientY + rect.top,
+          source: 'frame-b'
         }, '*');
       }
 

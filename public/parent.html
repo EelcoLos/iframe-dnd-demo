@@ -108,7 +108,7 @@
         if (event.data.type === 'dragStart') {
           startDrag(event.data);
         } else if (event.data.type === 'dragEnd') {
-          endDrag();
+          handleIframeDragEnd(event.data);
         } else if (event.data.type === 'dragMove') {
           // Handle drag move from iframes
           handleIframeDragMove(event.data);
@@ -152,6 +152,85 @@
       dragPreview.style.display = '';
 
       updateFrameHover(elementUnder, parentX, parentY);
+    }
+
+    function handleIframeDragEnd(data) {
+      if (!isDragging || !dragPreview) return;
+
+      // The iframe sends us where the pointer was released
+      // Convert to parent coordinates
+      const sourceFrame = data.source === 'frame-a' ? frameA : frameB;
+      const frameRect = sourceFrame.getBoundingClientRect();
+      
+      const parentX = frameRect.left + data.clientX;
+      const parentY = frameRect.top + data.clientY;
+
+      // Hide preview to check element under pointer
+      dragPreview.style.display = 'none';
+      const elementUnder = document.elementFromPoint(parentX, parentY);
+      dragPreview.style.display = '';
+
+      let dropped = false;
+
+      // Check if we're dropping on frame-a
+      if (elementUnder === frameA && dragData.source !== 'frame-a') {
+        const frameARect = frameA.getBoundingClientRect();
+        const relativeX = parentX - frameARect.left;
+        const relativeY = parentY - frameARect.top;
+
+        try {
+          frameA.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: relativeX,
+            y: relativeY,
+            dragData: dragData
+          }, '*');
+          dropped = true;
+
+          // Remove item from source frame (Frame B)
+          if (dragData.source === 'frame-b') {
+            frameB.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          }
+        } catch (err) {
+          console.error('Failed to send drop message to frame-a:', err);
+        }
+      }
+      // Check if we're dropping on frame-b
+      else if (elementUnder === frameB) {
+        const frameBRect = frameB.getBoundingClientRect();
+        const relativeX = parentX - frameBRect.left;
+        const relativeY = parentY - frameBRect.top;
+
+        try {
+          frameB.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: relativeX,
+            y: relativeY,
+            dragData: dragData
+          }, '*');
+          dropped = true;
+
+          // Remove item from source frame
+          if (dragData.source === 'frame-a') {
+            frameA.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          } else if (dragData.source === 'frame-b') {
+            frameB.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          }
+        } catch (err) {
+          console.error('Failed to send drop message to frame-b:', err);
+        }
+      }
+
+      endDrag();
     }
 
     function handlePointerMove(e) {
