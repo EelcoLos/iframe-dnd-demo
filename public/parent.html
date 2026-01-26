@@ -98,6 +98,23 @@
     let frameA = null;
     let frameB = null;
 
+    /**
+     * Check if a pointer position is over a specific iframe
+     * Uses both elementFromPoint and coordinate bounds for reliable detection
+     */
+    function isOverFrame(elementUnder, frameElement, clientX, clientY) {
+      if (!frameElement) return false;
+      
+      // Direct element match
+      if (elementUnder === frameElement) return true;
+      
+      // Coordinate-based fallback for Firefox and other browsers
+      // where elementFromPoint might not return the iframe element
+      const rect = frameElement.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right && 
+             clientY >= rect.top && clientY <= rect.bottom;
+    }
+
     // Wait for iframes to load
     window.addEventListener('load', () => {
       frameA = document.getElementById('frame-a');
@@ -172,20 +189,13 @@
 
       let dropped = false;
 
-      // Check bounds for reliable frame detection
-      const frameARect = frameA?.getBoundingClientRect();
-      const frameBRect = frameB?.getBoundingClientRect();
-      
-      const overFrameA = elementUnder === frameA || 
-                        (frameARect && parentX >= frameARect.left && parentX <= frameARect.right && 
-                         parentY >= frameARect.top && parentY <= frameARect.bottom);
-      
-      const overFrameB = elementUnder === frameB || 
-                        (frameBRect && parentX >= frameBRect.left && parentX <= frameBRect.right && 
-                         parentY >= frameBRect.top && parentY <= frameBRect.bottom);
+      // Check if we're over each frame using the helper function
+      const overFrameA = isOverFrame(elementUnder, frameA, parentX, parentY);
+      const overFrameB = isOverFrame(elementUnder, frameB, parentX, parentY);
 
       // Check if we're dropping on frame-a
       if (overFrameA && dragData.source !== 'frame-a') {
+        const frameARect = frameA.getBoundingClientRect();
         const relativeX = parentX - frameARect.left;
         const relativeY = parentY - frameARect.top;
 
@@ -211,6 +221,7 @@
       }
       // Check if we're dropping on frame-b
       else if (overFrameB) {
+        const frameBRect = frameB.getBoundingClientRect();
         const relativeX = parentX - frameBRect.left;
         const relativeY = parentY - frameBRect.top;
 
@@ -259,26 +270,14 @@
     }
 
     function updateFrameHover(elementUnder, clientX, clientY) {
-      // Determine which frame we're over
-      // Check both direct match and if we're within the frame's bounds
-      const frameARect = frameA?.getBoundingClientRect();
-      const frameBRect = frameB?.getBoundingClientRect();
-      
-      const overFrameA = elementUnder === frameA || 
-                        (frameARect && clientX >= frameARect.left && clientX <= frameARect.right && 
-                         clientY >= frameARect.top && clientY <= frameARect.bottom &&
-                         (elementUnder?.closest && elementUnder.closest('#frame-a') || 
-                          elementUnder?.parentElement?.id === 'frame-a'));
-      
-      const overFrameB = elementUnder === frameB || 
-                        (frameBRect && clientX >= frameBRect.left && clientX <= frameBRect.right && 
-                         clientY >= frameBRect.top && clientY <= frameBRect.bottom &&
-                         (elementUnder?.closest && elementUnder.closest('#frame-b') || 
-                          elementUnder?.parentElement?.id === 'frame-b'));
+      // Determine which frame we're over using the helper function
+      const overFrameA = isOverFrame(elementUnder, frameA, clientX, clientY);
+      const overFrameB = isOverFrame(elementUnder, frameB, clientX, clientY);
 
       // Handle Frame A
       if (overFrameA && dragData.source !== 'frame-a') {
         // Dragging from Frame B to Frame A
+        const frameARect = frameA.getBoundingClientRect();
         const relativeX = clientX - frameARect.left;
         const relativeY = clientY - frameARect.top;
 
@@ -303,6 +302,7 @@
       // Handle Frame B
       else if (overFrameB) {
         // Dragging to Frame B (from either frame)
+        const frameBRect = frameB.getBoundingClientRect();
         const relativeX = clientX - frameBRect.left;
         const relativeY = clientY - frameBRect.top;
 
@@ -349,20 +349,13 @@
       const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
       let dropped = false;
 
-      // Check bounds for reliable frame detection
-      const frameARect = frameA?.getBoundingClientRect();
-      const frameBRect = frameB?.getBoundingClientRect();
-      
-      const overFrameA = elementUnder === frameA || 
-                        (frameARect && e.clientX >= frameARect.left && e.clientX <= frameARect.right && 
-                         e.clientY >= frameARect.top && e.clientY <= frameARect.bottom);
-      
-      const overFrameB = elementUnder === frameB || 
-                        (frameBRect && e.clientX >= frameBRect.left && e.clientX <= frameBRect.right && 
-                         e.clientY >= frameBRect.top && e.clientY <= frameBRect.bottom);
+      // Check if we're over each frame using the helper function
+      const overFrameA = isOverFrame(elementUnder, frameA, e.clientX, e.clientY);
+      const overFrameB = isOverFrame(elementUnder, frameB, e.clientX, e.clientY);
 
       // Check if we're dropping on frame-a
       if (overFrameA && dragData.source !== 'frame-a') {
+        const frameARect = frameA.getBoundingClientRect();
         const relativeX = e.clientX - frameARect.left;
         const relativeY = e.clientY - frameARect.top;
 
@@ -388,6 +381,7 @@
       }
       // Check if we're dropping on frame-b
       else if (overFrameB) {
+        const frameBRect = frameB.getBoundingClientRect();
         const relativeX = e.clientX - frameBRect.left;
         const relativeY = e.clientY - frameBRect.top;
 
