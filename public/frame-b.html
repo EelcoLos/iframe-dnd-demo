@@ -89,6 +89,20 @@
       font-weight: 600;
       box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
       animation: dropIn 0.3s ease;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+      transition: all 0.2s ease;
+    }
+
+    .dropped-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .dropped-item.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
     }
 
     @keyframes dropIn {
@@ -129,8 +143,77 @@
 
   <script>
     let currentHoverZone = null;
+    let currentDragElement = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
 
-    // Expose functions to parent window for drag events
+    // Set up drag handlers for dropped items
+    function setupDragHandlers() {
+      document.querySelectorAll('.dropped-item').forEach(item => {
+        item.addEventListener('pointerdown', handlePointerDown);
+      });
+    }
+
+    function handlePointerDown(e) {
+      // Only handle if clicking directly on the dropped item
+      if (!e.target.classList.contains('dropped-item')) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      currentDragElement = e.currentTarget;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      // Set up move and up listeners
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    }
+
+    function handlePointerMove(e) {
+      if (!currentDragElement) return;
+
+      // Check if we've moved enough to start dragging (5px threshold)
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+
+      if (!isDragging && (deltaX > 5 || deltaY > 5)) {
+        isDragging = true;
+        currentDragElement.classList.add('dragging');
+
+        // Notify parent that drag has started
+        window.parent.postMessage({
+          type: 'dragStart',
+          pointerId: e.pointerId,
+          text: currentDragElement.textContent.trim(),
+          id: currentDragElement.dataset.id || `item-${Date.now()}`,
+          source: 'frame-b'
+        }, '*');
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!currentDragElement) return;
+
+      // Clean up
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDragging) {
+        // Notify parent that drag has ended
+        window.parent.postMessage({
+          type: 'dragEnd'
+        }, '*');
+      }
+
+      currentDragElement.classList.remove('dragging');
+      currentDragElement = null;
+      isDragging = false;
+    }
+
+    // Expose functions to parent window for drag events from Frame A or other drops
     window.__onParentDragMove = function(x, y, dragData) {
       // Find which drop zone is under the coordinates
       const element = document.elementFromPoint(x, y);
@@ -162,8 +245,12 @@
         const droppedItemsContainer = dropZone.querySelector('.dropped-items');
         const droppedItem = document.createElement('div');
         droppedItem.className = 'dropped-item';
+        droppedItem.dataset.id = dragData.id || `item-${Date.now()}`;
         droppedItem.textContent = dragData.text;
         droppedItemsContainer.appendChild(droppedItem);
+
+        // Set up drag handler for the new item
+        droppedItem.addEventListener('pointerdown', handlePointerDown);
 
         // Clear hover state
         dropZone.classList.remove('hover');
@@ -181,6 +268,15 @@
         if (currentHoverZone) {
           currentHoverZone.classList.remove('hover');
           currentHoverZone = null;
+        }
+      } else if (event.data.type === 'removeItem') {
+        // Remove item when it's successfully dropped elsewhere
+        const itemToRemove = document.querySelector(`.dropped-item[data-id="${event.data.id}"]`);
+        if (itemToRemove) {
+          itemToRemove.style.transition = 'all 0.2s ease';
+          itemToRemove.style.opacity = '0';
+          itemToRemove.style.transform = 'scale(0.8)';
+          setTimeout(() => itemToRemove.remove(), 200);
         }
       }
     });

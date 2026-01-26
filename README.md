@@ -115,6 +115,39 @@ npm run build
 npm preview
 ```
 
+## 🧪 Testing
+
+### E2E Tests with Playwright
+
+The project includes comprehensive E2E tests for the drag and drop functionality.
+
+```bash
+# Install Playwright browsers (first time only)
+npx playwright install
+
+# Run all tests
+npm test
+
+# Run tests in UI mode (interactive)
+npm run test:ui
+
+# Run tests in headed mode (see browser)
+npm run test:headed
+```
+
+### Test Coverage
+
+The test suite includes:
+- ✅ Page redirect from root to parent.html
+- ✅ Display of parent page with two iframes
+- ✅ Display of draggable items in Frame A
+- ✅ Display of drop zones in Frame B
+- ✅ Drag and drop to "To Do" zone
+- ✅ Drag and drop to "In Progress" zone
+- ✅ Drag and drop to "Done" zone
+- ✅ Multiple items drag and drop
+- ✅ Drag preview visibility during drag
+
 ## 🧪 Development
 
 ```bash

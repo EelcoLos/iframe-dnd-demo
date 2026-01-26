@@ -126,9 +126,6 @@
       dragPreview.className = 'drag-preview';
       dragPreview.textContent = data.text;
       document.body.appendChild(dragPreview);
-
-      // Capture pointer for reliable tracking
-      document.body.setPointerCapture(data.pointerId);
     }
 
     function handlePointerMove(e) {
@@ -143,14 +140,42 @@
       const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
       dragPreview.style.display = '';
 
-      // Check if we're over frame-b
-      if (elementUnder === frameB) {
-        // Convert coordinates to frame-b's coordinate system
+      // Determine which frame we're over
+      const overFrameA = elementUnder === frameA;
+      const overFrameB = elementUnder === frameB;
+
+      // Handle Frame A
+      if (overFrameA && dragData.source !== 'frame-a') {
+        // Dragging from Frame B to Frame A
+        const frameARect = frameA.getBoundingClientRect();
+        const relativeX = e.clientX - frameARect.left;
+        const relativeY = e.clientY - frameARect.top;
+
+        try {
+          frameA.contentWindow.postMessage({
+            type: 'parentDragMove',
+            x: relativeX,
+            y: relativeY,
+            dragData: dragData
+          }, '*');
+        } catch (err) {
+          console.error('Failed to send message to frame-a:', err);
+        }
+
+        // Send drag leave to Frame B
+        try {
+          frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
+        } catch (err) {
+          // Ignore
+        }
+      } 
+      // Handle Frame B
+      else if (overFrameB) {
+        // Dragging to Frame B (from either frame)
         const frameBRect = frameB.getBoundingClientRect();
         const relativeX = e.clientX - frameBRect.left;
         const relativeY = e.clientY - frameBRect.top;
 
-        // Send drag move event to frame-b
         try {
           frameB.contentWindow.postMessage({
             type: 'parentDragMove',
@@ -161,12 +186,22 @@
         } catch (err) {
           console.error('Failed to send message to frame-b:', err);
         }
-      } else {
-        // Not over frame-b, send drag leave
+
+        // Send drag leave to Frame A if dragging from B
+        if (dragData.source === 'frame-b') {
+          try {
+            frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
+          } catch (err) {
+            // Ignore
+          }
+        }
+      } 
+      // Not over any frame
+      else {
+        // Send drag leave to both frames
         try {
-          frameB.contentWindow.postMessage({
-            type: 'parentDragLeave'
-          }, '*');
+          frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
+          frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
         } catch (err) {
           // Ignore
         }
@@ -182,14 +217,40 @@
       }
       
       const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
+      let dropped = false;
 
+      // Check if we're dropping on frame-a
+      if (elementUnder === frameA && dragData.source !== 'frame-a') {
+        const frameARect = frameA.getBoundingClientRect();
+        const relativeX = e.clientX - frameARect.left;
+        const relativeY = e.clientY - frameARect.top;
+
+        try {
+          frameA.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: relativeX,
+            y: relativeY,
+            dragData: dragData
+          }, '*');
+          dropped = true;
+
+          // Remove item from source frame (Frame B)
+          if (dragData.source === 'frame-b') {
+            frameB.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          }
+        } catch (err) {
+          console.error('Failed to send drop message to frame-a:', err);
+        }
+      }
       // Check if we're dropping on frame-b
-      if (elementUnder === frameB) {
+      else if (elementUnder === frameB) {
         const frameBRect = frameB.getBoundingClientRect();
         const relativeX = e.clientX - frameBRect.left;
         const relativeY = e.clientY - frameBRect.top;
 
-        // Send drop event to frame-b
         try {
           frameB.contentWindow.postMessage({
             type: 'parentDrop',
@@ -197,6 +258,20 @@
             y: relativeY,
             dragData: dragData
           }, '*');
+          dropped = true;
+
+          // Remove item from source frame
+          if (dragData.source === 'frame-a') {
+            frameA.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          } else if (dragData.source === 'frame-b') {
+            frameB.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          }
         } catch (err) {
           console.error('Failed to send drop message to frame-b:', err);
         }
@@ -214,8 +289,13 @@
         dragPreview = null;
       }
 
-      // Send drag leave to frame-b to clear any hover states
+      // Send drag leave to both frames to clear any hover states
       try {
+        if (frameA && frameA.contentWindow) {
+          frameA.contentWindow.postMessage({
+            type: 'parentDragLeave'
+          }, '*');
+        }
         if (frameB && frameB.contentWindow) {
           frameB.contentWindow.postMessage({
             type: 'parentDragLeave'

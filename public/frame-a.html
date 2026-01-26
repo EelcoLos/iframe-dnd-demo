@@ -28,6 +28,18 @@
       display: flex;
       flex-direction: column;
       gap: 15px;
+      min-height: 300px;
+      padding: 20px;
+      border: 3px dashed transparent;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .draggable-items.hover {
+      background: #ede9fe;
+      border-color: #8b5cf6;
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
     }
 
     .draggable {
@@ -63,6 +75,13 @@
       margin-right: 10px;
       font-size: 1.2em;
     }
+
+    .hint {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9em;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -84,6 +103,7 @@
       <span class="emoji">🔧</span>Configuration
     </div>
   </div>
+  <div class="hint">Drag items to drop zones or drag items back here ↔️</div>
 
   <script>
     let currentDragElement = null;
@@ -92,9 +112,13 @@
     let isDragging = false;
 
     // Set up draggable items
-    document.querySelectorAll('.draggable').forEach(item => {
-      item.addEventListener('pointerdown', handlePointerDown);
-    });
+    function setupDraggables() {
+      document.querySelectorAll('.draggable').forEach(item => {
+        item.addEventListener('pointerdown', handlePointerDown);
+      });
+    }
+
+    setupDraggables();
 
     function handlePointerDown(e) {
       e.preventDefault();
@@ -107,9 +131,6 @@
       // Set up move and up listeners
       document.addEventListener('pointermove', handlePointerMove);
       document.addEventListener('pointerup', handlePointerUp);
-
-      // Capture the pointer
-      currentDragElement.setPointerCapture(e.pointerId);
     }
 
     function handlePointerMove(e) {
@@ -128,7 +149,8 @@
           type: 'dragStart',
           pointerId: e.pointerId,
           text: currentDragElement.textContent.trim(),
-          id: currentDragElement.dataset.id
+          id: currentDragElement.dataset.id,
+          source: 'frame-a'
         }, '*');
       }
     }
@@ -151,6 +173,96 @@
       currentDragElement = null;
       isDragging = false;
     }
+
+    // Expose functions to parent window for drag events from Frame B
+    let currentHoverContainer = null;
+
+    window.__onParentDragMove = function(x, y, dragData) {
+      // Check if we're over the draggable items container
+      const element = document.elementFromPoint(x, y);
+      const container = element?.closest('.draggable-items');
+
+      if (container && container !== currentHoverContainer) {
+        // Clear previous hover
+        if (currentHoverContainer) {
+          currentHoverContainer.classList.remove('hover');
+        }
+        
+        // Set new hover
+        currentHoverContainer = container;
+        currentHoverContainer.classList.add('hover');
+      } else if (!container && currentHoverContainer) {
+        // Clear hover if not over container
+        currentHoverContainer.classList.remove('hover');
+        currentHoverContainer = null;
+      }
+    };
+
+    window.__onParentDrop = function(x, y, dragData) {
+      // Check if we're over the draggable items container
+      const element = document.elementFromPoint(x, y);
+      const container = element?.closest('.draggable-items');
+
+      if (container && dragData.source !== 'frame-a') {
+        // Create a new draggable item
+        const newItem = document.createElement('div');
+        newItem.className = 'draggable';
+        newItem.dataset.id = dragData.id || `dropped-${Date.now()}`;
+        newItem.innerHTML = dragData.text;
+        
+        // Add to container
+        container.appendChild(newItem);
+        
+        // Set up drag handlers for the new item
+        newItem.addEventListener('pointerdown', handlePointerDown);
+        
+        // Animate in
+        newItem.style.animation = 'dropIn 0.3s ease';
+
+        // Clear hover state
+        container.classList.remove('hover');
+        currentHoverContainer = null;
+      }
+    };
+
+    // Listen for messages from parent
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'parentDragMove') {
+        window.__onParentDragMove(event.data.x, event.data.y, event.data.dragData);
+      } else if (event.data.type === 'parentDrop') {
+        window.__onParentDrop(event.data.x, event.data.y, event.data.dragData);
+      } else if (event.data.type === 'parentDragLeave') {
+        if (currentHoverContainer) {
+          currentHoverContainer.classList.remove('hover');
+          currentHoverContainer = null;
+        }
+      } else if (event.data.type === 'removeItem') {
+        // Remove item when it's successfully dropped elsewhere
+        const itemToRemove = document.querySelector(`[data-id="${event.data.id}"]`);
+        if (itemToRemove) {
+          itemToRemove.style.transition = 'all 0.2s ease';
+          itemToRemove.style.opacity = '0';
+          itemToRemove.style.transform = 'scale(0.8)';
+          setTimeout(() => itemToRemove.remove(), 200);
+        }
+      }
+    });
+
+    // Add animation for dropped items
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes dropIn {
+        from {
+          opacity: 0;
+          transform: scale(0.8) translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
   </script>
 </body>
 </html>
