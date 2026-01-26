@@ -23,9 +23,40 @@
     h1 {
       color: white;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       font-size: 2em;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .demo-selector {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .demo-button {
+      background: white;
+      color: #5a67d8;
+      border: 2px solid white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .demo-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .demo-button.active {
+      background: #5a67d8;
+      color: white;
+      border-color: #5a67d8;
     }
     
     .container {
@@ -80,13 +111,17 @@
 </head>
 <body>
   <h1>🎯 Drag & Drop Between iFrames Demo</h1>
+  <div class="demo-selector">
+    <button class="demo-button active" data-demo="basic">Basic Items Demo</button>
+    <button class="demo-button" data-demo="table">Table Rows Demo</button>
+  </div>
   <div class="container">
     <div class="iframe-wrapper">
-      <div class="iframe-header">Frame A - Draggable Items</div>
+      <div class="iframe-header" id="header-a">Frame A - Draggable Items</div>
       <iframe id="frame-a" src="frame-a.html"></iframe>
     </div>
     <div class="iframe-wrapper">
-      <div class="iframe-header">Frame B - Drop Zones</div>
+      <div class="iframe-header" id="header-b">Frame B - Drop Zones</div>
       <iframe id="frame-b" src="frame-b.html"></iframe>
     </div>
   </div>
@@ -121,6 +156,9 @@
       frameA = document.getElementById('frame-a');
       frameB = document.getElementById('frame-b');
 
+      // Set up demo switching
+      setupDemoSwitcher();
+
       // Listen for messages from frames
       window.addEventListener('message', (event) => {
         if (event.data.type === 'dragStart') {
@@ -136,6 +174,9 @@
         } else if (event.data.type === 'dropFailed') {
           // Handle failed drop - do not remove item from source
           handleDropFailed(event.data.dragData);
+        } else if (event.data.type === 'rowCopied') {
+          // Relay copied row data to all frames
+          handleRowCopied(event.data);
         }
       });
 
@@ -143,6 +184,57 @@
       document.addEventListener('pointermove', handlePointerMove);
       document.addEventListener('pointerup', handlePointerUp);
     });
+
+    function setupDemoSwitcher() {
+      const buttons = document.querySelectorAll('.demo-button');
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          const demo = button.dataset.demo;
+          switchDemo(demo);
+          
+          // Update active state
+          buttons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+        });
+      });
+    }
+
+    function switchDemo(demo) {
+      const headerA = document.getElementById('header-a');
+      const headerB = document.getElementById('header-b');
+      
+      if (demo === 'table') {
+        frameA.src = 'frame-a-table.html';
+        frameB.src = 'frame-b-table.html';
+        headerA.textContent = 'Frame A - Construction Calculation';
+        headerB.textContent = 'Frame B - Candidate Rows';
+      } else {
+        frameA.src = 'frame-a.html';
+        frameB.src = 'frame-b.html';
+        headerA.textContent = 'Frame A - Draggable Items';
+        headerB.textContent = 'Frame B - Drop Zones';
+      }
+    }
+
+    function handleRowCopied(data) {
+      // Relay copied row data to both frames so they can paste
+      try {
+        if (frameA && frameA.contentWindow) {
+          frameA.contentWindow.postMessage({
+            type: 'rowCopied',
+            rowData: data.rowData
+          }, '*');
+        }
+        if (frameB && frameB.contentWindow) {
+          frameB.contentWindow.postMessage({
+            type: 'rowCopied',
+            rowData: data.rowData
+          }, '*');
+        }
+      } catch (err) {
+        console.error('Failed to relay copied row data:', err);
+      }
+    }
 
     function startDrag(data) {
       isDragging = true;
@@ -201,7 +293,7 @@
       const overFrameB = isOverFrame(elementUnder, frameB, parentX, parentY);
 
       // Check if we're dropping on frame-a
-      if (overFrameA && dragData.source !== 'frame-a') {
+      if (overFrameA && dragData.source !== 'frame-a' && dragData.source !== 'frame-a-table') {
         const frameARect = frameA.getBoundingClientRect();
         const relativeX = parentX - frameARect.left;
         const relativeY = parentY - frameARect.top;
@@ -217,6 +309,15 @@
           
           // Store pending removal - will be executed only on dropSuccess message
           pendingDropRemoval = { source: dragData.source, id: dragData.id };
+
+          // Remove item from source frame (Frame B) - but not for table demo (copy semantics)
+          if (dragData.source === 'frame-b') {
+            frameB.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          }
+          // For frame-b-table, we keep the item (copy semantics)
         } catch (err) {
           console.error('Failed to send drop message to frame-a:', err);
         }
@@ -267,7 +368,7 @@
       const overFrameB = isOverFrame(elementUnder, frameB, clientX, clientY);
 
       // Handle Frame A
-      if (overFrameA && dragData.source !== 'frame-a') {
+      if (overFrameA && dragData.source !== 'frame-a' && dragData.source !== 'frame-a-table') {
         // Dragging from Frame B to Frame A
         const frameARect = frameA.getBoundingClientRect();
         const relativeX = clientX - frameARect.left;
@@ -309,8 +410,8 @@
           console.error('Failed to send message to frame-b:', err);
         }
 
-        // Send drag leave to Frame A if dragging from B
-        if (dragData.source === 'frame-b') {
+        // Send drag leave to Frame A if dragging from B or B-table
+        if (dragData.source === 'frame-b' || dragData.source === 'frame-b-table') {
           try {
             frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
           } catch (err) {
@@ -346,7 +447,7 @@
       const overFrameB = isOverFrame(elementUnder, frameB, e.clientX, e.clientY);
 
       // Check if we're dropping on frame-a
-      if (overFrameA && dragData.source !== 'frame-a') {
+      if (overFrameA && dragData.source !== 'frame-a' && dragData.source !== 'frame-a-table') {
         const frameARect = frameA.getBoundingClientRect();
         const relativeX = e.clientX - frameARect.left;
         const relativeY = e.clientY - frameARect.top;
@@ -362,6 +463,15 @@
           
           // Store pending removal - will be executed only on dropSuccess message
           pendingDropRemoval = { source: dragData.source, id: dragData.id };
+
+          // Remove item from source frame (Frame B) - but not for table demo (copy semantics)
+          if (dragData.source === 'frame-b') {
+            frameB.contentWindow.postMessage({
+              type: 'removeItem',
+              id: dragData.id
+            }, '*');
+          }
+          // For frame-b-table, we keep the item (copy semantics)
         } catch (err) {
           console.error('Failed to send drop message to frame-a:', err);
         }

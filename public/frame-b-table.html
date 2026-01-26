@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frame B - Candidate Rows</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 14px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+      transition: all 0.2s ease;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    tbody tr.dragging {
+      opacity: 0.5;
+    }
+
+    tbody tr.selected {
+      background: #dbeafe;
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
+
+    tbody tr.copied {
+      animation: copiedFlash 0.5s ease;
+    }
+
+    @keyframes copiedFlash {
+      0%, 100% { background: transparent; }
+      50% { background: #86efac; }
+    }
+
+    td {
+      padding: 12px;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: #94a3b8;
+      font-size: 16px;
+      padding: 0 8px;
+      display: inline-block;
+    }
+
+    .drag-handle:hover {
+      color: #64748b;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    td.number {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9em;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📦 Available Items</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Description</th>
+          <th style="width: 100px;">Quantity</th>
+          <th style="width: 100px;">Unit Price</th>
+          <th style="width: 120px;">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="candidate-row" data-id="candidate-1" data-description="Electrical Wiring" data-quantity="1" data-unit-price="4500">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Electrical Wiring</td>
+          <td class="number">1</td>
+          <td class="number">$4,500.00</td>
+          <td class="number">$4,500.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-2" data-description="Plumbing" data-quantity="1" data-unit-price="3200">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Plumbing</td>
+          <td class="number">1</td>
+          <td class="number">$3,200.00</td>
+          <td class="number">$3,200.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-3" data-description="Interior Finishing" data-quantity="1" data-unit-price="6500">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Interior Finishing</td>
+          <td class="number">1</td>
+          <td class="number">$6,500.00</td>
+          <td class="number">$6,500.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-4" data-description="HVAC System" data-quantity="1" data-unit-price="5800">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>HVAC System</td>
+          <td class="number">1</td>
+          <td class="number">$5,800.00</td>
+          <td class="number">$5,800.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-5" data-description="Windows & Doors" data-quantity="1" data-unit-price="4200">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Windows & Doors</td>
+          <td class="number">1</td>
+          <td class="number">$4,200.00</td>
+          <td class="number">$4,200.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hint">Drag items to Frame A's calculation table | Click to select, Ctrl+C to copy</div>
+
+  <script>
+    let currentDragElement = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
+    let selectedRow = null;
+    let copiedRowData = null;
+
+    function formatCurrency(amount) {
+      return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    // Set up draggable rows
+    function setupDraggables() {
+      document.querySelectorAll('.candidate-row').forEach(row => {
+        row.addEventListener('pointerdown', handlePointerDown);
+        row.addEventListener('click', handleRowClick);
+      });
+    }
+
+    setupDraggables();
+
+    // Handle row selection
+    function handleRowClick(e) {
+      // Don't select if we're dragging
+      if (isDragging) return;
+      
+      // Clear previous selection
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      
+      // Select this row
+      selectedRow = e.currentTarget;
+      selectedRow.classList.add('selected');
+    }
+
+    // Keyboard shortcuts for copy/paste
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+C or Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedRow) {
+          e.preventDefault();
+          copiedRowData = {
+            id: selectedRow.dataset.id,
+            description: selectedRow.dataset.description,
+            quantity: selectedRow.dataset.quantity,
+            unitPrice: selectedRow.dataset.unitPrice,
+            source: 'frame-b-table'
+          };
+          
+          // Visual feedback
+          selectedRow.classList.add('copied');
+          setTimeout(() => {
+            if (selectedRow) {
+              selectedRow.classList.remove('copied');
+            }
+          }, 500);
+          
+          console.log('Copied row:', copiedRowData.description);
+          
+          // Share copied data with parent to enable cross-frame paste
+          window.parent.postMessage({
+            type: 'rowCopied',
+            rowData: copiedRowData
+          }, '*');
+        }
+      }
+      
+      // Ctrl+V or Cmd+V - not implemented for Frame B (candidate rows are fixed)
+      // Users can paste into Frame A
+    });
+
+    function handlePointerDown(e) {
+      // Allow dragging from drag handle or anywhere on the row
+      e.preventDefault();
+      
+      currentDragElement = e.currentTarget;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      // Capture the pointer
+      currentDragElement.setPointerCapture(e.pointerId);
+
+      // Set up move and up listeners
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    }
+
+    function handlePointerMove(e) {
+      if (!currentDragElement) return;
+
+      // Check if we've moved enough to start dragging (5px threshold)
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+
+      if (!isDragging && (deltaX > 5 || deltaY > 5)) {
+        isDragging = true;
+        currentDragElement.classList.add('dragging');
+
+        // Notify parent that drag has started
+        window.parent.postMessage({
+          type: 'dragStart',
+          pointerId: e.pointerId,
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: 'frame-b-table',
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          }
+        }, '*');
+      }
+
+      // Continue sending pointer move events to parent while dragging
+      if (isDragging) {
+        window.parent.postMessage({
+          type: 'dragMove',
+          clientX: e.clientX,
+          clientY: e.clientY,
+          source: 'frame-b-table'
+        }, '*');
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!currentDragElement) return;
+
+      // Release pointer capture
+      if (currentDragElement.hasPointerCapture(e.pointerId)) {
+        currentDragElement.releasePointerCapture(e.pointerId);
+      }
+
+      // Clean up
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDragging) {
+        window.parent.postMessage({
+          type: 'dragEnd',
+          clientX: e.clientX,
+          clientY: e.clientY,
+          source: 'frame-b-table'
+        }, '*');
+      }
+
+      currentDragElement.classList.remove('dragging');
+      currentDragElement = null;
+      isDragging = false;
+    }
+
+    // Handle messages from parent
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'parentDragMove') {
+        // Could add hover effects here if needed
+      } else if (event.data.type === 'parentDrop') {
+        // Row remains in Frame B (copy semantics)
+        // No action needed
+      } else if (event.data.type === 'parentDragLeave') {
+        // Clear any hover effects
+      } else if (event.data.type === 'rowCopied') {
+        // Receive copied data from other frames
+        copiedRowData = event.data.rowData;
+        console.log('Received copied row data from parent:', copiedRowData.description);
+      }
+      // Note: We don't handle 'removeItem' because rows stay in Frame B (copy semantics)
+    });
+  </script>
+</body>
+</html>
