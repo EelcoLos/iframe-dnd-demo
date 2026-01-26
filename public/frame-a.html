@@ -153,6 +153,17 @@
           source: 'frame-a'
         }, '*');
       }
+
+      // Continue sending pointer move events to parent while dragging
+      if (isDragging) {
+        const rect = document.body.getBoundingClientRect();
+        window.parent.postMessage({
+          type: 'dragMove',
+          clientX: e.clientX + rect.left,
+          clientY: e.clientY + rect.top,
+          source: 'frame-a'
+        }, '*');
+      }
     }
 
     function handlePointerUp(e) {

@@ -103,12 +103,15 @@
       frameA = document.getElementById('frame-a');
       frameB = document.getElementById('frame-b');
 
-      // Listen for drag start messages from frame-a
+      // Listen for messages from frames
       window.addEventListener('message', (event) => {
         if (event.data.type === 'dragStart') {
           startDrag(event.data);
         } else if (event.data.type === 'dragEnd') {
           endDrag();
+        } else if (event.data.type === 'dragMove') {
+          // Handle drag move from iframes
+          handleIframeDragMove(event.data);
         }
       });
 
@@ -128,6 +131,29 @@
       document.body.appendChild(dragPreview);
     }
 
+    function handleIframeDragMove(data) {
+      if (!isDragging || !dragPreview) return;
+
+      // The iframe sends us coordinates relative to its own viewport
+      // We need to convert them to parent coordinates
+      const sourceFrame = data.source === 'frame-a' ? frameA : frameB;
+      const frameRect = sourceFrame.getBoundingClientRect();
+      
+      const parentX = frameRect.left + data.clientX;
+      const parentY = frameRect.top + data.clientY;
+
+      // Update drag preview position
+      dragPreview.style.left = parentX + 'px';
+      dragPreview.style.top = parentY + 'px';
+
+      // Check which frame we're over
+      dragPreview.style.display = 'none';
+      const elementUnder = document.elementFromPoint(parentX, parentY);
+      dragPreview.style.display = '';
+
+      updateFrameHover(elementUnder, parentX, parentY);
+    }
+
     function handlePointerMove(e) {
       if (!isDragging || !dragPreview) return;
 
@@ -140,6 +166,10 @@
       const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
       dragPreview.style.display = '';
 
+      updateFrameHover(elementUnder, e.clientX, e.clientY);
+    }
+
+    function updateFrameHover(elementUnder, clientX, clientY) {
       // Determine which frame we're over
       const overFrameA = elementUnder === frameA;
       const overFrameB = elementUnder === frameB;
@@ -148,8 +178,8 @@
       if (overFrameA && dragData.source !== 'frame-a') {
         // Dragging from Frame B to Frame A
         const frameARect = frameA.getBoundingClientRect();
-        const relativeX = e.clientX - frameARect.left;
-        const relativeY = e.clientY - frameARect.top;
+        const relativeX = clientX - frameARect.left;
+        const relativeY = clientY - frameARect.top;
 
         try {
           frameA.contentWindow.postMessage({
@@ -173,8 +203,8 @@
       else if (overFrameB) {
         // Dragging to Frame B (from either frame)
         const frameBRect = frameB.getBoundingClientRect();
-        const relativeX = e.clientX - frameBRect.left;
-        const relativeY = e.clientY - frameBRect.top;
+        const relativeX = clientX - frameBRect.left;
+        const relativeY = clientY - frameBRect.top;
 
         try {
           frameB.contentWindow.postMessage({
