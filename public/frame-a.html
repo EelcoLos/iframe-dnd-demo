@@ -156,11 +156,11 @@
 
       // Continue sending pointer move events to parent while dragging
       if (isDragging) {
-        const rect = document.body.getBoundingClientRect();
+        // clientX/clientY are already relative to the iframe viewport
         window.parent.postMessage({
           type: 'dragMove',
-          clientX: e.clientX + rect.left,
-          clientY: e.clientY + rect.top,
+          clientX: e.clientX,
+          clientY: e.clientY,
           source: 'frame-a'
         }, '*');
       }
@@ -175,11 +175,11 @@
 
       if (isDragging) {
         // Send pointer position to parent for drop detection
-        const rect = document.body.getBoundingClientRect();
+        // clientX/clientY are already relative to the iframe viewport
         window.parent.postMessage({
           type: 'dragEnd',
-          clientX: e.clientX + rect.left,
-          clientY: e.clientY + rect.top,
+          clientX: e.clientX,
+          clientY: e.clientY,
           source: 'frame-a'
         }, '*');
       }
