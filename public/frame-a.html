@@ -128,6 +128,9 @@
       dragStartY = e.clientY;
       isDragging = false;
 
+      // Capture the pointer to ensure we receive all events even if pointer moves fast
+      currentDragElement.setPointerCapture(e.pointerId);
+
       // Set up move and up listeners
       document.addEventListener('pointermove', handlePointerMove);
       document.addEventListener('pointerup', handlePointerUp);
@@ -168,6 +171,11 @@
 
     function handlePointerUp(e) {
       if (!currentDragElement) return;
+
+      // Release pointer capture
+      if (currentDragElement.hasPointerCapture(e.pointerId)) {
+        currentDragElement.releasePointerCapture(e.pointerId);
+      }
 
       // Clean up
       document.removeEventListener('pointermove', handlePointerMove);
