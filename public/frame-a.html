@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frame A - Draggables</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .draggable-items {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .draggable {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      cursor: move;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      transition: all 0.2s ease;
+      user-select: none;
+      touch-action: none;
+      position: relative;
+    }
+
+    .draggable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+
+    .draggable:active {
+      transform: scale(0.98);
+    }
+
+    .draggable.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+
+    .emoji {
+      margin-right: 10px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h2>📦 Draggable Items</h2>
+  <div class="draggable-items">
+    <div class="draggable" data-id="1">
+      <span class="emoji">🎨</span>Design Asset
+    </div>
+    <div class="draggable" data-id="2">
+      <span class="emoji">📝</span>Documentation
+    </div>
+    <div class="draggable" data-id="3">
+      <span class="emoji">💻</span>Code Module
+    </div>
+    <div class="draggable" data-id="4">
+      <span class="emoji">🎯</span>Task Item
+    </div>
+    <div class="draggable" data-id="5">
+      <span class="emoji">🔧</span>Configuration
+    </div>
+  </div>
+
+  <script>
+    let currentDragElement = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
+
+    // Set up draggable items
+    document.querySelectorAll('.draggable').forEach(item => {
+      item.addEventListener('pointerdown', handlePointerDown);
+    });
+
+    function handlePointerDown(e) {
+      e.preventDefault();
+      
+      currentDragElement = e.currentTarget;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      // Set up move and up listeners
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+
+      // Capture the pointer
+      currentDragElement.setPointerCapture(e.pointerId);
+    }
+
+    function handlePointerMove(e) {
+      if (!currentDragElement) return;
+
+      // Check if we've moved enough to start dragging (5px threshold)
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+
+      if (!isDragging && (deltaX > 5 || deltaY > 5)) {
+        isDragging = true;
+        currentDragElement.classList.add('dragging');
+
+        // Notify parent that drag has started
+        window.parent.postMessage({
+          type: 'dragStart',
+          pointerId: e.pointerId,
+          text: currentDragElement.textContent.trim(),
+          id: currentDragElement.dataset.id
+        }, '*');
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!currentDragElement) return;
+
+      // Clean up
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDragging) {
+        // Notify parent that drag has ended
+        window.parent.postMessage({
+          type: 'dragEnd'
+        }, '*');
+      }
+
+      currentDragElement.classList.remove('dragging');
+      currentDragElement = null;
+      isDragging = false;
+    }
+  </script>
+</body>
+</html>

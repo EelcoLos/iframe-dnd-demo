@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drag & Drop Between iFrames - Parent</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 2em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .container {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+      min-height: 0;
+    }
+    
+    .iframe-wrapper {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .iframe-header {
+      background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+      color: white;
+      padding: 15px;
+      font-weight: 600;
+      font-size: 1.1em;
+      text-align: center;
+      border-bottom: 3px solid rgba(255,255,255,0.2);
+    }
+    
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+      display: block;
+    }
+    
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      background: #4f46e5;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 10000;
+      opacity: 0.9;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Drag & Drop Between iFrames Demo</h1>
+  <div class="container">
+    <div class="iframe-wrapper">
+      <div class="iframe-header">Frame A - Draggable Items</div>
+      <iframe id="frame-a" src="/frame-a.html"></iframe>
+    </div>
+    <div class="iframe-wrapper">
+      <div class="iframe-header">Frame B - Drop Zones</div>
+      <iframe id="frame-b" src="/frame-b.html"></iframe>
+    </div>
+  </div>
+
+  <script type="module">
+    let isDragging = false;
+    let dragData = null;
+    let dragPreview = null;
+    let frameA = null;
+    let frameB = null;
+
+    // Wait for iframes to load
+    window.addEventListener('load', () => {
+      frameA = document.getElementById('frame-a');
+      frameB = document.getElementById('frame-b');
+
+      // Listen for drag start messages from frame-a
+      window.addEventListener('message', (event) => {
+        if (event.data.type === 'dragStart') {
+          startDrag(event.data);
+        } else if (event.data.type === 'dragEnd') {
+          endDrag();
+        }
+      });
+
+      // Set up pointer event listeners on the parent
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    });
+
+    function startDrag(data) {
+      isDragging = true;
+      dragData = data;
+
+      // Create drag preview
+      dragPreview = document.createElement('div');
+      dragPreview.className = 'drag-preview';
+      dragPreview.textContent = data.text;
+      document.body.appendChild(dragPreview);
+
+      // Capture pointer for reliable tracking
+      document.body.setPointerCapture(data.pointerId);
+    }
+
+    function handlePointerMove(e) {
+      if (!isDragging || !dragPreview) return;
+
+      // Update drag preview position
+      dragPreview.style.left = e.clientX + 'px';
+      dragPreview.style.top = e.clientY + 'px';
+
+      // Temporarily hide the preview to use elementFromPoint
+      dragPreview.style.display = 'none';
+      const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
+      dragPreview.style.display = '';
+
+      // Check if we're over frame-b
+      if (elementUnder === frameB) {
+        // Convert coordinates to frame-b's coordinate system
+        const frameBRect = frameB.getBoundingClientRect();
+        const relativeX = e.clientX - frameBRect.left;
+        const relativeY = e.clientY - frameBRect.top;
+
+        // Send drag move event to frame-b
+        try {
+          frameB.contentWindow.postMessage({
+            type: 'parentDragMove',
+            x: relativeX,
+            y: relativeY,
+            dragData: dragData
+          }, '*');
+        } catch (err) {
+          console.error('Failed to send message to frame-b:', err);
+        }
+      } else {
+        // Not over frame-b, send drag leave
+        try {
+          frameB.contentWindow.postMessage({
+            type: 'parentDragLeave'
+          }, '*');
+        } catch (err) {
+          // Ignore
+        }
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!isDragging) return;
+
+      // Hide preview to check element under pointer
+      if (dragPreview) {
+        dragPreview.style.display = 'none';
+      }
+      
+      const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
+
+      // Check if we're dropping on frame-b
+      if (elementUnder === frameB) {
+        const frameBRect = frameB.getBoundingClientRect();
+        const relativeX = e.clientX - frameBRect.left;
+        const relativeY = e.clientY - frameBRect.top;
+
+        // Send drop event to frame-b
+        try {
+          frameB.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: relativeX,
+            y: relativeY,
+            dragData: dragData
+          }, '*');
+        } catch (err) {
+          console.error('Failed to send drop message to frame-b:', err);
+        }
+      }
+
+      endDrag();
+    }
+
+    function endDrag() {
+      isDragging = false;
+      dragData = null;
+
+      if (dragPreview) {
+        dragPreview.remove();
+        dragPreview = null;
+      }
+
+      // Send drag leave to frame-b to clear any hover states
+      try {
+        if (frameB && frameB.contentWindow) {
+          frameB.contentWindow.postMessage({
+            type: 'parentDragLeave'
+          }, '*');
+        }
+      } catch (err) {
+        // Ignore
+      }
+    }
+  </script>
+</body>
+</html>
