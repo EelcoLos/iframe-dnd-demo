@@ -513,14 +513,12 @@
     function handleKeyboardCopy(data) {
       // Store the copied item in parent's context
       copiedItem = data.copiedItem;
-      console.log('Parent stored copied item:', copiedItem);
     }
 
     function handleKeyboardPaste(data) {
       const { target, targetZone } = data;
 
       if (!copiedItem) {
-        console.log('No item copied yet');
         return;
       }
 

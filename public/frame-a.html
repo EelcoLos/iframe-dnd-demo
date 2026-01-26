@@ -108,7 +108,7 @@
       <span class="emoji">🔧</span>Configuration
     </div>
   </div>
-  <div class="hint">Drag items to drop zones or use Tab+C/V to copy/paste ↔️</div>
+  <div class="hint">Drag items to drop zones or use Ctrl+C/Ctrl+V to copy/paste ↔️</div>
 
   <script>
     let currentDragElement = null;
@@ -165,23 +165,6 @@
           window.parent.postMessage({
             type: 'keyboardPaste',
             target: 'frame-a'
-          }, '*');
-        }
-      }
-    });
-
-    // Listen for copy requests from parent (when copying from Frame A via parent)
-    window.addEventListener('message', (event) => {
-      if (event.data.type === 'requestCopy') {
-        const focusedElement = document.activeElement;
-        if (focusedElement && focusedElement.classList.contains('draggable')) {
-          window.parent.postMessage({
-            type: 'copyData',
-            copiedItem: {
-              text: focusedElement.textContent.trim(),
-              id: focusedElement.dataset.id,
-              source: 'frame-a'
-            }
           }, '*');
         }
       }
