@@ -120,10 +120,22 @@
     function setupDraggables() {
       document.querySelectorAll('.draggable').forEach(item => {
         item.addEventListener('pointerdown', handlePointerDown);
+        // Focus element on click to enable keyboard shortcuts
+        item.addEventListener('click', (e) => {
+          e.currentTarget.focus();
+        });
       });
     }
 
     setupDraggables();
+
+    // Set up click handler for container to enable paste
+    document.querySelector('.draggable-items').addEventListener('click', (e) => {
+      // Only focus container if clicking on it directly (not on a child draggable)
+      if (e.target.classList.contains('draggable-items')) {
+        e.currentTarget.focus();
+      }
+    });
 
     // Keyboard event handling for copy/paste
     document.addEventListener('keydown', (e) => {
@@ -282,12 +294,17 @@
         newItem.className = 'draggable';
         newItem.dataset.id = dragData.id || `dropped-${Date.now()}`;
         newItem.innerHTML = dragData.text;
+        newItem.setAttribute('tabindex', '0');
         
         // Add to container
         container.appendChild(newItem);
         
         // Set up drag handlers for the new item
         newItem.addEventListener('pointerdown', handlePointerDown);
+        // Focus element on click to enable keyboard shortcuts
+        newItem.addEventListener('click', (e) => {
+          e.currentTarget.focus();
+        });
         
         // Animate in
         newItem.style.animation = 'dropIn 0.3s ease';

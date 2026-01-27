@@ -163,8 +163,19 @@
     function setupDragHandlers() {
       document.querySelectorAll('.dropped-item').forEach(item => {
         item.addEventListener('pointerdown', handlePointerDown);
+        // Focus element on click to enable keyboard shortcuts
+        item.addEventListener('click', (e) => {
+          e.currentTarget.focus();
+        });
       });
     }
+
+    // Set up click handlers for drop zones to enable paste
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.currentTarget.focus();
+      });
+    });
 
     // Keyboard event handling for copy/paste
     document.addEventListener('keydown', (e) => {
@@ -341,6 +352,10 @@
 
         // Set up drag handler for the new item
         droppedItem.addEventListener('pointerdown', handlePointerDown);
+        // Focus element on click to enable keyboard shortcuts
+        droppedItem.addEventListener('click', (e) => {
+          e.currentTarget.focus();
+        });
         
         // Make item focusable
         droppedItem.setAttribute('tabindex', '0');
@@ -398,6 +413,10 @@
 
           // Set up drag handler for the new item
           droppedItem.addEventListener('pointerdown', handlePointerDown);
+          // Focus element on click to enable keyboard shortcuts
+          droppedItem.addEventListener('click', (e) => {
+            e.currentTarget.focus();
+          });
           
           // Focus the new item
           droppedItem.focus();
