@@ -376,16 +376,6 @@
       const element = document.elementFromPoint(x, y);
       const tbody = document.getElementById('table-body');
       
-      // Remove old placeholder and preview
-      if (placeholderRow) {
-        placeholderRow.remove();
-        placeholderRow = null;
-      }
-      if (previewRow) {
-        previewRow.remove();
-        previewRow = null;
-      }
-
       // Find the closest data row
       let targetRow = element?.closest('.data-row');
       
@@ -405,45 +395,67 @@
           }
         }
 
-        // Create placeholder
-        placeholderRow = document.createElement('tr');
-        placeholderRow.className = 'drop-placeholder';
-        placeholderRow.innerHTML = '<td colspan="5"></td>';
-
-        // Create preview row with data from dragData
-        const quantity = parseFloat(dragData.rowData?.quantity || 1);
-        const unitPrice = parseFloat(dragData.rowData?.unitPrice || 0);
-        const amount = quantity * unitPrice;
-
-        previewRow = document.createElement('tr');
-        previewRow.className = 'data-row preview-insert';
-        previewRow.innerHTML = `
-          <td><span class="drag-handle">⋮⋮</span></td>
-          <td>${dragData.rowData?.description || dragData.text}</td>
-          <td class="number">${quantity}</td>
-          <td class="number">${formatCurrency(unitPrice)}</td>
-          <td class="number">${formatCurrency(amount)}</td>
-        `;
-        previewRow.dataset.quantity = quantity;
-        previewRow.dataset.unitPrice = unitPrice;
-
-        // Insert placeholder and preview
-        if (insertIndex < rows.length) {
-          rows[insertIndex].parentNode.insertBefore(placeholderRow, rows[insertIndex]);
-          rows[insertIndex].parentNode.insertBefore(previewRow, rows[insertIndex]);
-        } else {
-          // Insert before subtotal row
-          const subtotalRow = tbody.querySelector('tr:not(.data-row)');
-          if (subtotalRow) {
-            subtotalRow.parentNode.insertBefore(placeholderRow, subtotalRow);
-            subtotalRow.parentNode.insertBefore(previewRow, subtotalRow);
-          }
+        // Create placeholder and preview rows only once
+        if (!placeholderRow) {
+          placeholderRow = document.createElement('tr');
+          placeholderRow.className = 'drop-placeholder';
+          placeholderRow.innerHTML = '<td colspan="5"></td>';
         }
 
-        // Store preview data for reverting
-        previewData = dragData.rowData;
+        if (!previewRow) {
+          // Create preview row with data from dragData
+          const quantity = parseFloat(dragData.rowData?.quantity || 1);
+          const unitPrice = parseFloat(dragData.rowData?.unitPrice || 0);
+          const amount = quantity * unitPrice;
 
-        // Update totals with preview
+          previewRow = document.createElement('tr');
+          previewRow.className = 'data-row preview-insert';
+          previewRow.innerHTML = `
+            <td><span class="drag-handle">⋮⋮</span></td>
+            <td>${dragData.rowData?.description || dragData.text}</td>
+            <td class="number">${quantity}</td>
+            <td class="number">${formatCurrency(unitPrice)}</td>
+            <td class="number">${formatCurrency(amount)}</td>
+          `;
+          previewRow.dataset.quantity = quantity;
+          previewRow.dataset.unitPrice = unitPrice;
+
+          // Store preview data for reverting
+          previewData = dragData.rowData;
+        }
+
+        // Determine where to insert the rows
+        let referenceRow = null;
+        if (insertIndex < rows.length) {
+          referenceRow = rows[insertIndex];
+        } else {
+          // Insert before subtotal row
+          referenceRow = tbody.querySelector('tr:not(.data-row)');
+        }
+
+        // Only move rows if they're not already in the correct position
+        // Check previewRow.nextSibling since structure is: placeholderRow -> previewRow -> referenceRow
+        if (referenceRow) {
+          if (previewRow.nextSibling !== referenceRow || !tbody.contains(previewRow)) {
+            tbody.insertBefore(placeholderRow, referenceRow);
+            tbody.insertBefore(previewRow, referenceRow);
+            
+            // Only recalculate totals when position actually changes
+            calculateTotals();
+          }
+        }
+      } else {
+        // Remove placeholder and preview when dragging outside the table
+        if (placeholderRow) {
+          placeholderRow.remove();
+          placeholderRow = null;
+        }
+        if (previewRow) {
+          previewRow.remove();
+          previewRow = null;
+        }
+        previewData = null;
+        // Recalculate to remove preview amounts
         calculateTotals();
       }
     };
