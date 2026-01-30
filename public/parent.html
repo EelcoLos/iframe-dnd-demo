@@ -202,7 +202,7 @@
             frameA.contentWindow.postMessage({
               type: 'removeItem',
               id: clipboardData.id
-            }, '*');
+            }, window.location.origin);
             clipboardData = null; // Clear clipboard after move
           }
         }
@@ -222,7 +222,7 @@
         targetFrame.contentWindow.postMessage({
           type: 'pasteItem',
           itemData: clipboardData
-        }, '*');
+        }, window.location.origin);
       } catch (err) {
         console.error('Failed to send paste message:', err);
       }
@@ -267,7 +267,7 @@
           frameA.contentWindow.postMessage({
             type: 'rowCopied',
             rowData: data.rowData
-          }, '*');
+          }, window.location.origin);
           console.log('Sent rowCopied to Frame A');
         } else {
           console.warn('Frame A not ready for postMessage');
@@ -276,7 +276,7 @@
           frameB.contentWindow.postMessage({
             type: 'rowCopied',
             rowData: data.rowData
-          }, '*');
+          }, window.location.origin);
           console.log('Sent rowCopied to Frame B');
         } else {
           console.warn('Frame B not ready for postMessage');
@@ -354,7 +354,7 @@
             x: relativeX,
             y: relativeY,
             dragData: dragData
-          }, '*');
+          }, window.location.origin);
           dropped = true;
           
 
@@ -363,7 +363,7 @@
             frameB.contentWindow.postMessage({
               type: 'removeItem',
               id: dragData.id
-            }, '*');
+            }, window.location.origin);
           }
           // For frame-b-table, we keep the item (copy semantics)
         } catch (err) {
@@ -382,7 +382,7 @@
             x: relativeX,
             y: relativeY,
             dragData: dragData
-          }, '*');
+          }, window.location.origin);
           dropped = true;
           
         } catch (err) {
@@ -426,14 +426,14 @@
             x: relativeX,
             y: relativeY,
             dragData: dragData
-          }, '*');
+          }, window.location.origin);
         } catch (err) {
           console.error('Failed to send message to frame-a:', err);
         }
 
         // Send drag leave to Frame B
         try {
-          frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
+          frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
         } catch (err) {
           // Ignore
         }
@@ -451,7 +451,7 @@
             x: relativeX,
             y: relativeY,
             dragData: dragData
-          }, '*');
+          }, window.location.origin);
         } catch (err) {
           console.error('Failed to send message to frame-b:', err);
         }
@@ -459,7 +459,7 @@
         // Send drag leave to Frame A if dragging from B or B-table
         if (dragData.source === 'frame-b' || dragData.source === 'frame-b-table') {
           try {
-            frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
+            frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
           } catch (err) {
             // Ignore
           }
@@ -469,8 +469,8 @@
       else {
         // Send drag leave to both frames
         try {
-          frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
-          frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, '*');
+          frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
+          frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
         } catch (err) {
           // Ignore
         }
@@ -504,7 +504,7 @@
             x: relativeX,
             y: relativeY,
             dragData: dragData
-          }, '*');
+          }, window.location.origin);
           dropped = true;
           
 
@@ -513,7 +513,7 @@
             frameB.contentWindow.postMessage({
               type: 'removeItem',
               id: dragData.id
-            }, '*');
+            }, window.location.origin);
           }
           // For frame-b-table, we keep the item (copy semantics)
         } catch (err) {
@@ -532,7 +532,7 @@
             x: relativeX,
             y: relativeY,
             dragData: dragData
-          }, '*');
+          }, window.location.origin);
           dropped = true;
           
         } catch (err) {
@@ -557,12 +557,12 @@
         if (frameA && frameA.contentWindow) {
           frameA.contentWindow.postMessage({
             type: 'parentDragLeave'
-          }, '*');
+          }, window.location.origin);
         }
         if (frameB && frameB.contentWindow) {
           frameB.contentWindow.postMessage({
             type: 'parentDragLeave'
-          }, '*');
+          }, window.location.origin);
         }
       } catch (err) {
         // Ignore
@@ -580,12 +580,12 @@
           frameA.contentWindow.postMessage({
             type: 'removeItem',
             id: dragData.id
-          }, '*');
+          }, window.location.origin);
         } else if (dragData.source === 'frame-b') {
           frameB.contentWindow.postMessage({
             type: 'removeItem',
             id: dragData.id
-          }, '*');
+          }, window.location.origin);
         }
       }
     }

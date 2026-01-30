@@ -162,7 +162,7 @@
           text: currentDragElement.textContent.trim(),
           id: currentDragElement.dataset.id,
           source: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
 
       // Continue sending pointer move events to parent while dragging
@@ -173,7 +173,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
     }
 
@@ -197,7 +197,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
 
       currentDragElement.classList.remove('dragging');
@@ -258,18 +258,21 @@
         window.parent.postMessage({
           type: 'dropSuccess',
           dragData: dragData
-        }, '*');
+        }, window.location.origin);
       } else if (dragData.source !== 'frame-a') {
         // Notify parent that the drop failed (not over the container or dragging from same frame)
         window.parent.postMessage({
           type: 'dropFailed',
           dragData: dragData
-        }, '*');
+        }, window.location.origin);
       }
     };
 
     // Listen for messages from parent
     window.addEventListener('message', (event) => {
+      // Validate message origin for security
+      if (event.origin !== window.location.origin) return;
+      
       if (event.data.type === 'parentDragMove') {
         window.__onParentDragMove(event.data.x, event.data.y, event.data.dragData);
       } else if (event.data.type === 'parentDrop') {
@@ -288,6 +291,26 @@
           itemToRemove.style.opacity = '0';
           itemToRemove.style.transform = 'scale(0.8)';
           setTimeout(() => itemToRemove.remove(), 200);
+        }
+      } else if (event.data.type === 'pasteItem' && event.data.itemData) {
+        // Paste the item into this frame
+        const container = document.querySelector('.draggable-items');
+        if (container && event.data.itemData.source !== 'frame-a') {
+          const newItem = document.createElement('div');
+          newItem.className = 'draggable';
+          newItem.dataset.id = event.data.itemData.id || `pasted-${Date.now()}`;
+          newItem.innerHTML = event.data.itemData.text;
+          
+          container.appendChild(newItem);
+          newItem.addEventListener('pointerdown', handlePointerDown);
+          newItem.style.animation = 'dropIn 0.3s ease';
+          
+          // Select the newly pasted item
+          if (selectedItem) {
+            selectedItem.classList.remove('selected');
+          }
+          selectedItem = newItem;
+          selectedItem.classList.add('selected');
         }
       }
     });
@@ -334,7 +357,7 @@
         window.parent.postMessage({
           type: 'itemCopied',
           itemData: copiedItemData
-        }, '*');
+        }, window.location.origin);
         
         // Visual feedback
         const originalBg = selectedItem.style.background;
@@ -350,51 +373,7 @@
         window.parent.postMessage({
           type: 'requestPaste',
           target: 'frame-a'
-        }, '*');
-      }
-    });
-
-    // Handle paste from parent
-    window.addEventListener('message', (event) => {
-      if (event.data.type === 'parentDragMove') {
-        window.__onParentDragMove(event.data.x, event.data.y, event.data.dragData);
-      } else if (event.data.type === 'parentDrop') {
-        window.__onParentDrop(event.data.x, event.data.y, event.data.dragData);
-      } else if (event.data.type === 'parentDragLeave') {
-        if (currentHoverContainer) {
-          currentHoverContainer.classList.remove('hover');
-          currentHoverContainer = null;
-        }
-      } else if (event.data.type === 'removeItem') {
-        // Remove item when it's successfully dropped elsewhere
-        const itemToRemove = Array.from(document.querySelectorAll('[data-id]'))
-          .find(item => item.dataset.id === event.data.id);
-        if (itemToRemove) {
-          itemToRemove.style.transition = 'all 0.2s ease';
-          itemToRemove.style.opacity = '0';
-          itemToRemove.style.transform = 'scale(0.8)';
-          setTimeout(() => itemToRemove.remove(), 200);
-        }
-      } else if (event.data.type === 'pasteItem' && event.data.itemData) {
-        // Paste the item into this frame
-        const container = document.querySelector('.draggable-items');
-        if (container && event.data.itemData.source !== 'frame-a') {
-          const newItem = document.createElement('div');
-          newItem.className = 'draggable';
-          newItem.dataset.id = event.data.itemData.id || `pasted-${Date.now()}`;
-          newItem.innerHTML = event.data.itemData.text;
-          
-          container.appendChild(newItem);
-          newItem.addEventListener('pointerdown', handlePointerDown);
-          newItem.style.animation = 'dropIn 0.3s ease';
-          
-          // Select the newly pasted item
-          if (selectedItem) {
-            selectedItem.classList.remove('selected');
-          }
-          selectedItem = newItem;
-          selectedItem.classList.add('selected');
-        }
+        }, window.location.origin);
       }
     });
 

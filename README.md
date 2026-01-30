@@ -188,6 +188,26 @@ iframe-dnd-demo/
 - ✅ Smooth animations
 - ✅ Responsive design
 - ✅ Touch-friendly (touch-action: none)
+- ✅ Keyboard copy-paste support
+
+## 🌐 Browser Compatibility & Known Issues
+
+### Firefox Enhanced Tracking Protection
+
+Firefox's Enhanced Tracking Protection (ETP) can interfere with cross-iframe communication when using wildcard (`'*'`) as the target origin in `postMessage` calls. This project has been updated to use explicit origins (`window.location.origin`) instead of wildcards to ensure compatibility with Firefox's default and strict ETP settings.
+
+**What was fixed:**
+- All `postMessage` calls now specify the actual origin instead of using `'*'`
+- This ensures keyboard copy-paste and drag-and-drop work correctly on Firefox with ETP enabled
+
+**If you experience issues:**
+1. Ensure you're using the same origin for all iframes (same protocol, domain, and port)
+2. Check that your browser's Enhanced Tracking Protection is not set to custom mode blocking same-origin communication
+3. For development, you may need to add a localhost exception in Firefox's ETP settings
+
+### Same-Origin Requirement
+
+This demo requires all iframes to be served from the same origin. Cross-origin iframe communication would require additional CORS configuration and is not supported in this demo.
 
 ## 📄 License
 

@@ -212,7 +212,7 @@
           text: currentDragElement.textContent.trim(),
           id: currentDragElement.dataset.id || `item-${Date.now()}`,
           source: 'frame-b'
-        }, '*');
+        }, window.location.origin);
       }
 
       // Continue sending pointer move events to parent while dragging
@@ -223,7 +223,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-b'
-        }, '*');
+        }, window.location.origin);
       }
     }
 
@@ -247,7 +247,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-b'
-        }, '*');
+        }, window.location.origin);
       }
 
       currentDragElement.classList.remove('dragging');
@@ -312,18 +312,21 @@
         window.parent.postMessage({
           type: 'dropSuccess',
           dragData: dragData
-        }, '*');
+        }, window.location.origin);
       } else {
         // Notify parent that the drop failed (not over a valid drop zone)
         window.parent.postMessage({
           type: 'dropFailed',
           dragData: dragData
-        }, '*');
+        }, window.location.origin);
       }
     };
 
     // Listen for messages from parent
     window.addEventListener('message', (event) => {
+      // Validate message origin for security
+      if (event.origin !== window.location.origin) return;
+      
       if (event.data.type === 'parentDragMove') {
         window.__onParentDragMove(event.data.x, event.data.y, event.data.dragData);
       } else if (event.data.type === 'parentDrop') {
@@ -363,7 +366,7 @@
           window.parent.postMessage({
             type: 'pasteSuccess',
             itemData: event.data.itemData
-          }, '*');
+          }, window.location.origin);
         }
       }
     });
@@ -410,7 +413,7 @@
         window.parent.postMessage({
           type: 'requestPaste',
           target: 'frame-b'
-        }, '*');
+        }, window.location.origin);
       }
     });
   </script>
