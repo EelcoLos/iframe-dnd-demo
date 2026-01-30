@@ -77,6 +77,11 @@
       50% { background: #86efac; }
     }
 
+    tbody tr.highlight {
+      background: #dbeafe;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
     td {
       padding: 12px;
       color: #334155;
@@ -164,7 +169,7 @@
       </tbody>
     </table>
   </div>
-  <div class="hint">Drag items to Frame A's calculation table | Click to select, Ctrl+C to copy</div>
+  <div class="hint">Drag items to Frame A's calculation table | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
 
   <script>
     let currentDragElement = null;
@@ -192,6 +197,9 @@
     function handleRowClick(e) {
       // Don't select if we're dragging
       if (isDragging) return;
+      
+      // Ensure this window has focus for keyboard events
+      window.focus();
       
       // Clear previous selection
       if (selectedRow) {
@@ -235,9 +243,61 @@
         }
       }
       
-      // Ctrl+V or Cmd+V - not implemented for Frame B (candidate rows are fixed)
-      // Users can paste into Frame A
+      // Ctrl+V or Cmd+V
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if (copiedRowData) {
+          e.preventDefault();
+          pasteRow();
+        }
+      }
     });
+
+    // Paste row function
+    function pasteRow() {
+      if (!copiedRowData) return;
+      
+      const tbody = document.getElementById('table-body');
+      const quantity = parseFloat(copiedRowData.quantity || 1);
+      const unitPrice = parseFloat(copiedRowData.unitPrice || 0);
+      const amount = quantity * unitPrice;
+      
+      const newRow = document.createElement('tr');
+      newRow.className = 'candidate-row highlight';
+      newRow.dataset.id = `pasted-${Date.now()}`;
+      newRow.dataset.description = copiedRowData.description;
+      newRow.dataset.quantity = quantity;
+      newRow.dataset.unitPrice = unitPrice;
+      newRow.innerHTML = `
+        <td><span class="drag-handle">⋮⋮</span></td>
+        <td>${copiedRowData.description}</td>
+        <td class="number">${quantity}</td>
+        <td class="number">${formatCurrency(unitPrice)}</td>
+        <td class="number">${formatCurrency(amount)}</td>
+      `;
+      
+      // Insert at the end
+      tbody.appendChild(newRow);
+      
+      // Set up event handlers
+      newRow.addEventListener('pointerdown', handlePointerDown);
+      newRow.addEventListener('click', handleRowClick);
+      
+      // Select the new row
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      selectedRow = newRow;
+      selectedRow.classList.add('selected');
+      
+      // Remove highlight after animation
+      setTimeout(() => {
+        if (newRow) {
+          newRow.classList.remove('highlight');
+        }
+      }, 1000);
+      
+      console.log('Pasted row:', copiedRowData.description);
+    }
 
     function handlePointerDown(e) {
       // Allow dragging from drag handle or anywhere on the row

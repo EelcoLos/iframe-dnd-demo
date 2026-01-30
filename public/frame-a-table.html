@@ -237,6 +237,9 @@
       // Don't select if we're dragging
       if (isDragging) return;
       
+      // Ensure this window has focus for keyboard events
+      window.focus();
+      
       // Clear previous selection
       if (selectedRow) {
         selectedRow.classList.remove('selected');

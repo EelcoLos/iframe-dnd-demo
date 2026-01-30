@@ -72,6 +72,21 @@
       color: #8b5cf6;
     }
 
+    .drop-zone.selected {
+      background: #faf5ff;
+      border-color: #4f46e5;
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+
+    .drop-zone.selected .drop-zone-title {
+      color: #4f46e5;
+    }
+
+    .drop-zone.selected .drop-zone-hint {
+      color: #6366f1;
+    }
+
     .dropped-items {
       margin-top: 15px;
       width: 100%;
@@ -140,6 +155,9 @@
       <div class="dropped-items"></div>
     </div>
   </div>
+  <div style="text-align: center; color: #94a3b8; font-size: 0.9em; margin-top: 15px;">
+    Use arrow keys to select zone, Ctrl+V to paste
+  </div>
 
   <script>
     let currentHoverZone = null;
@@ -147,6 +165,7 @@
     let dragStartX = 0;
     let dragStartY = 0;
     let isDragging = false;
+    let selectedZone = null;
 
     // Set up drag handlers for dropped items
     function setupDragHandlers() {
@@ -324,6 +343,74 @@
           itemToRemove.style.transform = 'scale(0.8)';
           setTimeout(() => itemToRemove.remove(), 200);
         }
+      } else if (event.data.type === 'pasteItem' && event.data.itemData) {
+        // Paste the item into the selected zone
+        if (selectedZone) {
+          const droppedItemsContainer = selectedZone.querySelector('.dropped-items');
+          const droppedItem = document.createElement('div');
+          droppedItem.className = 'dropped-item';
+          droppedItem.dataset.id = event.data.itemData.id || `pasted-${Date.now()}`;
+          droppedItem.textContent = event.data.itemData.text;
+          droppedItemsContainer.appendChild(droppedItem);
+
+          // Set up drag handler for the new item
+          droppedItem.addEventListener('pointerdown', handlePointerDown);
+          
+          // Visual feedback
+          droppedItem.style.animation = 'dropIn 0.3s ease';
+          
+          // Notify parent that paste was successful
+          window.parent.postMessage({
+            type: 'pasteSuccess',
+            itemData: event.data.itemData
+          }, '*');
+        }
+      }
+    });
+
+    // Keyboard navigation and paste functionality
+    document.addEventListener('keydown', (e) => {
+      const dropZones = Array.from(document.querySelectorAll('.drop-zone'));
+      if (dropZones.length === 0) return;
+
+      // Arrow key navigation
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        
+        if (!selectedZone) {
+          // Select first zone
+          selectedZone = dropZones[0];
+          selectedZone.classList.add('selected');
+        } else {
+          const currentIndex = dropZones.indexOf(selectedZone);
+          let newIndex;
+          
+          if (e.key === 'ArrowDown') {
+            newIndex = (currentIndex + 1) % dropZones.length;
+          } else {
+            newIndex = (currentIndex - 1 + dropZones.length) % dropZones.length;
+          }
+          
+          selectedZone.classList.remove('selected');
+          selectedZone = dropZones[newIndex];
+          selectedZone.classList.add('selected');
+        }
+      }
+      // Paste functionality (Ctrl+V or Cmd+V)
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        
+        if (!selectedZone) {
+          // Auto-select first zone if none selected
+          selectedZone = dropZones[0];
+          selectedZone.classList.add('selected');
+        }
+        
+        // Request paste from parent
+        window.parent.postMessage({
+          type: 'requestPaste',
+          target: 'frame-b'
+        }, '*');
       }
     });
   </script>
