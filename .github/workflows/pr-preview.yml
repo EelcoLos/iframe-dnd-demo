@@ -16,17 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
+      - name: Prepare preview files
+        run: |
+          # For PR previews, just copy the public files directly
+          # since they are self-contained HTML files with relative paths
+          mkdir -p dist
+          cp -r public/* dist/
+          cp index.html dist/
 
       - name: Deploy to PR Preview
         uses: peaceiris/actions-gh-pages@v4
