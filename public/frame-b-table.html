@@ -77,6 +77,11 @@
       50% { background: #86efac; }
     }
 
+    tbody tr.highlight {
+      background: #dbeafe;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
     td {
       padding: 12px;
       color: #334155;
@@ -193,6 +198,9 @@
       // Don't select if we're dragging
       if (isDragging) return;
       
+      // Ensure this window has focus for keyboard events
+      window.focus();
+      
       // Clear previous selection
       if (selectedRow) {
         selectedRow.classList.remove('selected');
@@ -251,9 +259,10 @@
       const tbody = document.getElementById('table-body');
       const quantity = parseFloat(copiedRowData.quantity || 1);
       const unitPrice = parseFloat(copiedRowData.unitPrice || 0);
+      const amount = quantity * unitPrice;
       
       const newRow = document.createElement('tr');
-      newRow.className = 'highlight';
+      newRow.className = 'candidate-row highlight';
       newRow.dataset.id = `pasted-${Date.now()}`;
       newRow.dataset.description = copiedRowData.description;
       newRow.dataset.quantity = quantity;
@@ -262,7 +271,8 @@
         <td><span class="drag-handle">⋮⋮</span></td>
         <td>${copiedRowData.description}</td>
         <td class="number">${quantity}</td>
-        <td class="number">$${unitPrice.toFixed(2)}</td>
+        <td class="number">${formatCurrency(unitPrice)}</td>
+        <td class="number">${formatCurrency(amount)}</td>
       `;
       
       // Insert at the end
