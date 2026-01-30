@@ -16,24 +16,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare preview files
-        run: |
-          # For PR previews, just copy the public files directly
-          # since they are self-contained HTML files with relative paths
-          mkdir -p dist
-          cp public/* dist/
-          cp index.html dist/
-          # Add .nojekyll to prevent GitHub Pages from processing files with Jekyll
-          touch dist/.nojekyll
-
-      - name: Deploy to PR Preview
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          destination_dir: pr-preview/pr-${{ github.event.number }}
-          keep_files: true
-          enable_jekyll: false
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Prepare and deploy preview files
+        run: |
+          # Create preview directory
+          mkdir -p gh-pages/pr-preview/pr-${{ github.event.number }}
+          
+          # Copy public files directly
+          cp public/* gh-pages/pr-preview/pr-${{ github.event.number }}/
+          cp index.html gh-pages/pr-preview/pr-${{ github.event.number }}/
+          
+          # Ensure .nojekyll exists at root
+          touch gh-pages/.nojekyll
+          
+          # Configure git and commit
+          cd gh-pages
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -m "Deploy preview for PR #${{ github.event.number }}" || echo "No changes to commit"
+          git push origin gh-pages
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
