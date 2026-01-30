@@ -21,7 +21,7 @@ jobs:
           # For PR previews, just copy the public files directly
           # since they are self-contained HTML files with relative paths
           mkdir -p dist
-          cp -r public/* dist/
+          cp public/* dist/
           cp index.html dist/
 
       - name: Deploy to PR Preview
