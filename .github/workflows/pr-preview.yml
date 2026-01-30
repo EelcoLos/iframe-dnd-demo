@@ -26,10 +26,10 @@ jobs:
         run: npm ci
 
       - name: Build with PR-specific base path
-        run: |
-          # Update vite.config.ts to use PR-specific base path
-          sed -i "s|base: '/iframe-dnd-demo/'|base: '/iframe-dnd-demo/pr-preview/pr-${{ github.event.number }}/'|g" vite.config.ts
-          npm run build
+        run: npm run build
+        env:
+          # Vite will use this environment variable for base path
+          VITE_BASE: /iframe-dnd-demo/pr-preview/pr-${{ github.event.number }}/
 
       - name: Deploy to PR Preview
         uses: peaceiris/actions-gh-pages@v4

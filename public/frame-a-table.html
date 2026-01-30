@@ -434,8 +434,9 @@
         }
 
         // Only move rows if they're not already in the correct position
+        // Check previewRow.nextSibling since structure is: placeholderRow -> previewRow -> referenceRow
         if (referenceRow) {
-          if (placeholderRow.nextSibling !== referenceRow || !tbody.contains(placeholderRow)) {
+          if (previewRow.nextSibling !== referenceRow || !tbody.contains(previewRow)) {
             tbody.insertBefore(placeholderRow, referenceRow);
             tbody.insertBefore(previewRow, referenceRow);
             
@@ -443,6 +444,19 @@
             calculateTotals();
           }
         }
+      } else {
+        // Remove placeholder and preview when dragging outside the table
+        if (placeholderRow) {
+          placeholderRow.remove();
+          placeholderRow = null;
+        }
+        if (previewRow) {
+          previewRow.remove();
+          previewRow = null;
+        }
+        previewData = null;
+        // Recalculate to remove preview amounts
+        calculateTotals();
       }
     };
 
