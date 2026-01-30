@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frame B - Drop Zones</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .drop-zones {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .drop-zone {
+      background: white;
+      border: 3px dashed #cbd5e0;
+      border-radius: 12px;
+      padding: 30px;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .drop-zone-title {
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .drop-zone-hint {
+      color: #94a3b8;
+      font-size: 0.9em;
+      text-align: center;
+    }
+
+    .drop-zone.hover {
+      background: #ede9fe;
+      border-color: #8b5cf6;
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .drop-zone.hover .drop-zone-title {
+      color: #7c3aed;
+    }
+
+    .drop-zone.hover .drop-zone-hint {
+      color: #8b5cf6;
+    }
+
+    .dropped-items {
+      margin-top: 15px;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .dropped-item {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      animation: dropIn 0.3s ease;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+      transition: all 0.2s ease;
+    }
+
+    .dropped-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .dropped-item.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+
+    @keyframes dropIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .emoji {
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎯 Drop Zones</h2>
+  <div class="drop-zones">
+    <div class="drop-zone" data-zone-id="zone-1">
+      <div class="drop-zone-title">📋 To Do</div>
+      <div class="drop-zone-hint">Drop items here</div>
+      <div class="dropped-items"></div>
+    </div>
+    <div class="drop-zone" data-zone-id="zone-2">
+      <div class="drop-zone-title">🚀 In Progress</div>
+      <div class="drop-zone-hint">Drop items here</div>
+      <div class="dropped-items"></div>
+    </div>
+    <div class="drop-zone" data-zone-id="zone-3">
+      <div class="drop-zone-title">✅ Done</div>
+      <div class="drop-zone-hint">Drop items here</div>
+      <div class="dropped-items"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentHoverZone = null;
+    let currentDragElement = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
+
+    // Set up drag handlers for dropped items
+    function setupDragHandlers() {
+      document.querySelectorAll('.dropped-item').forEach(item => {
+        item.addEventListener('pointerdown', handlePointerDown);
+      });
+    }
+
+    function handlePointerDown(e) {
+      // Only handle if clicking directly on the dropped item
+      if (!e.target.classList.contains('dropped-item')) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      currentDragElement = e.currentTarget;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      // Capture the pointer to ensure we receive all events even if pointer moves fast
+      currentDragElement.setPointerCapture(e.pointerId);
+
+      // Set up move and up listeners
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    }
+
+    function handlePointerMove(e) {
+      if (!currentDragElement) return;
+
+      // Check if we've moved enough to start dragging (5px threshold)
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+
+      if (!isDragging && (deltaX > 5 || deltaY > 5)) {
+        isDragging = true;
+        currentDragElement.classList.add('dragging');
+
+        // Notify parent that drag has started
+        window.parent.postMessage({
+          type: 'dragStart',
+          pointerId: e.pointerId,
+          text: currentDragElement.textContent.trim(),
+          id: currentDragElement.dataset.id || `item-${Date.now()}`,
+          source: 'frame-b'
+        }, '*');
+      }
+
+      // Continue sending pointer move events to parent while dragging
+      if (isDragging) {
+        // clientX/clientY are already relative to the iframe viewport
+        window.parent.postMessage({
+          type: 'dragMove',
+          clientX: e.clientX,
+          clientY: e.clientY,
+          source: 'frame-b'
+        }, '*');
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!currentDragElement) return;
+
+      // Release pointer capture
+      if (currentDragElement.hasPointerCapture(e.pointerId)) {
+        currentDragElement.releasePointerCapture(e.pointerId);
+      }
+
+      // Clean up
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDragging) {
+        // Send pointer position to parent for drop detection
+        // clientX/clientY are already relative to the iframe viewport
+        window.parent.postMessage({
+          type: 'dragEnd',
+          clientX: e.clientX,
+          clientY: e.clientY,
+          source: 'frame-b'
+        }, '*');
+      }
+
+      currentDragElement.classList.remove('dragging');
+      currentDragElement = null;
+      isDragging = false;
+    }
+
+    // Expose functions to parent window for drag events from Frame A or other drops
+    window.__onParentDragMove = function(x, y, dragData) {
+      // Find which drop zone is under the coordinates
+      const element = document.elementFromPoint(x, y);
+      const dropZone = element?.closest('.drop-zone');
+
+      if (dropZone && dropZone !== currentHoverZone) {
+        // Clear previous hover
+        if (currentHoverZone) {
+          currentHoverZone.classList.remove('hover');
+        }
+        
+        // Set new hover
+        currentHoverZone = dropZone;
+        currentHoverZone.classList.add('hover');
+      } else if (!dropZone && currentHoverZone) {
+        // Clear hover if not over any drop zone
+        currentHoverZone.classList.remove('hover');
+        currentHoverZone = null;
+      }
+    };
+
+    window.__onParentDrop = function(x, y, dragData) {
+      // Find which drop zone is under the coordinates
+      const element = document.elementFromPoint(x, y);
+      const dropZone = element?.closest('.drop-zone');
+
+      if (dropZone) {
+        // If dragging within the same frame (frame-b), remove the old item first
+        // This prevents duplicate IDs when moving between zones
+        if (dragData.source === 'frame-b') {
+          const oldItem = Array.from(document.querySelectorAll('.dropped-item'))
+            .find(item => item.dataset.id === dragData.id);
+          if (oldItem) {
+            oldItem.remove();
+          }
+        }
+        
+        // Add the dropped item to this zone
+        const droppedItemsContainer = dropZone.querySelector('.dropped-items');
+        const droppedItem = document.createElement('div');
+        droppedItem.className = 'dropped-item';
+        droppedItem.dataset.id = dragData.id || `item-${Date.now()}`;
+        droppedItem.textContent = dragData.text;
+        droppedItemsContainer.appendChild(droppedItem);
+
+        // Set up drag handler for the new item
+        droppedItem.addEventListener('pointerdown', handlePointerDown);
+
+        // Clear hover state
+        dropZone.classList.remove('hover');
+        currentHoverZone = null;
+        
+        // Notify parent that the drop was successful
+        window.parent.postMessage({
+          type: 'dropSuccess',
+          dragData: dragData
+        }, '*');
+      } else {
+        // Notify parent that the drop failed (not over a valid drop zone)
+        window.parent.postMessage({
+          type: 'dropFailed',
+          dragData: dragData
+        }, '*');
+      }
+    };
+
+    // Listen for messages from parent
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'parentDragMove') {
+        window.__onParentDragMove(event.data.x, event.data.y, event.data.dragData);
+      } else if (event.data.type === 'parentDrop') {
+        window.__onParentDrop(event.data.x, event.data.y, event.data.dragData);
+      } else if (event.data.type === 'parentDragLeave') {
+        if (currentHoverZone) {
+          currentHoverZone.classList.remove('hover');
+          currentHoverZone = null;
+        }
+      } else if (event.data.type === 'removeItem') {
+        // Remove item when it's successfully dropped elsewhere
+        const itemToRemove = Array.from(document.querySelectorAll('.dropped-item'))
+          .find(item => item.dataset.id === event.data.id);
+        if (itemToRemove) {
+          itemToRemove.style.transition = 'all 0.2s ease';
+          itemToRemove.style.opacity = '0';
+          itemToRemove.style.transform = 'scale(0.8)';
+          setTimeout(() => itemToRemove.remove(), 200);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
