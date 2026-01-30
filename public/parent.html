@@ -132,6 +132,7 @@
     let dragPreview = null;
     let frameA = null;
     let frameB = null;
+    let clipboardData = null;
 
     /**
      * Check if a pointer position is over a specific iframe
@@ -189,6 +190,21 @@
         } else if (event.data.type === 'rowCopied') {
           // Relay copied row data to all frames
           handleRowCopied(event.data);
+        } else if (event.data.type === 'itemCopied') {
+          // Store copied item data in clipboard
+          clipboardData = event.data.itemData;
+        } else if (event.data.type === 'requestPaste') {
+          // Handle paste request from a frame
+          handlePasteRequest(event.data.target);
+        } else if (event.data.type === 'pasteSuccess') {
+          // Handle successful paste - remove item from source if it was a move
+          if (clipboardData && clipboardData.source === 'frame-a') {
+            frameA.contentWindow.postMessage({
+              type: 'removeItem',
+              id: clipboardData.id
+            }, '*');
+            clipboardData = null; // Clear clipboard after move
+          }
         }
       });
 
@@ -196,6 +212,21 @@
       document.addEventListener('pointermove', handlePointerMove);
       document.addEventListener('pointerup', handlePointerUp);
     });
+
+    function handlePasteRequest(target) {
+      if (!clipboardData) return;
+      
+      const targetFrame = target === 'frame-a' ? frameA : frameB;
+      
+      try {
+        targetFrame.contentWindow.postMessage({
+          type: 'pasteItem',
+          itemData: clipboardData
+        }, '*');
+      } catch (err) {
+        console.error('Failed to send paste message:', err);
+      }
+    }
 
     function setupDemoSwitcher() {
       const buttons = document.querySelectorAll('.demo-button');
