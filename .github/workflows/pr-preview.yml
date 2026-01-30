@@ -47,7 +47,8 @@ jobs:
         with:
           script: |
             const prNumber = context.issue.number;
-            const previewUrl = `https://${{ github.repository_owner }}.github.io/iframe-dnd-demo/pr-preview/pr-${prNumber}/`;
+            // Use custom domain if configured
+            const previewUrl = `http://gh.eelcolos.nl/iframe-dnd-demo/pr-preview/pr-${prNumber}/`;
             
             const comment = `## 🎯 PR Preview Deployed!
             
