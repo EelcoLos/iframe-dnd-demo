@@ -324,6 +324,9 @@
 
     // Listen for messages from parent
     window.addEventListener('message', (event) => {
+      // Validate message origin for security
+      if (event.origin !== window.location.origin) return;
+      
       if (event.data.type === 'parentDragMove') {
         window.__onParentDragMove(event.data.x, event.data.y, event.data.dragData);
       } else if (event.data.type === 'parentDrop') {

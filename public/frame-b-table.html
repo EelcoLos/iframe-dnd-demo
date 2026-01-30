@@ -382,6 +382,9 @@
 
     // Handle messages from parent
     window.addEventListener('message', (event) => {
+      // Validate message origin for security
+      if (event.origin !== window.location.origin) return;
+      
       if (event.data.type === 'parentDragMove') {
         // Could add hover effects here if needed
       } else if (event.data.type === 'parentDrop') {
