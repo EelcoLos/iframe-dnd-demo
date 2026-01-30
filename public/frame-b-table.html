@@ -239,7 +239,7 @@
           window.parent.postMessage({
             type: 'rowCopied',
             rowData: copiedRowData
-          }, '*');
+          }, window.location.origin);
         }
       }
       
@@ -340,7 +340,7 @@
             quantity: currentDragElement.dataset.quantity,
             unitPrice: currentDragElement.dataset.unitPrice
           }
-        }, '*');
+        }, window.location.origin);
       }
 
       // Continue sending pointer move events to parent while dragging
@@ -350,7 +350,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-b-table'
-        }, '*');
+        }, window.location.origin);
       }
     }
 
@@ -372,7 +372,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-b-table'
-        }, '*');
+        }, window.location.origin);
       }
 
       currentDragElement.classList.remove('dragging');

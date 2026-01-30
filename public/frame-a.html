@@ -162,7 +162,7 @@
           text: currentDragElement.textContent.trim(),
           id: currentDragElement.dataset.id,
           source: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
 
       // Continue sending pointer move events to parent while dragging
@@ -173,7 +173,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
     }
 
@@ -197,7 +197,7 @@
           clientX: e.clientX,
           clientY: e.clientY,
           source: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
 
       currentDragElement.classList.remove('dragging');
@@ -258,13 +258,13 @@
         window.parent.postMessage({
           type: 'dropSuccess',
           dragData: dragData
-        }, '*');
+        }, window.location.origin);
       } else if (dragData.source !== 'frame-a') {
         // Notify parent that the drop failed (not over the container or dragging from same frame)
         window.parent.postMessage({
           type: 'dropFailed',
           dragData: dragData
-        }, '*');
+        }, window.location.origin);
       }
     };
 
@@ -334,7 +334,7 @@
         window.parent.postMessage({
           type: 'itemCopied',
           itemData: copiedItemData
-        }, '*');
+        }, window.location.origin);
         
         // Visual feedback
         const originalBg = selectedItem.style.background;
@@ -350,7 +350,7 @@
         window.parent.postMessage({
           type: 'requestPaste',
           target: 'frame-a'
-        }, '*');
+        }, window.location.origin);
       }
     });
 
