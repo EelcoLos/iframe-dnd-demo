@@ -261,18 +261,25 @@
 
     function handleRowCopied(data) {
       // Relay copied row data to both frames so they can paste
+      console.log('Parent relaying rowCopied:', data.rowData?.description);
       try {
         if (frameA && frameA.contentWindow) {
           frameA.contentWindow.postMessage({
             type: 'rowCopied',
             rowData: data.rowData
           }, '*');
+          console.log('Sent rowCopied to Frame A');
+        } else {
+          console.warn('Frame A not ready for postMessage');
         }
         if (frameB && frameB.contentWindow) {
           frameB.contentWindow.postMessage({
             type: 'rowCopied',
             rowData: data.rowData
           }, '*');
+          console.log('Sent rowCopied to Frame B');
+        } else {
+          console.warn('Frame B not ready for postMessage');
         }
       } catch (err) {
         console.error('Failed to relay copied row data:', err);
