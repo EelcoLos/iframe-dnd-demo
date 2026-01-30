@@ -1,0 +1,106 @@
+name: PR Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with PR-specific base path
+        run: |
+          # Update vite.config.ts to use PR-specific base path
+          sed -i "s|base: '/iframe-dnd-demo/'|base: '/iframe-dnd-demo/pr-preview/pr-${{ github.event.number }}/'|g" vite.config.ts
+          npm run build
+
+      - name: Deploy to PR Preview
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          destination_dir: pr-preview/pr-${{ github.event.number }}
+          keep_files: false
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const previewUrl = `https://${{ github.repository_owner }}.github.io/iframe-dnd-demo/pr-preview/pr-${prNumber}/parent.html`;
+            
+            const comment = `## 🎯 PR Preview Deployed!
+            
+            Your changes have been deployed to a preview environment:
+            
+            🔗 **Preview URL:** ${previewUrl}
+            
+            The preview will be automatically updated when you push new commits to this PR.
+            
+            ---
+            <sub>Preview deployed from commit ${{ github.sha }}</sub>`;
+            
+            // Find existing preview comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('PR Preview Deployed')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment
+              });
+            }
+
+  cleanup-preview:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Remove preview directory
+        run: |
+          rm -rf pr-preview/pr-${{ github.event.number }}
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -m "Remove preview for PR #${{ github.event.number }}" || echo "No changes to commit"
+          git push origin gh-pages || echo "Nothing to push"
