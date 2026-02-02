@@ -228,13 +228,14 @@ export class HybridCommunicationManager {
       
       // Additional validation - verify window identity
       try {
-        // Try to access a property to verify window is accessible
+        // Try to access window.name to verify window is accessible
         const windowName = windowRef.name || 'unknown';
-        console.log(`[HybridComm] Window ${windowId} name:`, windowName, 'expected:', windowId === 'frame-a' ? 'DraggableItems' : 'DropZones');
+        const expectedPrefix = windowId === 'frame-a' ? 'DraggableItems' : 'DropZones';
+        console.log(`[HybridComm] Window ${windowId} name:`, windowName, 'expected prefix:', expectedPrefix);
         
         // Check if this is actually the window we think it is
-        if (windowName !== (windowId === 'frame-a' ? 'DraggableItems' : 'DropZones')) {
-          console.error(`[HybridComm] Window name mismatch! Expected ${windowId === 'frame-a' ? 'DraggableItems' : 'DropZones'} but got ${windowName}`);
+        if (!windowName.startsWith(expectedPrefix)) {
+          console.error(`[HybridComm] Window name mismatch! Expected name starting with ${expectedPrefix} but got ${windowName}`);
         }
       } catch (e) {
         console.warn(`[HybridComm] Cannot access window.name for ${windowId}:`, e.message);
