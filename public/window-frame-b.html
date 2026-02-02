@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drop Zones</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+      transition: background 0.3s ease;
+    }
+    
+    body.drag-active {
+      background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .drop-zones {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .drop-zone {
+      background: white;
+      border: 3px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 150px;
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone.hover {
+      background: #e0e7ff;
+      border-color: #4f46e5;
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      transform: scale(1.02);
+    }
+
+    .zone-header {
+      font-weight: 600;
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .zone-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 80px;
+    }
+
+    .dropped-item {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      animation: dropIn 0.3s ease;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .dropped-item.dragging {
+      opacity: 0.5;
+    }
+
+    @keyframes dropIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .hint {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9em;
+      margin-top: 20px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #94a3b8;
+      font-style: italic;
+      padding: 20px;
+    }
+    
+    .status-indicator {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #1e293b;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      display: none;
+    }
+    
+    .status-indicator.active {
+      display: block;
+      background: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+    
+    .status-indicator.success {
+      display: block;
+      background: #10b981;
+      animation: none;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .drag-instruction-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(79, 70, 229, 0.95);
+      color: white;
+      padding: 3rem 4rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border: 4px solid white;
+    }
+    
+    .drag-instruction-overlay.visible {
+      opacity: 1;
+    }
+    
+    .drag-instruction-overlay h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      animation: bounce 1s infinite;
+    }
+    
+    .drag-instruction-overlay p {
+      font-size: 1.3rem;
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+    
+    .drag-instruction-overlay .highlight {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fbbf24;
+      text-decoration: underline;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      transform: translate(-50%, -50%);
+    }
+    
+    .drag-preview.visible {
+      opacity: 0.8;
+    }
+    
+    .drag-preview-item {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+      white-space: nowrap;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="drag-instruction" class="drag-instruction-overlay">
+    <h2>👆 MOVE YOUR MOUSE HERE!</h2>
+    <p>To drop an item, you must:</p>
+    <p class="highlight">Move your mouse cursor into THIS window</p>
+    <p>while holding the mouse button down</p>
+  </div>
+  
+  <div id="drag-preview" class="drag-preview" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <div class="drag-preview-item"></div>
+  </div>
+  
+  <div id="status-indicator" class="status-indicator">Waiting for drag...</div>
+  
+  <h2>🎯 Drop Zones</h2>
+  <div class="drop-zones">
+    <div class="drop-zone" data-zone="todo">
+      <div class="zone-header">📋 To Do</div>
+      <div class="zone-items">
+        <div class="empty-state">Drop items here</div>
+      </div>
+    </div>
+
+    <div class="drop-zone" data-zone="in-progress">
+      <div class="zone-header">🚀 In Progress</div>
+      <div class="zone-items">
+        <div class="empty-state">Drop items here</div>
+      </div>
+    </div>
+
+    <div class="drop-zone" data-zone="done">
+      <div class="zone-header">✅ Done</div>
+      <div class="zone-items">
+        <div class="empty-state">Drop items here</div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">← Drag items from the Draggable Items window</div>
+  
+  <div id="no-coordinator-warning" style="display: none; background: #fee; border: 2px solid #c33; border-radius: 8px; padding: 15px; margin-top: 20px; color: #a00;">
+    <strong>⚠️ Warning:</strong> This window was not opened from the Coordinator!
+    <br>
+    <small>Cross-window drag & drop requires opening windows from <a href="parent-windows.html" target="_blank">parent-windows.html</a></small>
+  </div>
+
+  <script type="module">
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Global error handler
+    window.addEventListener('error', (e) => {
+      console.error('[frame-b ERROR]', e.error || e.message);
+    });
+    
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('[frame-b PROMISE ERROR]', e.reason);
+    });
+
+    const windowId = 'frame-b';
+    
+    const broadcast = new HybridCommunicationManager({ windowId, debug: true });
+    broadcast.initializeAsChild();
+    
+    // Show warning if no coordinator
+    if (!window.opener || window.opener.closed) {
+      document.getElementById('no-coordinator-warning').style.display = 'block';
+      console.error('[frame-b] NO COORDINATOR - window.opener is', window.opener);
+    }
+
+    const dropZones = document.querySelectorAll('.drop-zone');
+    const statusIndicator = document.getElementById('status-indicator');
+    const dragInstruction = document.getElementById('drag-instruction');
+    const dragPreview = document.getElementById('drag-preview');
+    const dragPreviewItem = dragPreview.querySelector('.drag-preview-item');
+    let currentHoveredZone = null;
+    let isDragActive = false;
+    let draggedItemElement = null;
+    let dragStartPos = { x: 0, y: 0 };
+    let currentDragData = null;
+    let isMouseOverWindow = false;
+    const DRAG_THRESHOLD = 5;
+    const BOUNDARY_MARGIN = 50; // Pixels of margin around window bounds for showing preview
+
+    // Track if mouse is over this window
+    document.addEventListener('mouseenter', () => {
+      isMouseOverWindow = true;
+      if (isDragActive) {
+        // Hide instruction overlay when mouse enters
+        dragInstruction.classList.remove('visible');
+        statusIndicator.textContent = '🎯 Drop zone ready!';
+        statusIndicator.className = 'status-indicator active';
+        // Preview will be shown by next dragMove event
+      }
+    });
+
+    document.addEventListener('mouseleave', () => {
+      isMouseOverWindow = false;
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+      clearHoverStates();
+      if (isDragActive) {
+        // Show instruction overlay again when mouse leaves
+        dragInstruction.classList.add('visible');
+        statusIndicator.textContent = '⚠️ Move mouse over window to drop';
+        statusIndicator.className = 'status-indicator active';
+      }
+    });
+
+    // Listen for drag start
+    broadcast.on('dragStart', (data) => {
+      // VISUAL FEEDBACK
+      statusIndicator.textContent = `🎬 Drag started: ${data.text}`;
+      statusIndicator.className = 'status-indicator active';
+      document.body.classList.add('drag-active');
+      
+      // Show instruction overlay if mouse not already over window
+      if (!isMouseOverWindow) {
+        dragInstruction.classList.add('visible');
+      }
+      
+      // Send acknowledgment back to coordinator
+      broadcast.broadcast('messageReceived', { originalType: 'dragStart', receivedBy: 'frame-b' });
+      
+      isDragActive = true;
+      currentDragData = data;
+      
+      // Show visual feedback that drag is active
+      document.body.style.cursor = 'grabbing';
+      
+      // Set up drag preview with item text
+      dragPreviewItem.textContent = data.text;
+    });
+    
+    // Listen for drag move - show preview based on screen coordinates
+    broadcast.on('dragMove', (data) => {
+      if (!isDragActive) return;
+      
+      // Validate coordinates are numbers
+      if (typeof data.screenX !== 'number' || typeof data.screenY !== 'number') {
+        return;
+      }
+      
+      // Convert screen coordinates to window-relative coordinates
+      // Use screenLeft/screenTop for better cross-browser compatibility
+      const windowX = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+      const windowY = window.screenTop !== undefined ? window.screenTop : window.screenY;
+      
+      const localX = data.screenX - windowX;
+      const localY = data.screenY - windowY;
+      
+      // Check if cursor would be within our window bounds (with margin for smooth transition)
+      const isWithinBounds = localX >= -BOUNDARY_MARGIN && localX <= window.innerWidth + BOUNDARY_MARGIN &&
+                            localY >= -BOUNDARY_MARGIN && localY <= window.innerHeight + BOUNDARY_MARGIN;
+      
+      if (isWithinBounds) {
+        dragPreview.style.left = localX + 'px';
+        dragPreview.style.top = localY + 'px';
+        dragPreview.classList.add('visible');
+        dragPreview.setAttribute('aria-hidden', 'false');
+      } else {
+        dragPreview.classList.remove('visible');
+        dragPreview.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    // Listen for drag end
+    broadcast.on('dragEnd', (data) => {
+      console.log('[frame-b] ✅ dragEnd handler called, isDragActive:', isDragActive);
+      
+      // Hide instruction overlay regardless of outcome
+      dragInstruction.classList.remove('visible');
+      
+      // Send acknowledgment back to coordinator
+      broadcast.broadcast('messageReceived', { originalType: 'dragEnd', receivedBy: 'frame-b' });
+      
+      if (!isDragActive) {
+        console.warn('[frame-b] Ignoring dragEnd because isDragActive is false');
+        statusIndicator.textContent = '⚠️ dragEnd ignored (not active)';
+        statusIndicator.className = 'status-indicator';
+        return;
+      }
+      
+      
+      // If mouse was over this window and over a zone, handle the drop
+      if (isMouseOverWindow && currentHoveredZone && currentDragData) {
+        console.log('[frame-b] ✅ Dropping item into zone:', currentHoveredZone.dataset.zone);
+        addItemToZone(currentHoveredZone, currentDragData);
+        
+        // VISUAL FEEDBACK
+        statusIndicator.textContent = `✅ Dropped into ${currentHoveredZone.dataset.zone}!`;
+        statusIndicator.className = 'status-indicator success';
+        setTimeout(() => {
+          statusIndicator.className = 'status-indicator';
+        }, 3000);
+        
+        // Notify that item was dropped successfully
+        broadcast.broadcast('removeItem', {
+          id: currentDragData.id
+        });
+      } else {
+        console.log('[frame-b] ❌ Not dropping - isMouseOverWindow:', isMouseOverWindow, 'currentHoveredZone:', currentHoveredZone, 'currentDragData:', currentDragData);
+        
+        // VISUAL FEEDBACK
+        statusIndicator.textContent = '❌ Drop failed: Mouse wasn\'t over this window!';
+        statusIndicator.className = 'status-indicator active';
+        setTimeout(() => {
+          statusIndicator.className = 'status-indicator';
+        }, 5000);
+      }
+      
+      isDragActive = false;
+      currentDragData = null;
+      document.body.style.cursor = '';
+      document.body.classList.remove('drag-active');
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+      clearHoverStates();
+    });
+
+    function clearHoverStates() {
+      dropZones.forEach(zone => zone.classList.remove('hover'));
+      currentHoveredZone = null;
+    }
+
+    // Add hover detection for drop zones
+    dropZones.forEach(zone => {
+      zone.addEventListener('mouseenter', (e) => {
+        if (isDragActive && currentDragData) {
+          currentHoveredZone = zone;
+          zone.classList.add('hover');
+        }
+      });
+      
+      zone.addEventListener('mouseleave', (e) => {
+        zone.classList.remove('hover');
+        if (currentHoveredZone === zone) {
+          currentHoveredZone = null;
+        }
+      });
+    });
+
+    function addItemToZone(zone, dragData) {
+      const zoneItems = zone.querySelector('.zone-items');
+      
+      // Remove empty state if present
+      const emptyState = zoneItems.querySelector('.empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+      
+      // Create dropped item
+      const item = document.createElement('div');
+      item.className = 'dropped-item';
+      item.dataset.id = dragData.id;
+      item.textContent = dragData.text;
+      
+      zoneItems.appendChild(item);
+      
+      // Make it draggable back out
+      setupDraggableItem(item);
+      
+    }
+
+    // Setup dragging for items in drop zones
+    function setupDraggableItem(element) {
+      element.addEventListener('pointerdown', handleItemPointerDown);
+    }
+
+    function handleItemPointerDown(e) {
+      if (e.button !== 0) return;
+      
+      draggedItemElement = e.currentTarget;
+      dragStartPos = { x: e.clientX, y: e.clientY };
+      
+      document.addEventListener('pointermove', handleItemPointerMove);
+      document.addEventListener('pointerup', handleItemPointerUp);
+      
+      draggedItemElement.setPointerCapture(e.pointerId);
+    }
+
+    function handleItemPointerMove(e) {
+      if (!draggedItemElement) return;
+      
+      const dx = e.clientX - dragStartPos.x;
+      const dy = e.clientY - dragStartPos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (!isDragActive && distance > DRAG_THRESHOLD) {
+        startItemDrag(e);
+      }
+    }
+
+    function handleItemPointerUp(e) {
+      if (isDragActive) {
+        endItemDrag(e);
+      }
+      
+      document.removeEventListener('pointermove', handleItemPointerMove);
+      document.removeEventListener('pointerup', handleItemPointerUp);
+      
+      if (draggedItemElement) {
+        draggedItemElement.releasePointerCapture(e.pointerId);
+        draggedItemElement = null;
+      }
+    }
+
+    function startItemDrag(e) {
+      isDragActive = true;
+      draggedItemElement.classList.add('dragging');
+      
+      const dragData = {
+        text: draggedItemElement.textContent.trim(),
+        id: draggedItemElement.dataset.id,
+        source: windowId
+      };
+      
+      currentDragData = dragData;
+      
+      broadcast.broadcast('dragStart', dragData);
+    }
+
+    function endItemDrag(e) {
+      broadcast.broadcast('dragEnd', {
+        ...currentDragData,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        screenX: e.screenX,
+        screenY: e.screenY
+      });
+      
+      if (draggedItemElement) {
+        draggedItemElement.classList.remove('dragging');
+      }
+      
+      isDragActive = false;
+      currentDragData = null;
+    }
+
+    // Listen for parent drop messages (for receiving items)
+    broadcast.on('parentDrop', (data) => {
+      if (!data || !data.dragData) return;
+      if (!dropZones || dropZones.length === 0) return;
+
+      // Find the drop zone at the given coordinates
+      let targetZone = null;
+      if (typeof data.clientX === 'number' && typeof data.clientY === 'number') {
+        for (const zone of dropZones) {
+          const rect = zone.getBoundingClientRect();
+          if (
+            data.clientX >= rect.left &&
+            data.clientX <= rect.right &&
+            data.clientY >= rect.top &&
+            data.clientY <= rect.bottom
+          ) {
+            targetZone = zone;
+            break;
+          }
+        }
+      }
+
+      // Fallback to the first zone if coordinates don't match any zone
+      if (!targetZone) {
+        targetZone = dropZones[0];
+      }
+
+      addItemToZone(targetZone, data.dragData);
+    });
+
+    // Initialize existing items as draggable
+    document.querySelectorAll('.dropped-item').forEach(setupDraggableItem);
+  </script>
+</body>
+</html>

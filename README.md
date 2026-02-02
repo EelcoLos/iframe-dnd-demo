@@ -1,6 +1,6 @@
 # 🎯 iframe-dnd-demo
 
-A demonstration of drag-and-drop functionality between two same-origin iframes using custom Pointer Events (no HTML5 Drag & Drop API).
+A demonstration of drag-and-drop functionality using custom Pointer Events (no HTML5 Drag & Drop API). Features both **iframe-based** and **cross-window** implementations.
 
 ## 🌐 Live Demo
 
@@ -8,18 +8,18 @@ View the live demo at: **[https://eelcolos.github.io/iframe-dnd-demo/](https://e
 
 ## 📋 Overview
 
-This demo implements a cross-iframe drag-and-drop system with:
-- **Parent page** (`/parent.html`) that hosts two iframes
-- **Frame A** (`/frame-a.html`) containing draggable items
-- **Frame B** (`/frame-b.html`) containing drop zones
-- Custom **Pointer Events-based** drag and drop implementation
-- Cross-iframe coordinate conversion
-- Real-time hover highlighting
-- Visual drag preview
+This demo implements cross-iframe and cross-window drag-and-drop systems:
+
+**iFrame Mode** - Classic drag-and-drop between two same-origin iframes
+**Cross-Window Mode** - Drag and drop between separate browser windows/tabs
+
+Both modes use custom Pointer Events for precise control and cross-context coordinate conversion.
 
 ## 🏗️ Architecture
 
-### Parent Page
+### iFrame Mode
+
+#### Parent Page
 - Hosts both iframes
 - Listens for drag start/end messages from Frame A
 - Tracks pointer movements across the entire page
@@ -27,16 +27,27 @@ This demo implements a cross-iframe drag-and-drop system with:
 - Converts parent coordinates to Frame B coordinates
 - Communicates with Frame B via `postMessage` for hover highlighting and drops
 
-### Frame A (Draggables)
+#### Frame A (Draggables)
 - Contains draggable items with pointer event handlers
 - Sends `dragStart` and `dragEnd` messages to parent via `postMessage`
 - Uses pointer capture for reliable tracking
 
-### Frame B (Drop Zones)
+#### Frame B (Drop Zones)
 - Contains drop zones that can receive items
 - Exposes `__onParentDragMove` and `__onParentDrop` functions
 - Listens for messages from parent to handle hover and drop events
 - Uses `elementFromPoint` to determine which drop zone is under the cursor
+
+### Cross-Window Mode
+
+Uses BroadcastChannel/postMessage for cross-window communication. Provides both HTML5 Drag & Drop API implementation (default, simpler) and custom Pointer Events implementation (advanced, more control).
+
+**Usage:**
+1. Click "Cross-Window Mode" tab to open coordinator
+2. Open Draggable Items and Drop Zones windows
+3. Drag items between windows
+
+Windows can be positioned anywhere on your screen and across multiple monitors.
 
 ## 🚀 Getting Started
 
@@ -69,11 +80,13 @@ The dev server will start (typically on `http://localhost:5173`).
 http://localhost:5173/
 ```
 
-The root index page will automatically redirect to `parent.html`.
+The root index page will show a selection screen to choose between iFrame Mode and Cross-Window Mode.
 
 ## 🎮 How to Use
 
-1. Open `/parent.html` in your browser
+### iFrame Mode
+
+1. Select "iFrame Mode" from the index page (or go to `/parent.html`)
 2. You'll see two iframes side by side:
    - **Left (Frame A)**: Contains colorful draggable items
    - **Right (Frame B)**: Contains drop zones (To Do, In Progress, Done)
@@ -81,6 +94,22 @@ The root index page will automatically redirect to `parent.html`.
 4. Drag it over Frame B - you'll see drop zones highlight when hovered
 5. Release to drop the item into a zone
 6. The item will appear in the drop zone with a success animation
+
+### Cross-Window Mode
+
+Cross-Window Mode lets you drag items between completely separate browser windows.
+
+1. From the index page, select **"Cross-Window Mode"**
+2. A coordinator page opens. Use the controls on this page to open:
+   - a **Draggable Items** window, and
+   - a **Drop Zones** window
+3. Arrange the separate windows anywhere on your desktop (including across multiple monitors)
+4. In the **Draggable Items** window, click and start dragging any item
+5. While holding the mouse button (or touch), move the pointer into the **Drop Zones** window
+6. Hover over a drop zone; it will respond visually when it can accept a drop
+7. Release the pointer to drop the item into the hovered zone
+
+The coordinator window manages communication between windows using BroadcastChannel (with automatic postMessage fallback for Firefox). Two implementations are available: HTML5 Drag & Drop API (default, simpler) and custom Pointer Events (advanced, more control).
 
 ## 🛠️ Technical Implementation
 
@@ -108,10 +137,10 @@ The root index page will automatically redirect to `parent.html`.
 ### Key Features
 
 - **No HTML5 DnD**: Uses Pointer Events API for better control
-- **Same-Origin**: All iframes are served from the same origin
-- **Coordinate Conversion**: Parent converts its coordinates to Frame B's coordinate system
 - **Visual Feedback**: Hover highlights and drag preview
 - **Pointer Capture**: Ensures reliable drag tracking even with fast mouse movements
+- **Same-Origin**: All iframes are served from the same origin
+- **Coordinate Conversion**: Parent converts its coordinates to Frame B's coordinate system
 
 ## 📦 Build
 
@@ -193,14 +222,26 @@ For a quick API overview, see [API.md](./API.md).
 ```
 iframe-dnd-demo/
 ├── public/
+│   # iFrame Mode files
 │   ├── parent.html                      # Parent page hosting iframes
 │   ├── frame-a.html                     # Draggable items iframe
 │   ├── frame-b.html                     # Drop zones iframe
+│   ├── frame-a-table.html               # Table demo - draggable rows
+│   ├── frame-b-table.html               # Table demo - drop zones
 │   ├── iframe-communication.js          # Parent coordination module
 │   ├── draggable-items-communication.js # Draggable items module
-│   └── drop-zones-communication.js      # Drop zones module
+│   ├── drop-zones-communication.js      # Drop zones module
+│   # Cross-Window Mode files (NEW)
+│   ├── parent-windows.html              # Coordinator for managing windows
+│   ├── window-frame-a.html              # Standalone draggable items window
+│   ├── window-frame-b.html              # Standalone drop zones window
+│   ├── hybrid-communication.js          # Hybrid BroadcastChannel/postMessage manager (Firefox compatible)
+│   └── broadcast-communication.js       # BroadcastChannel manager (legacy, Chrome/Edge only)
 ├── src/
 │   └── ...                              # React app (not used in this demo)
+├── e2e/
+│   └── *.spec.ts                        # Playwright E2E tests
+├── index.html                           # Landing page with mode selection
 ├── package.json
 ├── vite.config.ts
 └── README.md
@@ -208,9 +249,11 @@ iframe-dnd-demo/
 
 ## 🔧 Using the Modules
 
+### iFrame Mode Modules
+
 The iframe communication has been modularized into reusable ES6 modules. Here's how to use them:
 
-### Parent Window (Coordinator)
+#### Parent Window (Coordinator)
 
 ```javascript
 import { IframeCommunicationManager } from './iframe-communication.js';
@@ -269,21 +312,133 @@ receiveOnlyManager.initialize();
 - ✅ **Scalable**: Support for any number of frames
 - ✅ **Backward compatible**: Still supports simple string constructor for frameId
 
+### Cross-Window Mode Modules (NEW)
+
+The BroadcastChannel-based communication enables drag and drop between separate windows:
+
+#### HybridCommunicationManager (Recommended for Cross-Window)
+
+```javascript
+import { HybridCommunicationManager } from './hybrid-communication.js';
+
+// Coordinator window (opens child windows)
+const coordinator = new HybridCommunicationManager({
+  windowId: 'coordinator',
+  channelName: 'iframe-dnd-channel' // optional
+});
+
+coordinator.initializeAsCoordinator();
+
+// Register child windows for postMessage relay (Firefox compatibility)
+const childWindow = window.open('child.html', 'Child', 'width=500,height=600');
+coordinator.registerWindow('child-window', childWindow);
+
+// Child window
+const child = new HybridCommunicationManager({
+  windowId: 'child-window'
+});
+
+child.initializeAsChild();
+
+// Listen for messages (same API for both coordinator and child)
+child.on('dragStart', (data, sourceWindowId) => {
+  console.log('Drag started from', sourceWindowId, data);
+});
+
+// Broadcast to all windows
+child.broadcast('dragStart', {
+  text: 'Item 1',
+  id: '1'
+});
+
+// Send to specific window
+child.sendTo('target-window', 'drop', { itemId: '1' });
+
+// Get list of connected windows
+const windows = child.getKnownWindows();
+```
+
+**Key Features:**
+- ✅ **Hybrid Communication**: BroadcastChannel with automatic postMessage fallback
+- ✅ **Firefox Compatible**: Detects and handles BroadcastChannel partitioning
+- ✅ **Pub/Sub Pattern**: Broadcast messages to all connected windows
+- ✅ **Window Registry**: Automatic tracking of active windows
+- ✅ **Event Handlers**: Register callbacks for specific message types
+- ✅ **Coordinator Pattern**: Central relay for message routing when needed
+- ✅ **Graceful Cleanup**: Announces window departure on close
+
+#### BroadcastCommunicationManager (Legacy - Chrome/Edge only)
+
+```javascript
+import { BroadcastCommunicationManager } from './broadcast-communication.js';
+
+// Create manager with unique window ID
+const broadcast = new BroadcastCommunicationManager({
+  windowId: 'my-window',
+  channelName: 'iframe-dnd-channel' // optional, defaults to 'iframe-dnd-channel'
+});
+
+broadcast.initialize();
+
+// Listen for messages
+broadcast.on('dragStart', (data, sourceWindowId) => {
+  console.log('Drag started from', sourceWindowId, data);
+});
+
+// Broadcast to all windows
+broadcast.broadcast('dragStart', {
+  text: 'Item 1',
+  id: '1'
+});
+
+// Send to specific window
+broadcast.sendTo('target-window', 'drop', { itemId: '1' });
+
+// Get list of connected windows
+const windows = broadcast.getKnownWindows();
+```
+
+**Note:** This manager only uses BroadcastChannel and may not work on Firefox. Use `HybridCommunicationManager` for cross-browser compatibility.
+
 ## 🎨 Features
 
+**Both Modes:**
 - ✅ Custom Pointer Events-based drag and drop
-- ✅ Cross-iframe communication via `postMessage`
-- ✅ Coordinate system conversion
 - ✅ Real-time hover feedback
 - ✅ Visual drag preview
 - ✅ Smooth animations
 - ✅ Responsive design
 - ✅ Touch-friendly (touch-action: none)
-- ✅ Keyboard copy-paste support
+- ✅ Keyboard copy-paste support (iFrame mode)
+
+**iFrame Mode Specific:**
+- ✅ Cross-iframe communication via `postMessage`
+- ✅ Coordinate system conversion
+- ✅ Table row drag and drop demo
+
+**Cross-Window Mode Specific:**
+- ✅ BroadcastChannel API for cross-window communication
+- ✅ Separate browser windows/tabs
+- ✅ Real-time window status tracking
+- ✅ Window positioning freedom
 
 ## 🌐 Browser Compatibility & Known Issues
 
-### Firefox Enhanced Tracking Protection
+### BroadcastChannel API Support
+
+The Cross-Window mode requires the BroadcastChannel API, which is supported in:
+- ✅ Chrome/Edge 54+
+- ✅ Firefox 38+
+- ✅ Safari 15.4+
+- ✅ Opera 41+
+
+**Not supported in:**
+- ❌ Internet Explorer (use iFrame mode instead)
+
+**Firefox Compatibility:**
+Firefox's Enhanced Tracking Protection (ETP) partitions BroadcastChannel between windows opened with `window.open()`. The demo automatically detects this and falls back to `window.postMessage` relay through the coordinator window. This ensures the cross-window demo works perfectly on Firefox without any user configuration needed.
+
+### iFrame Mode - Firefox Enhanced Tracking Protection
 
 Firefox's Enhanced Tracking Protection (ETP) can interfere with cross-iframe communication when using wildcard (`'*'`) as the target origin in `postMessage` calls. This project has been updated to use explicit origins (`window.location.origin`) instead of wildcards to ensure compatibility with Firefox's default and strict ETP settings.
 
@@ -296,9 +451,13 @@ Firefox's Enhanced Tracking Protection (ETP) can interfere with cross-iframe com
 2. Check that your browser's Enhanced Tracking Protection is not set to custom mode blocking same-origin communication
 3. For development, you may need to add a localhost exception in Firefox's ETP settings
 
-### Same-Origin Requirement
+### Same-Origin Requirement (iFrame Mode)
 
-This demo requires all iframes to be served from the same origin. Cross-origin iframe communication would require additional CORS configuration and is not supported in this demo.
+The iFrame mode requires all iframes to be served from the same origin. Cross-origin iframe communication would require additional CORS configuration and is not supported in this demo.
+
+### Pop-up Blocker (Cross-Window Mode)
+
+The cross-window mode opens new browser windows, which may be blocked by pop-up blockers. Make sure to allow pop-ups for the demo site.
 
 ## 📄 License
 

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draggable Items (HTML5 DnD)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: white;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .items {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .item {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      cursor: move;
+      user-select: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .item.dragging {
+      opacity: 0.5;
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+    }
+
+    .hint {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9em;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📦 Draggable Items (HTML5 DnD)</h2>
+  <div class="items" id="items">
+    <div class="item" draggable="true" data-id="1" data-text="Design Asset">
+      🎨 Design Asset
+    </div>
+    <div class="item" draggable="true" data-id="2" data-text="Documentation">
+      📄 Documentation
+    </div>
+    <div class="item" draggable="true" data-id="3" data-text="Code Module">
+      💻 Code Module
+    </div>
+    <div class="item" draggable="true" data-id="4" data-text="Task Item">
+      🎯 Task Item
+    </div>
+    <div class="item" draggable="true" data-id="5" data-text="Configuration">
+      🔧 Configuration
+    </div>
+  </div>
+  <div class="hint">← Drag these items to the Drop Zones window</div>
+
+  <script>
+    const items = document.querySelectorAll('.item');
+
+    items.forEach(item => {
+      item.addEventListener('dragstart', (e) => {
+        console.log('[HTML5 DnD] dragstart', item.dataset);
+        
+        // Set the data to transfer
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', item.dataset.text);
+        e.dataTransfer.setData('application/json', JSON.stringify({
+          id: item.dataset.id,
+          text: item.dataset.text
+        }));
+        
+        // Add dragging class
+        item.classList.add('dragging');
+        
+        // Notify other windows via postMessage if coordinator exists
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({
+            type: 'html5DragStart',
+            data: {
+              id: item.dataset.id,
+              text: item.dataset.text
+            }
+          }, window.location.origin);
+        }
+      });
+
+      item.addEventListener('dragend', (e) => {
+        console.log('[HTML5 DnD] dragend');
+        item.classList.remove('dragging');
+        
+        // Notify other windows
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({
+            type: 'html5DragEnd',
+            data: {}
+          }, window.location.origin);
+        }
+      });
+    });
+
+    // Listen for remove requests from drop zones
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'removeItem' && event.data.data?.id) {
+        const item = document.querySelector(`[data-id="${event.data.data.id}"]`);
+        if (item) {
+          item.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => item.remove(), 300);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

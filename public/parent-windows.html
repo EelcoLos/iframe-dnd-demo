@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cross-Window Drag & Drop Demo - Coordinator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+    
+    h1 {
+      color: #4f46e5;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+    
+    .instructions {
+      background: #f8fafc;
+      border-left: 4px solid #4f46e5;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+    
+    .instructions h3 {
+      color: #4f46e5;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+    
+    .instructions ol {
+      margin-left: 20px;
+      line-height: 1.8;
+      color: #475569;
+    }
+    
+    .instructions li {
+      margin-bottom: 8px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .btn {
+      flex: 1;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    
+    .btn:hover {
+      background: #4338ca;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-secondary {
+      background: #64748b;
+    }
+    
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    
+    .status {
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .status h3 {
+      color: #334155;
+      margin-bottom: 15px;
+      font-size: 1.1em;
+    }
+    
+    .window-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+    
+    .status-indicator.inactive {
+      background: #ef4444;
+      animation: none;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+    
+    .window-name {
+      font-weight: 600;
+      color: #334155;
+    }
+    
+    .note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: #78350f;
+    }
+    
+    .note strong {
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🪟 Cross-Window Drag & Drop</h1>
+    <p class="subtitle">Drag and drop between separate browser windows!</p>
+    
+    <div class="instructions">
+      <h3>📋 How to Use:</h3>
+      <ol>
+        <li>Click "Open Draggable Items Window" to open the first window</li>
+        <li>Click "Open Drop Zones Window" to open the second window</li>
+        <li>Drag items from the Draggable Items window</li>
+        <li>Drop them in the Drop Zones window</li>
+        <li>Windows can be moved and positioned anywhere on your screen!</li>
+      </ol>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn" id="open-frame-a-html5">
+        📦 Open Draggable Items Window
+      </button>
+      <button class="btn" id="open-frame-b-html5">
+        🎯 Open Drop Zones Window
+      </button>
+    </div>
+    
+    <div class="note" style="margin-top: 15px; margin-bottom: 15px; background: #e0e7ff; border-color: #6366f1;">
+      <strong>Advanced:</strong> Try the custom Pointer Events implementation (more control, cross-browser consistent visuals):
+    </div>
+    
+    <div class="button-group">
+      <button class="btn" style="background: #8b5cf6;" id="open-frame-a">
+        📦 Open Draggable Items (Custom)
+      </button>
+      <button class="btn" style="background: #8b5cf6;" id="open-frame-b">
+        🎯 Open Drop Zones (Custom)
+      </button>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-secondary" id="close-all">
+        ✖️ Close All Windows
+      </button>
+    </div>
+    
+    <div class="status">
+      <h3>Window Status:</h3>
+      <div id="window-status-list">
+        <div class="window-status">
+          <div class="status-indicator inactive"></div>
+          <span class="window-name">Draggable Items Window</span>
+        </div>
+        <div class="window-status">
+          <div class="status-indicator inactive"></div>
+          <span class="window-name">Drop Zones Window</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="note">
+      <strong>Note:</strong> This demo uses the HTML5 Drag & Drop API by default, which works natively across browser windows. 
+      The "Custom" version uses Pointer Events with BroadcastChannel/postMessage for maximum control over drag preview appearance.
+      Make sure pop-ups are not blocked by your browser.
+    </div>
+  </div>
+
+  <script type="module">
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Windows registry
+    const windows = {
+      'frame-a': null,
+      'frame-b': null
+    };
+
+    // Initialize hybrid manager as coordinator
+    const broadcast = new HybridCommunicationManager({
+      windowId: 'coordinator'
+    });
+    broadcast.initializeAsCoordinator();
+
+    // Track window status
+    const windowStatus = {
+      'frame-a': false,
+      'frame-b': false
+    };
+
+    // Update UI based on window status
+    function updateWindowStatus() {
+      const statusList = document.getElementById('window-status-list');
+      const statusHTML = `
+        <div class="window-status">
+          <div class="status-indicator ${windowStatus['frame-a'] ? '' : 'inactive'}"></div>
+          <span class="window-name">Draggable Items Window</span>
+        </div>
+        <div class="window-status">
+          <div class="status-indicator ${windowStatus['frame-b'] ? '' : 'inactive'}"></div>
+          <span class="window-name">Drop Zones Window</span>
+        </div>
+      `;
+      statusList.innerHTML = statusHTML;
+    }
+
+    // Listen for window join/leave messages
+    broadcast.on('windowJoined', (data) => {
+      if (data.windowId && windowStatus.hasOwnProperty(data.windowId)) {
+        windowStatus[data.windowId] = true;
+        updateWindowStatus();
+      }
+    });
+
+    broadcast.on('windowLeft', (data) => {
+      if (data.windowId && windowStatus.hasOwnProperty(data.windowId)) {
+        windowStatus[data.windowId] = false;
+        updateWindowStatus();
+      }
+    });
+
+    // Open window buttons
+    document.getElementById('open-frame-a').addEventListener('click', () => {
+      if (windows['frame-a'] && !windows['frame-a'].closed) {
+        windows['frame-a'].focus();
+        return;
+      }
+      
+      // Use unique window name to avoid reusing old windows
+      const uniqueName = `DraggableItems_${Date.now()}`;
+      
+      windows['frame-a'] = window.open(
+        'window-frame-a.html',
+        uniqueName,
+        'width=500,height=600,left=100,top=100'
+      );
+      
+      // Register window for postMessage relay
+      if (windows['frame-a']) {
+        broadcast.registerWindow('frame-a', windows['frame-a']);
+      } else {
+        console.error('[Coordinator] Failed to open frame-a - check popup blocker');
+      }
+    });
+
+    document.getElementById('open-frame-b').addEventListener('click', () => {
+      if (windows['frame-b'] && !windows['frame-b'].closed) {
+        windows['frame-b'].focus();
+        return;
+      }
+      
+      // Use unique window name to avoid reusing old windows  
+      const uniqueName = `DropZones_${Date.now()}`;
+      
+      windows['frame-b'] = window.open(
+        'window-frame-b.html',
+        uniqueName,
+        'width=500,height=600,left=650,top=100'
+      );
+      
+      // Register window for postMessage relay
+      if (windows['frame-b']) {
+        broadcast.registerWindow('frame-b', windows['frame-b']);
+      } else {
+        console.error('[Coordinator] Failed to open frame-b - check popup blocker');
+      }
+    });
+
+    // Close all windows
+    document.getElementById('close-all').addEventListener('click', () => {
+      Object.values(windows).forEach(win => {
+        if (win && !win.closed) {
+          win.close();
+        }
+      });
+      
+      // Reset status
+      Object.keys(windowStatus).forEach(key => {
+        windowStatus[key] = false;
+      });
+      updateWindowStatus();
+    });
+    
+    // HTML5 DnD version buttons
+    document.getElementById('open-frame-a-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-a-html5.html',
+        `DraggableItemsHTML5_${Date.now()}`,
+        'width=500,height=600,left=100,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
+    });
+    
+    document.getElementById('open-frame-b-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-b-html5.html',
+        `DropZonesHTML5_${Date.now()}`,
+        'width=500,height=600,left=650,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
+    });
+
+    // Periodically check if windows are still open
+    setInterval(() => {
+      Object.entries(windows).forEach(([id, win]) => {
+        if (win && win.closed) {
+          windowStatus[id] = false;
+          windows[id] = null;
+        }
+      });
+      updateWindowStatus();
+    }, 1000);
+
+    // Initial status update
+    updateWindowStatus();
+  </script>
+</body>
+</html>
