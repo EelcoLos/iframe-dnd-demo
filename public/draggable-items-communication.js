@@ -1,14 +1,92 @@
 /**
- * Draggable items communication module
- * Handles drag and drop for draggable items in child iframes
+ * @fileoverview Draggable items communication module for child iframes.
+ * 
+ * @module draggable-items-communication
+ * @description
+ * This module provides the `DraggableItemsManager` class which manages draggable items
+ * within a child iframe. It handles pointer events for dragging, keyboard navigation,
+ * and communication with the parent window for cross-iframe drag and drop operations.
+ * 
+ * @example
+ * // Standard usage with drag capability
+ * import { DraggableItemsManager } from './draggable-items-communication.js';
+ * 
+ * const manager = new DraggableItemsManager({ frameId: 'source-panel' });
+ * manager.initialize();
+ * 
+ * @example
+ * // Receive-only mode (can only accept drops, cannot drag)
+ * const manager = new DraggableItemsManager({
+ *   frameId: 'preview-panel',
+ *   receiveOnly: true
+ * });
+ * manager.initialize();
+ * 
+ * @author iframe-dnd-demo
+ * @version 1.0.0
  */
 
+/**
+ * @typedef {Object} DraggableItemOptions
+ * @property {string} frameId - Unique identifier for this frame
+ * @property {boolean} [receiveOnly=false] - If true, frame can only receive drops, not send drags
+ */
+
+/**
+ * @typedef {Object} ItemData
+ * @property {string} id - Unique identifier for the item
+ * @property {string} text - Display text for the item
+ * @property {string} source - Frame ID where the item originated
+ */
+
+/**
+ * Manager for draggable items in child iframes.
+ * 
+ * @class DraggableItemsManager
+ * @description
+ * Manages draggable items by:
+ * - Setting up pointer event handlers for drag operations
+ * - Communicating drag events to the parent window
+ * - Receiving drop and paste events from parent
+ * - Supporting keyboard-based copy/paste operations
+ * - Optional receive-only mode for non-draggable frames
+ * 
+ * @example
+ * // Create a draggable items manager
+ * const manager = new DraggableItemsManager({ frameId: 'items-panel' });
+ * manager.initialize();
+ * 
+ * @example
+ * // Create a receive-only manager (items cannot be dragged out)
+ * const manager = new DraggableItemsManager({
+ *   frameId: 'preview-panel',
+ *   receiveOnly: true
+ * });
+ * manager.initialize();
+ */
 export class DraggableItemsManager {
   /**
-   * Create a draggable items manager
-   * @param {Object} options - Configuration options
-   * @param {string} options.frameId - Unique identifier for this frame
-   * @param {boolean} [options.receiveOnly=false] - If true, frame can only receive drops, not send drags
+   * Create a draggable items manager.
+   * 
+   * @constructor
+   * @param {DraggableItemOptions|string} options - Configuration options or frame ID string
+   * @throws {Error} If frameId is not provided
+   * 
+   * @description
+   * Supports both object-based and string-based constructor arguments for
+   * backward compatibility. When receiveOnly is true, drag handlers are not
+   * set up, and items can only be received via drop or paste operations.
+   * 
+   * @example
+   * // Object-based (recommended)
+   * const manager = new DraggableItemsManager({
+   *   frameId: 'panel-1',
+   *   receiveOnly: false
+   * });
+   * 
+   * @example
+   * // String-based (backward compatible)
+   * const manager = new DraggableItemsManager('panel-1');
    */
   constructor(options = {}) {
     const { frameId, receiveOnly = false } = typeof options === 'string' 
@@ -19,19 +97,78 @@ export class DraggableItemsManager {
       throw new Error('frameId is required');
     }
     
+    /**
+     * Unique identifier for this frame
+     * @type {string}
+     * @public
+     */
     this.frameId = frameId;
+    
+    /**
+     * Whether this frame is receive-only (cannot send drags)
+     * @type {boolean}
+     * @public
+     */
     this.receiveOnly = receiveOnly;
+    
+    /**
+     * Currently dragged element
+     * @type {HTMLElement|null}
+     * @private
+     */
     this.currentDragElement = null;
+    
+    /**
+     * X coordinate where drag started
+     * @type {number}
+     * @private
+     */
     this.dragStartX = 0;
+    
+    /**
+     * Y coordinate where drag started
+     * @type {number}
+     * @private
+     */
     this.dragStartY = 0;
+    
+    /**
+     * Whether a drag is currently in progress
+     * @type {boolean}
+     * @private
+     */
     this.isDragging = false;
+    
+    /**
+     * Currently selected item for keyboard operations
+     * @type {HTMLElement|null}
+     * @private
+     */
     this.selectedItem = null;
+    
+    /**
+     * Data copied to clipboard via keyboard
+     * @type {ItemData|null}
+     * @private
+     */
     this.copiedItemData = null;
+    
+    /**
+     * Container currently being hovered during external drag
+     * @type {HTMLElement|null}
+     * @private
+     */
     this.currentHoverContainer = null;
   }
 
   /**
-   * Initialize the manager with draggable items
+   * Initialize the manager with draggable items.
+   * 
+   * @description
+   * Sets up event handlers based on the receiveOnly flag:
+   * - If receiveOnly is false: Sets up drag handlers and keyboard handlers
+   * - If receiveOnly is true: Only sets up message listener for receiving drops
+   * - Always sets up message listener and drop-in animations
    */
   initialize() {
     if (!this.receiveOnly) {
@@ -43,7 +180,13 @@ export class DraggableItemsManager {
   }
 
   /**
-   * Set up draggable items
+   * Set up draggable items.
+   * 
+   * @private
+   * 
+   * @description
+   * Attaches pointerdown event listeners to all elements with the 'draggable' class.
+   * Called during initialization unless receiveOnly mode is enabled.
    */
   setupDraggables() {
     document.querySelectorAll('.draggable').forEach(item => {
@@ -51,6 +194,17 @@ export class DraggableItemsManager {
     });
   }
 
+  /**
+   * Handle pointer down events on draggable items.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Initiates a potential drag operation. Captures the pointer and sets up
+   * move/up listeners. Drag doesn't actually start until the pointer moves
+   * beyond a 5px threshold.
+   */
   handlePointerDown(e) {
     e.preventDefault();
     
@@ -74,6 +228,17 @@ export class DraggableItemsManager {
     this._upHandler = upHandler;
   }
 
+  /**
+   * Handle pointer move events during a drag operation.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Tracks pointer movement and starts the drag operation when movement exceeds
+   * a 5px threshold. Sends drag move messages to the parent window for cross-iframe
+   * drag tracking.
+   */
   handlePointerMove(e) {
     if (!this.currentDragElement) return;
 
@@ -107,6 +272,16 @@ export class DraggableItemsManager {
     }
   }
 
+  /**
+   * Handle pointer up events to complete a drag operation.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Releases pointer capture, cleans up event listeners, and notifies parent
+   * of drag end. Removes visual feedback and resets state.
+   */
   handlePointerUp(e) {
     if (!this.currentDragElement) return;
 
@@ -135,6 +310,18 @@ export class DraggableItemsManager {
     this.isDragging = false;
   }
 
+  /**
+   * Handle drag move events from parent window.
+   * 
+   * @param {number} x - X coordinate in this iframe's viewport
+   * @param {number} y - Y coordinate in this iframe's viewport
+   * @param {ItemData} dragData - Data about the dragged item
+   * @private
+   * 
+   * @description
+   * Called when an item from another frame is being dragged over this frame.
+   * Provides visual feedback by adding a 'hover' class to the container.
+   */
   onParentDragMove(x, y, dragData) {
     // Check if we're over the draggable items container
     const element = document.elementFromPoint(x, y);
@@ -156,6 +343,19 @@ export class DraggableItemsManager {
     }
   }
 
+  /**
+   * Handle drop events from parent window.
+   * 
+   * @param {number} x - X coordinate where drop occurred
+   * @param {number} y - Y coordinate where drop occurred
+   * @param {ItemData} dragData - Data about the dropped item
+   * @private
+   * 
+   * @description
+   * Creates a new draggable item element when an item from another frame
+   * is dropped onto this frame's container. Notifies parent of success or failure.
+   * In receive-only mode, dropped items will not have drag handlers attached.
+   */
   onParentDrop(x, y, dragData) {
     // Check if we're over the draggable items container
     const element = document.elementFromPoint(x, y);
@@ -197,6 +397,22 @@ export class DraggableItemsManager {
     }
   }
 
+  /**
+   * Set up message listener for parent window communication.
+   * 
+   * @private
+   * 
+   * @description
+   * Listens for messages from the parent window and routes them to appropriate handlers.
+   * Validates message origin for security before processing.
+   * 
+   * Supported message types:
+   * - parentDragMove: Item is being dragged over this frame
+   * - parentDrop: Item is being dropped onto this frame
+   * - parentDragLeave: Drag has left this frame
+   * - removeItem: Remove an item that was moved elsewhere
+   * - pasteItem: Paste item from clipboard
+   */
   setupMessageListener() {
     window.addEventListener('message', (event) => {
       // Validate message origin for security
@@ -227,6 +443,16 @@ export class DraggableItemsManager {
     });
   }
 
+  /**
+   * Handle paste item operations.
+   * 
+   * @param {ItemData} itemData - Data about the item to paste
+   * @private
+   * 
+   * @description
+   * Creates a new item from clipboard data. In receive-only mode, the pasted
+   * item will not have drag handlers attached. Notifies parent of successful paste.
+   */
   handlePasteItem(itemData) {
     // Paste the item into this frame
     const container = document.querySelector('.draggable-items');
@@ -252,6 +478,19 @@ export class DraggableItemsManager {
     }
   }
 
+  /**
+   * Set up keyboard handlers for navigation and copy/paste operations.
+   * 
+   * @private
+   * 
+   * @description
+   * Enables keyboard-based interactions:
+   * - Arrow Up/Down: Navigate between draggable items
+   * - Ctrl+C/Cmd+C: Copy selected item to clipboard
+   * - Ctrl+V/Cmd+V: Paste item from clipboard (requests from parent)
+   * 
+   * Only active when receiveOnly is false.
+   */
   setupKeyboardHandlers() {
     document.addEventListener('keydown', (e) => {
       const draggableItems = Array.from(document.querySelectorAll('.draggable'));
@@ -315,6 +554,15 @@ export class DraggableItemsManager {
     });
   }
 
+  /**
+   * Add CSS animation for dropped/pasted items.
+   * 
+   * @private
+   * 
+   * @description
+   * Injects a CSS keyframe animation that provides visual feedback when
+   * items are dropped or pasted into this frame.
+   */
   addDropInAnimation() {
     // Add animation for dropped items
     const style = document.createElement('style');
