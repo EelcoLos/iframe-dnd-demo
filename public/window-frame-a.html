@@ -133,6 +133,12 @@
     import { HybridCommunicationManager } from './hybrid-communication.js';
 
     const windowId = 'frame-a';
+    
+    // Debug: Log ALL postMessage events
+    window.addEventListener('message', (event) => {
+      console.log('[frame-a DEBUG] Received raw message event:', event.origin, event.data);
+    });
+    
     const broadcast = new HybridCommunicationManager({ windowId });
     broadcast.initializeAsChild();
     

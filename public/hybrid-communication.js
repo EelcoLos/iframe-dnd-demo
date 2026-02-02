@@ -166,15 +166,24 @@ export class HybridCommunicationManager {
    */
   handlePostMessage(event) {
     // Validate origin for security
-    if (event.origin !== window.location.origin) return;
+    if (event.origin !== window.location.origin) {
+      console.warn(`[HybridComm] ${this.windowId} rejected message from wrong origin:`, event.origin, 'expected:', window.location.origin);
+      return;
+    }
     
     const message = event.data;
     
     // Check if this is our message format
-    if (!message.type || !message.source) return;
+    if (!message.type || !message.source) {
+      console.log(`[HybridComm] ${this.windowId} ignoring non-hybrid message:`, message);
+      return;
+    }
     
     // Ignore messages from self
-    if (message.source === this.windowId) return;
+    if (message.source === this.windowId) {
+      console.log(`[HybridComm] ${this.windowId} ignoring message from self`);
+      return;
+    }
     
     console.log(`[HybridComm] ${this.windowId} received via postMessage:`, message.type, 'from', message.source);
     
@@ -210,10 +219,11 @@ export class HybridCommunicationManager {
       }
       
       try {
-        console.log(`[HybridComm] Relaying to ${windowId}`);
+        console.log(`[HybridComm] Relaying to ${windowId}, message:`, relayedMessage);
         windowRef.postMessage(relayedMessage, window.location.origin);
+        console.log(`[HybridComm] Successfully posted message to ${windowId}`);
       } catch (e) {
-        console.warn(`Failed to relay message to ${windowId}:`, e);
+        console.error(`[HybridComm] Failed to relay message to ${windowId}:`, e);
       }
     }
   }
