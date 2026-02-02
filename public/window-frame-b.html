@@ -142,9 +142,62 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
     }
+    
+    .drag-instruction-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(79, 70, 229, 0.95);
+      color: white;
+      padding: 3rem 4rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border: 4px solid white;
+    }
+    
+    .drag-instruction-overlay.visible {
+      opacity: 1;
+    }
+    
+    .drag-instruction-overlay h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      animation: bounce 1s infinite;
+    }
+    
+    .drag-instruction-overlay p {
+      font-size: 1.3rem;
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+    
+    .drag-instruction-overlay .highlight {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fbbf24;
+      text-decoration: underline;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
   </style>
 </head>
 <body>
+  <div id="drag-instruction" class="drag-instruction-overlay">
+    <h2>👆 MOVE YOUR MOUSE HERE!</h2>
+    <p>To drop an item, you must:</p>
+    <p class="highlight">Move your mouse cursor into THIS window</p>
+    <p>while holding the mouse button down</p>
+  </div>
+  
   <div id="status-indicator" class="status-indicator">Waiting for drag...</div>
   
   <h2>🎯 Drop Zones</h2>
@@ -207,6 +260,7 @@
 
     const dropZones = document.querySelectorAll('.drop-zone');
     const statusIndicator = document.getElementById('status-indicator');
+    const dragInstruction = document.getElementById('drag-instruction');
     let currentHoveredZone = null;
     let isDragActive = false;
     let draggedItemElement = null;
@@ -220,6 +274,8 @@
       isMouseOverWindow = true;
       console.log('[frame-b] Mouse entered window');
       if (isDragActive) {
+        // Hide instruction overlay when mouse enters
+        dragInstruction.classList.remove('visible');
         statusIndicator.textContent = '🎯 Drop zone ready!';
         statusIndicator.className = 'status-indicator active';
       }
@@ -230,6 +286,8 @@
       console.log('[frame-b] Mouse left window');
       clearHoverStates();
       if (isDragActive) {
+        // Show instruction overlay again when mouse leaves
+        dragInstruction.classList.add('visible');
         statusIndicator.textContent = '⚠️ Move mouse over window to drop';
         statusIndicator.className = 'status-indicator active';
       }
@@ -243,6 +301,11 @@
       statusIndicator.textContent = `🎬 Drag started: ${data.text}`;
       statusIndicator.className = 'status-indicator active';
       document.body.classList.add('drag-active');
+      
+      // Show instruction overlay if mouse not already over window
+      if (!isMouseOverWindow) {
+        dragInstruction.classList.add('visible');
+      }
       
       // Send acknowledgment back to coordinator
       broadcast.broadcast('messageReceived', { originalType: 'dragStart', receivedBy: 'frame-b' });
@@ -258,6 +321,9 @@
     // Listen for drag end
     broadcast.on('dragEnd', (data) => {
       console.log('[frame-b] ✅ dragEnd handler called, isDragActive:', isDragActive);
+      
+      // Hide instruction overlay regardless of outcome
+      dragInstruction.classList.remove('visible');
       
       // Send acknowledgment back to coordinator
       broadcast.broadcast('messageReceived', { originalType: 'dragEnd', receivedBy: 'frame-b' });
@@ -291,7 +357,7 @@
         console.log('[frame-b] ❌ Not dropping - isMouseOverWindow:', isMouseOverWindow, 'currentHoveredZone:', currentHoveredZone, 'currentDragData:', currentDragData);
         
         // VISUAL FEEDBACK
-        statusIndicator.textContent = '❌ Drop failed: Move mouse over window & zone';
+        statusIndicator.textContent = '❌ Drop failed: Mouse wasn\'t over this window!';
         statusIndicator.className = 'status-indicator active';
         setTimeout(() => {
           statusIndicator.className = 'status-indicator';
