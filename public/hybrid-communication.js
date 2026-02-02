@@ -66,6 +66,11 @@ export class HybridCommunicationManager {
     // Store reference to opener (coordinator)
     if (window.opener && !window.opener.closed) {
       this.coordinatorWindow = window.opener;
+      console.log(`[HybridComm] ${this.windowId} initialized as child, coordinator found`);
+    } else {
+      console.error(`[HybridComm] ${this.windowId} has NO coordinator window!`);
+      console.error('Cross-window mode requires windows to be opened from the Coordinator.');
+      console.error('Please open parent-windows.html and use the buttons there to open child windows.');
     }
     
     this.initialize();

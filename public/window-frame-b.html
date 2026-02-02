@@ -132,6 +132,12 @@
     </div>
   </div>
   <div class="hint">← Drag items from the Draggable Items window</div>
+  
+  <div id="no-coordinator-warning" style="display: none; background: #fee; border: 2px solid #c33; border-radius: 8px; padding: 15px; margin-top: 20px; color: #a00;">
+    <strong>⚠️ Warning:</strong> This window was not opened from the Coordinator!
+    <br>
+    <small>Cross-window drag & drop requires opening windows from <a href="parent-windows.html" target="_blank">parent-windows.html</a></small>
+  </div>
 
   <script type="module">
     import { HybridCommunicationManager } from './hybrid-communication.js';
@@ -139,6 +145,11 @@
     const windowId = 'frame-b';
     const broadcast = new HybridCommunicationManager({ windowId });
     broadcast.initializeAsChild();
+    
+    // Show warning if no coordinator
+    if (!window.opener || window.opener.closed) {
+      document.getElementById('no-coordinator-warning').style.display = 'block';
+    }
 
     const dropZones = document.querySelectorAll('.drop-zone');
     let currentHoveredZone = null;
