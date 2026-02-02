@@ -280,7 +280,7 @@
         statusIndicator.textContent = `✅ Dropped into ${currentHoveredZone.dataset.zone}!`;
         statusIndicator.className = 'status-indicator success';
         setTimeout(() => {
-          statusIndicator.style.display = 'none';
+          statusIndicator.className = 'status-indicator';
         }, 3000);
         
         // Notify that item was dropped successfully
@@ -292,9 +292,9 @@
         
         // VISUAL FEEDBACK
         statusIndicator.textContent = '❌ Drop failed: Move mouse over window & zone';
-        statusIndicator.className = 'status-indicator';
+        statusIndicator.className = 'status-indicator active';
         setTimeout(() => {
-          statusIndicator.style.display = 'none';
+          statusIndicator.className = 'status-indicator';
         }, 5000);
       }
       

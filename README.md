@@ -148,12 +148,13 @@ The root index page will show a selection screen to choose between iFrame Mode a
 - 🪟 Keep all three windows open during drag operations
 
 **Troubleshooting:**
-If drag and drop isn't working, see the comprehensive debugging guides:
-- [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) - Usage instructions and common issues
+If drag and drop isn't working, see the comprehensive guides:
+- **[HOW-TO-USE-CROSS-WINDOW.md](./HOW-TO-USE-CROSS-WINDOW.md)** - ⭐ **START HERE** - Complete usage guide explaining mouse requirements
+- [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) - Technical setup and architecture
 - [DEBUGGING.md](./DEBUGGING.md) - Detailed debugging with console logs
-- [SUMMARY.md](./SUMMARY.md) - Overview of debugging infrastructure
+- [SUMMARY.md](./SUMMARY.md) - Root cause analysis and fixes
 
-If you open child windows incorrectly, you'll see a warning banner with instructions. See [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) for detailed troubleshooting.
+**Critical**: You must physically move your mouse into the Drop Zones window while dragging! See [HOW-TO-USE-CROSS-WINDOW.md](./HOW-TO-USE-CROSS-WINDOW.md) for detailed explanation of browser limitations and proper usage.
 
 ## 🛠️ Technical Implementation
 
