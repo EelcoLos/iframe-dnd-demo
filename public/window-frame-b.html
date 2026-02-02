@@ -353,16 +353,28 @@
       dragPreviewItem.textContent = data.text;
     });
     
-    // Listen for drag move - show preview when mouse is over this window
+    // Listen for drag move - show preview based on screen coordinates
     broadcast.on('dragMove', (data) => {
       if (!isDragActive) return;
       
-      // Only show preview if mouse is over this window
-      if (isMouseOverWindow && data.screenX !== undefined && data.screenY !== undefined) {
-        // Convert screen coordinates to window-relative coordinates
-        const localX = data.screenX - window.screenX;
-        const localY = data.screenY - window.screenY;
-        
+      // Validate coordinates are numbers
+      if (typeof data.screenX !== 'number' || typeof data.screenY !== 'number') {
+        return;
+      }
+      
+      // Convert screen coordinates to window-relative coordinates
+      // Use screenLeft/screenTop for better cross-browser compatibility
+      const windowX = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+      const windowY = window.screenTop !== undefined ? window.screenTop : window.screenY;
+      
+      const localX = data.screenX - windowX;
+      const localY = data.screenY - windowY;
+      
+      // Check if cursor would be within our window bounds (with some margin)
+      const isWithinBounds = localX >= -50 && localX <= window.innerWidth + 50 &&
+                            localY >= -50 && localY <= window.innerHeight + 50;
+      
+      if (isWithinBounds) {
         dragPreview.style.left = localX + 'px';
         dragPreview.style.top = localY + 'px';
         dragPreview.classList.add('visible');
