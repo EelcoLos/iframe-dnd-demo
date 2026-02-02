@@ -134,11 +134,11 @@
   <div class="hint">← Drag items from the Draggable Items window</div>
 
   <script type="module">
-    import { BroadcastCommunicationManager } from './broadcast-communication.js';
+    import { HybridCommunicationManager } from './hybrid-communication.js';
 
     const windowId = 'frame-b';
-    const broadcast = new BroadcastCommunicationManager({ windowId });
-    broadcast.initialize();
+    const broadcast = new HybridCommunicationManager({ windowId });
+    broadcast.initializeAsChild();
 
     const dropZones = document.querySelectorAll('.drop-zone');
     let currentHoveredZone = null;

@@ -225,13 +225,14 @@
     </div>
     
     <div class="note">
-      <strong>Note:</strong> This demo uses the BroadcastChannel API for cross-window communication. 
-      Make sure pop-ups are not blocked by your browser. All windows must remain open for drag and drop to work.
+      <strong>Note:</strong> This demo works in all modern browsers including Firefox. 
+      It uses BroadcastChannel API with automatic fallback to window.postMessage for maximum compatibility. 
+      Make sure pop-ups are not blocked by your browser.
     </div>
   </div>
 
   <script type="module">
-    import { BroadcastCommunicationManager } from './broadcast-communication.js';
+    import { HybridCommunicationManager } from './hybrid-communication.js';
 
     // Windows registry
     const windows = {
@@ -239,11 +240,11 @@
       'frame-b': null
     };
 
-    // Initialize broadcast manager
-    const broadcast = new BroadcastCommunicationManager({
+    // Initialize hybrid manager as coordinator
+    const broadcast = new HybridCommunicationManager({
       windowId: 'coordinator'
     });
-    broadcast.initialize();
+    broadcast.initializeAsCoordinator();
 
     // Track window status
     const windowStatus = {
@@ -294,6 +295,11 @@
         'DraggableItems',
         'width=500,height=600,left=100,top=100'
       );
+      
+      // Register window for postMessage relay
+      if (windows['frame-a']) {
+        broadcast.registerWindow('frame-a', windows['frame-a']);
+      }
     });
 
     document.getElementById('open-frame-b').addEventListener('click', () => {
@@ -307,6 +313,11 @@
         'DropZones',
         'width=500,height=600,left=650,top=100'
       );
+      
+      // Register window for postMessage relay
+      if (windows['frame-b']) {
+        broadcast.registerWindow('frame-b', windows['frame-b']);
+      }
     });
 
     // Close all windows

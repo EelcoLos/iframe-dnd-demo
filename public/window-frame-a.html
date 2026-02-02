@@ -124,11 +124,11 @@
   <div class="drag-preview" id="drag-preview"></div>
 
   <script type="module">
-    import { BroadcastCommunicationManager } from './broadcast-communication.js';
+    import { HybridCommunicationManager } from './hybrid-communication.js';
 
     const windowId = 'frame-a';
-    const broadcast = new BroadcastCommunicationManager({ windowId });
-    broadcast.initialize();
+    const broadcast = new HybridCommunicationManager({ windowId });
+    broadcast.initializeAsChild();
 
     const container = document.getElementById('draggable-container');
     const dragPreview = document.getElementById('drag-preview');

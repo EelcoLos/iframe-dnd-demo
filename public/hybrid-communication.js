@@ -1,0 +1,356 @@
+/**
+ * @fileoverview Hybrid communication module using both BroadcastChannel and postMessage.
+ * 
+ * @module hybrid-communication
+ * @description
+ * This module provides cross-window communication with automatic fallback:
+ * - Tries BroadcastChannel first (faster, cleaner)
+ * - Falls back to window.postMessage when BroadcastChannel is partitioned (Firefox ETP)
+ * - Maintains window references for postMessage relay
+ * 
+ * @author iframe-dnd-demo
+ * @version 1.0.0
+ */
+
+/**
+ * Hybrid manager for cross-window communication.
+ * Uses BroadcastChannel when available, postMessage as fallback.
+ */
+export class HybridCommunicationManager {
+  constructor(options = {}) {
+    const { windowId, channelName = 'iframe-dnd-channel' } = options;
+    
+    if (!windowId) {
+      throw new Error('windowId is required');
+    }
+    
+    this.windowId = windowId;
+    this.channelName = channelName;
+    this.messageHandlers = new Map();
+    this.initialized = false;
+    this.knownWindows = new Set();
+    this.windowRefs = new Map(); // Store window references for postMessage
+    this.isCoordinator = false;
+    this.coordinatorWindow = null;
+    this.useBroadcastChannel = false;
+    
+    // Try to use BroadcastChannel
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        this.channel = new BroadcastChannel(channelName);
+        this.useBroadcastChannel = true;
+      } catch (e) {
+        console.warn('BroadcastChannel failed, using postMessage fallback:', e);
+        this.useBroadcastChannel = false;
+      }
+    }
+  }
+  
+  /**
+   * Initialize as coordinator (parent window that opens child windows)
+   */
+  initializeAsCoordinator() {
+    this.isCoordinator = true;
+    this.initialize();
+    
+    // Set up postMessage listener for child windows
+    window.addEventListener('message', (event) => this.handlePostMessage(event));
+  }
+  
+  /**
+   * Initialize as child window
+   */
+  initializeAsChild() {
+    this.isCoordinator = false;
+    
+    // Store reference to opener (coordinator)
+    if (window.opener && !window.opener.closed) {
+      this.coordinatorWindow = window.opener;
+    }
+    
+    this.initialize();
+    
+    // Set up postMessage listener
+    window.addEventListener('message', (event) => this.handlePostMessage(event));
+    
+    // Announce to coordinator via postMessage
+    this.sendToCoordinator('windowJoined', { windowId: this.windowId });
+  }
+  
+  initialize() {
+    if (this.initialized) return;
+    
+    if (this.useBroadcastChannel && this.channel) {
+      this.channel.onmessage = (event) => this.handleBroadcastMessage(event);
+      
+      // Test if BroadcastChannel actually works
+      this.testBroadcastChannel();
+    }
+    
+    // Handle window close
+    window.addEventListener('beforeunload', () => {
+      this.broadcast('windowLeft', { windowId: this.windowId });
+      this.close();
+    });
+    
+    this.initialized = true;
+  }
+  
+  /**
+   * Test if BroadcastChannel is working (not partitioned)
+   */
+  async testBroadcastChannel() {
+    if (!this.useBroadcastChannel) return;
+    
+    const testId = Math.random().toString(36).substr(2, 9);
+    let received = false;
+    
+    const handler = (data) => {
+      if (data.testId === testId) {
+        received = true;
+      }
+    };
+    
+    this.on('broadcastTest', handler);
+    this.broadcast('broadcastTest', { testId });
+    
+    // Wait to see if we receive our own message
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    this.off('broadcastTest', handler);
+    
+    // If we didn't receive our own broadcast, it's partitioned
+    if (!received && !this.isCoordinator) {
+      console.warn('BroadcastChannel appears to be partitioned, using postMessage fallback');
+      this.useBroadcastChannel = false;
+    }
+  }
+  
+  /**
+   * Register window reference for postMessage
+   */
+  registerWindow(windowId, windowRef) {
+    this.windowRefs.set(windowId, windowRef);
+    this.knownWindows.add(windowId);
+  }
+  
+  /**
+   * Handle BroadcastChannel messages
+   */
+  handleBroadcastMessage(event) {
+    const message = event.data;
+    
+    // Ignore messages from self
+    if (message.source === this.windowId) return;
+    
+    // If message has a target, only process if we're the target
+    if (message.target && message.target !== this.windowId) return;
+    
+    this.processMessage(message);
+  }
+  
+  /**
+   * Handle postMessage messages
+   */
+  handlePostMessage(event) {
+    // Validate origin for security
+    if (event.origin !== window.location.origin) return;
+    
+    const message = event.data;
+    
+    // Check if this is our message format
+    if (!message.type || !message.source) return;
+    
+    // Ignore messages from self
+    if (message.source === this.windowId) return;
+    
+    // If we're the coordinator, relay to other windows
+    if (this.isCoordinator && message.relay !== false) {
+      this.relayMessage(message, message.source);
+    }
+    
+    // Process the message
+    this.processMessage(message);
+  }
+  
+  /**
+   * Relay message to all other child windows (coordinator only)
+   */
+  relayMessage(message, sourceId) {
+    if (!this.isCoordinator) return;
+    
+    // Mark as relayed to prevent loops
+    const relayedMessage = { ...message, relay: false };
+    
+    for (const [windowId, windowRef] of this.windowRefs.entries()) {
+      // Don't send back to source
+      if (windowId === sourceId) continue;
+      
+      // Skip if window is closed
+      if (!windowRef || windowRef.closed) {
+        this.windowRefs.delete(windowId);
+        this.knownWindows.delete(windowId);
+        continue;
+      }
+      
+      try {
+        windowRef.postMessage(relayedMessage, window.location.origin);
+      } catch (e) {
+        console.warn(`Failed to relay message to ${windowId}:`, e);
+      }
+    }
+  }
+  
+  /**
+   * Process incoming message
+   */
+  processMessage(message) {
+    // Track known windows
+    if (message.type === 'windowJoined' && message.data?.windowId) {
+      this.knownWindows.add(message.data.windowId);
+    } else if (message.type === 'windowLeft' && message.data?.windowId) {
+      this.knownWindows.delete(message.data.windowId);
+      this.windowRefs.delete(message.data.windowId);
+    }
+    
+    // Call registered handlers
+    const handlers = this.messageHandlers.get(message.type);
+    if (handlers) {
+      handlers.forEach(handler => {
+        try {
+          handler(message.data, message.source);
+        } catch (error) {
+          console.error('Error in message handler:', error);
+        }
+      });
+    }
+  }
+  
+  on(type, handler) {
+    if (!this.messageHandlers.has(type)) {
+      this.messageHandlers.set(type, []);
+    }
+    this.messageHandlers.get(type).push(handler);
+  }
+  
+  off(type, handler) {
+    if (!this.messageHandlers.has(type)) return;
+    
+    const handlers = this.messageHandlers.get(type);
+    const index = handlers.indexOf(handler);
+    if (index !== -1) {
+      handlers.splice(index, 1);
+    }
+  }
+  
+  /**
+   * Broadcast message to all windows
+   */
+  broadcast(type, data) {
+    const message = {
+      type,
+      source: this.windowId,
+      data,
+      timestamp: Date.now(),
+      relay: true
+    };
+    
+    // Try BroadcastChannel first
+    if (this.useBroadcastChannel && this.channel) {
+      try {
+        this.channel.postMessage(message);
+        return; // Success, no need for fallback
+      } catch (error) {
+        console.warn('BroadcastChannel failed, using postMessage:', error);
+        this.useBroadcastChannel = false;
+      }
+    }
+    
+    // Fallback to postMessage
+    this.sendViaPostMessage(message);
+  }
+  
+  /**
+   * Send message via postMessage (fallback)
+   */
+  sendViaPostMessage(message) {
+    if (this.isCoordinator) {
+      // Coordinator sends to all child windows
+      for (const [windowId, windowRef] of this.windowRefs.entries()) {
+        if (!windowRef || windowRef.closed) {
+          this.windowRefs.delete(windowId);
+          this.knownWindows.delete(windowId);
+          continue;
+        }
+        
+        try {
+          windowRef.postMessage(message, window.location.origin);
+        } catch (e) {
+          console.warn(`Failed to send to ${windowId}:`, e);
+        }
+      }
+    } else {
+      // Child sends to coordinator for relay
+      this.sendToCoordinator(message.type, message.data);
+    }
+  }
+  
+  /**
+   * Send message to coordinator (child window only)
+   */
+  sendToCoordinator(type, data) {
+    if (this.isCoordinator || !this.coordinatorWindow || this.coordinatorWindow.closed) {
+      return;
+    }
+    
+    const message = {
+      type,
+      source: this.windowId,
+      data,
+      timestamp: Date.now(),
+      relay: true
+    };
+    
+    try {
+      this.coordinatorWindow.postMessage(message, window.location.origin);
+    } catch (e) {
+      console.error('Failed to send to coordinator:', e);
+    }
+  }
+  
+  sendTo(targetWindowId, type, data) {
+    const message = {
+      type,
+      source: this.windowId,
+      target: targetWindowId,
+      data,
+      timestamp: Date.now(),
+      relay: true
+    };
+    
+    if (this.useBroadcastChannel && this.channel) {
+      try {
+        this.channel.postMessage(message);
+        return;
+      } catch (error) {
+        this.useBroadcastChannel = false;
+      }
+    }
+    
+    this.sendViaPostMessage(message);
+  }
+  
+  getKnownWindows() {
+    return Array.from(this.knownWindows);
+  }
+  
+  close() {
+    if (this.channel) {
+      this.channel.close();
+    }
+    this.messageHandlers.clear();
+    this.knownWindows.clear();
+    this.windowRefs.clear();
+    this.initialized = false;
+  }
+}
