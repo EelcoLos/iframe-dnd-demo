@@ -147,6 +147,12 @@ The root index page will show a selection screen to choose between iFrame Mode a
 - 🔒 Make sure pop-ups are not blocked by your browser
 - 🪟 Keep all three windows open during drag operations
 
+**Troubleshooting:**
+If drag and drop isn't working, see the comprehensive debugging guides:
+- [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) - Usage instructions and common issues
+- [DEBUGGING.md](./DEBUGGING.md) - Detailed debugging with console logs
+- [SUMMARY.md](./SUMMARY.md) - Overview of debugging infrastructure
+
 If you open child windows incorrectly, you'll see a warning banner with instructions. See [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) for detailed troubleshooting.
 
 ## 🛠️ Technical Implementation
