@@ -196,24 +196,24 @@
     </div>
     
     <div class="button-group">
-      <button class="btn" id="open-frame-a">
+      <button class="btn" id="open-frame-a-html5">
         📦 Open Draggable Items Window
       </button>
-      <button class="btn" id="open-frame-b">
+      <button class="btn" id="open-frame-b-html5">
         🎯 Open Drop Zones Window
       </button>
     </div>
     
-    <div class="note" style="margin-bottom: 15px; background: #e0e7ff; border-color: #6366f1;">
-      <strong>Alternative:</strong> Try the HTML5 Drag & Drop API version (simpler, native browser API):
+    <div class="note" style="margin-top: 15px; margin-bottom: 15px; background: #e0e7ff; border-color: #6366f1;">
+      <strong>Advanced:</strong> Try the custom Pointer Events implementation (more control, cross-browser consistent visuals):
     </div>
     
     <div class="button-group">
-      <button class="btn" style="background: #6366f1;" id="open-frame-a-html5">
-        📦 Open Draggable Items (HTML5)
+      <button class="btn" style="background: #8b5cf6;" id="open-frame-a">
+        📦 Open Draggable Items (Custom)
       </button>
-      <button class="btn" style="background: #6366f1;" id="open-frame-b-html5">
-        🎯 Open Drop Zones (HTML5)
+      <button class="btn" style="background: #8b5cf6;" id="open-frame-b">
+        🎯 Open Drop Zones (Custom)
       </button>
     </div>
     
@@ -238,8 +238,8 @@
     </div>
     
     <div class="note">
-      <strong>Note:</strong> This demo works in all modern browsers including Firefox. 
-      It uses BroadcastChannel API with automatic fallback to window.postMessage for maximum compatibility. 
+      <strong>Note:</strong> This demo uses the HTML5 Drag & Drop API by default, which works natively across browser windows. 
+      The "Custom" version uses Pointer Events with BroadcastChannel/postMessage for maximum control over drag preview appearance.
       Make sure pop-ups are not blocked by your browser.
     </div>
   </div>
