@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drop Zones (HTML5 DnD)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .drop-zones {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .drop-zone {
+      background: white;
+      border: 3px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 150px;
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone.drag-over {
+      background: #e0e7ff;
+      border-color: #4f46e5;
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      transform: scale(1.02);
+    }
+
+    .zone-header {
+      font-weight: 600;
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .zone-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 80px;
+    }
+
+    .dropped-item {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      animation: dropIn 0.3s ease;
+    }
+
+    @keyframes dropIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #94a3b8;
+      font-style: italic;
+      padding: 20px;
+    }
+
+    .hint {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9em;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎯 Drop Zones (HTML5 DnD)</h2>
+  <div class="drop-zones">
+    <div class="drop-zone" data-zone="todo">
+      <div class="zone-header">📋 To Do</div>
+      <div class="zone-items">
+        <div class="empty-state">Drop items here</div>
+      </div>
+    </div>
+
+    <div class="drop-zone" data-zone="in-progress">
+      <div class="zone-header">🚀 In Progress</div>
+      <div class="zone-items">
+        <div class="empty-state">Drop items here</div>
+      </div>
+    </div>
+
+    <div class="drop-zone" data-zone="done">
+      <div class="zone-header">✅ Done</div>
+      <div class="zone-items">
+        <div class="empty-state">Drop items here</div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">← Drag items from the Draggable Items window</div>
+
+  <script>
+    const dropZones = document.querySelectorAll('.drop-zone');
+
+    dropZones.forEach(zone => {
+      // Prevent default to allow drop
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        zone.classList.add('drag-over');
+      });
+
+      zone.addEventListener('dragleave', (e) => {
+        // Only remove if leaving the zone itself, not a child
+        if (e.target === zone) {
+          zone.classList.remove('drag-over');
+        }
+      });
+
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+
+        console.log('[HTML5 DnD] drop event', e.dataTransfer.types);
+
+        // Try to get JSON data first
+        let data;
+        try {
+          const jsonData = e.dataTransfer.getData('application/json');
+          if (jsonData) {
+            data = JSON.parse(jsonData);
+          }
+        } catch (err) {
+          console.error('Failed to parse JSON data:', err);
+        }
+
+        // Fallback to text
+        if (!data) {
+          const text = e.dataTransfer.getData('text/plain');
+          if (text) {
+            data = { text, id: Date.now().toString() };
+          }
+        }
+
+        if (data) {
+          console.log('[HTML5 DnD] Dropped data:', data);
+          addItemToZone(zone, data);
+
+          // Notify draggable items window to remove the item
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({
+              type: 'removeItem',
+              data: { id: data.id }
+            }, window.location.origin);
+          }
+        }
+      });
+    });
+
+    function addItemToZone(zone, data) {
+      const zoneItems = zone.querySelector('.zone-items');
+      
+      // Remove empty state if present
+      const emptyState = zoneItems.querySelector('.empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+
+      // Create and add new item
+      const item = document.createElement('div');
+      item.className = 'dropped-item';
+      item.textContent = data.text;
+      item.dataset.id = data.id;
+      
+      zoneItems.appendChild(item);
+      
+      console.log(`✅ Added "${data.text}" to ${zone.dataset.zone}`);
+    }
+
+    // Listen for drag start/end notifications
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'html5DragStart') {
+        console.log('[HTML5 DnD] Drag started in other window:', event.data.data);
+        document.body.style.background = 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)';
+      } else if (event.data.type === 'html5DragEnd') {
+        console.log('[HTML5 DnD] Drag ended in other window');
+        document.body.style.background = 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -204,6 +204,19 @@
       </button>
     </div>
     
+    <div class="note" style="margin-bottom: 15px; background: #e0e7ff; border-color: #6366f1;">
+      <strong>Alternative:</strong> Try the HTML5 Drag & Drop API version (simpler, native browser API):
+    </div>
+    
+    <div class="button-group">
+      <button class="btn" style="background: #6366f1;" id="open-frame-a-html5">
+        📦 Open Draggable Items (HTML5)
+      </button>
+      <button class="btn" style="background: #6366f1;" id="open-frame-b-html5">
+        🎯 Open Drop Zones (HTML5)
+      </button>
+    </div>
+    
     <div class="button-group">
       <button class="btn btn-secondary" id="close-all">
         ✖️ Close All Windows
@@ -373,6 +386,29 @@
         windowStatus[key] = false;
       });
       updateWindowStatus();
+    });
+    
+    // HTML5 DnD version buttons
+    document.getElementById('open-frame-a-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-a-html5.html',
+        `DraggableItemsHTML5_${Date.now()}`,
+        'width=500,height=600,left=100,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
+    });
+    
+    document.getElementById('open-frame-b-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-b-html5.html',
+        `DropZonesHTML5_${Date.now()}`,
+        'width=500,height=600,left=650,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
     });
 
     // Periodically check if windows are still open
