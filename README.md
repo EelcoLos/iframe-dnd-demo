@@ -161,7 +161,32 @@ The test suite includes:
 ```bash
 # Run linter
 npm run lint
+
+# Generate API documentation
+npm run docs
+
+# Generate and serve API documentation
+npm run docs:serve
 ```
+
+## 📚 API Documentation
+
+This project includes comprehensive JSDoc documentation for all modules. To generate and view the full API documentation:
+
+```bash
+npm install  # Install JSDoc dependencies
+npm run docs  # Generate documentation in docs/ directory
+```
+
+For a quick API overview, see [API.md](./API.md).
+
+### Documentation Features
+- ✅ Complete JSDoc comments for all classes and methods
+- ✅ Type definitions and parameter documentation
+- ✅ Usage examples and code samples
+- ✅ Module architecture explanations
+- ✅ Message protocol documentation
+- ✅ Browser compatibility notes
 
 ## 📝 Project Structure
 
