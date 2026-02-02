@@ -460,7 +460,7 @@
     broadcast.on('dragMove', (data) => {
       if (data.source === windowId) return;
 
-      if (!data.screenX || !data.screenY) return;
+      if (typeof data.screenX !== 'number' || typeof data.screenY !== 'number') return;
 
       // Convert screen coordinates to window-relative coordinates
       const windowX = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
@@ -563,7 +563,7 @@
     broadcast.on('dragEnd', (data) => {
       if (data.source === windowId) return;
 
-      if (!data.screenX || !data.screenY) {
+      if (typeof data.screenX !== 'number' || typeof data.screenY !== 'number') {
         // Clean up preview
         if (placeholderRow) {
           placeholderRow.remove();
