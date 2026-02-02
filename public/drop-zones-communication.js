@@ -1,14 +1,92 @@
 /**
- * Drop zones communication module
- * Handles drag and drop for drop zones in child iframes
+ * @fileoverview Drop zones communication module for child iframes.
+ * 
+ * @module drop-zones-communication
+ * @description
+ * This module provides the `DropZonesManager` class which manages drop zones
+ * within a child iframe. It handles accepting drops from other frames, managing
+ * draggable items within drop zones, and supporting keyboard-based operations.
+ * 
+ * @example
+ * // Standard usage
+ * import { DropZonesManager } from './drop-zones-communication.js';
+ * 
+ * const manager = new DropZonesManager({ frameId: 'target-panel' });
+ * manager.initialize();
+ * 
+ * @example
+ * // Receive-only mode (items in zones cannot be dragged out)
+ * const manager = new DropZonesManager({
+ *   frameId: 'locked-panel',
+ *   receiveOnly: true
+ * });
+ * manager.initialize();
+ * 
+ * @author iframe-dnd-demo
+ * @version 1.0.0
  */
 
+/**
+ * @typedef {Object} DropZoneOptions
+ * @property {string} frameId - Unique identifier for this frame
+ * @property {boolean} [receiveOnly=false] - If true, dropped items cannot be dragged out
+ */
+
+/**
+ * @typedef {Object} ItemData
+ * @property {string} id - Unique identifier for the item
+ * @property {string} text - Display text for the item
+ * @property {string} source - Frame ID where the item originated
+ */
+
+/**
+ * Manager for drop zones in child iframes.
+ * 
+ * @class DropZonesManager
+ * @description
+ * Manages drop zones by:
+ * - Setting up pointer event handlers for dropped items
+ * - Receiving drop events from parent window
+ * - Providing visual feedback during drag operations
+ * - Supporting keyboard-based navigation and paste operations
+ * - Optional receive-only mode to prevent items from being dragged out
+ * 
+ * @example
+ * // Create a drop zones manager
+ * const manager = new DropZonesManager({ frameId: 'zones-panel' });
+ * manager.initialize();
+ * 
+ * @example
+ * // Create a receive-only manager (items cannot be dragged out)
+ * const manager = new DropZonesManager({
+ *   frameId: 'readonly-panel',
+ *   receiveOnly: true
+ * });
+ * manager.initialize();
+ */
 export class DropZonesManager {
   /**
-   * Create a drop zones manager
-   * @param {Object} options - Configuration options
-   * @param {string} options.frameId - Unique identifier for this frame
-   * @param {boolean} [options.receiveOnly=false] - If true, frame can only receive drops, not send drags
+   * Create a drop zones manager.
+   * 
+   * @constructor
+   * @param {DropZoneOptions|string} options - Configuration options or frame ID string
+   * @throws {Error} If frameId is not provided
+   * 
+   * @description
+   * Supports both object-based and string-based constructor arguments for
+   * backward compatibility. When receiveOnly is true, dropped items will not
+   * have drag handlers attached, preventing them from being dragged out.
+   * 
+   * @example
+   * // Object-based (recommended)
+   * const manager = new DropZonesManager({
+   *   frameId: 'drop-panel',
+   *   receiveOnly: false
+   * });
+   * 
+   * @example
+   * // String-based (backward compatible)
+   * const manager = new DropZonesManager('drop-panel');
    */
   constructor(options = {}) {
     const { frameId, receiveOnly = false } = typeof options === 'string' 
@@ -19,18 +97,71 @@ export class DropZonesManager {
       throw new Error('frameId is required');
     }
     
+    /**
+     * Unique identifier for this frame
+     * @type {string}
+     * @public
+     */
     this.frameId = frameId;
+    
+    /**
+     * Whether this frame is receive-only (dropped items cannot be dragged out)
+     * @type {boolean}
+     * @public
+     */
     this.receiveOnly = receiveOnly;
+    
+    /**
+     * Currently hovered drop zone during drag
+     * @type {HTMLElement|null}
+     * @private
+     */
     this.currentHoverZone = null;
+    
+    /**
+     * Currently dragged element
+     * @type {HTMLElement|null}
+     * @private
+     */
     this.currentDragElement = null;
+    
+    /**
+     * X coordinate where drag started
+     * @type {number}
+     * @private
+     */
     this.dragStartX = 0;
+    
+    /**
+     * Y coordinate where drag started
+     * @type {number}
+     * @private
+     */
     this.dragStartY = 0;
+    
+    /**
+     * Whether a drag is currently in progress
+     * @type {boolean}
+     * @private
+     */
     this.isDragging = false;
+    
+    /**
+     * Currently selected zone for keyboard operations
+     * @type {HTMLElement|null}
+     * @private
+     */
     this.selectedZone = null;
   }
 
   /**
-   * Initialize the manager
+   * Initialize the manager.
+   * 
+   * @description
+   * Sets up event handlers based on the receiveOnly flag:
+   * - If receiveOnly is false: Sets up drag handlers and keyboard handlers
+   * - If receiveOnly is true: Only sets up message listener for receiving drops
+   * - Always sets up message listener
    */
   initialize() {
     if (!this.receiveOnly) {
@@ -41,7 +172,13 @@ export class DropZonesManager {
   }
 
   /**
-   * Set up drag handlers for dropped items
+   * Set up drag handlers for dropped items.
+   * 
+   * @private
+   * 
+   * @description
+   * Attaches pointerdown event listeners to all dropped items in the zones.
+   * Called during initialization unless receiveOnly mode is enabled.
    */
   setupDragHandlers() {
     document.querySelectorAll('.dropped-item').forEach(item => {
@@ -49,6 +186,16 @@ export class DropZonesManager {
     });
   }
 
+  /**
+   * Handle pointer down events on dropped items.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Initiates a potential drag operation for items in drop zones.
+   * Similar to draggable items, uses a 5px threshold before starting drag.
+   */
   handlePointerDown(e) {
     // Only handle if clicking directly on the dropped item
     if (!e.target.classList.contains('dropped-item')) return;
@@ -76,6 +223,16 @@ export class DropZonesManager {
     this._upHandler = upHandler;
   }
 
+  /**
+   * Handle pointer move events during a drag operation.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Tracks pointer movement and starts the drag when movement exceeds threshold.
+   * Sends drag move messages to parent for cross-iframe tracking.
+   */
   handlePointerMove(e) {
     if (!this.currentDragElement) return;
 
@@ -109,6 +266,15 @@ export class DropZonesManager {
     }
   }
 
+  /**
+   * Handle pointer up events to complete a drag operation.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Releases pointer capture, cleans up listeners, and notifies parent of drag end.
+   */
   handlePointerUp(e) {
     if (!this.currentDragElement) return;
 
@@ -137,6 +303,17 @@ export class DropZonesManager {
     this.isDragging = false;
   }
 
+  /**
+   * Handle drag move events from parent window.
+   * 
+   * @param {number} x - X coordinate in this iframe's viewport
+   * @param {number} y - Y coordinate in this iframe's viewport
+   * @param {ItemData} dragData - Data about the dragged item
+   * @private
+   * 
+   * @description
+   * Provides visual feedback by adding hover class to the drop zone under the pointer.
+   */
   onParentDragMove(x, y, dragData) {
     // Find which drop zone is under the coordinates
     const element = document.elementFromPoint(x, y);
@@ -158,6 +335,19 @@ export class DropZonesManager {
     }
   }
 
+  /**
+   * Handle drop events from parent window.
+   * 
+   * @param {number} x - X coordinate where drop occurred
+   * @param {number} y - Y coordinate where drop occurred
+   * @param {ItemData} dragData - Data about the dropped item
+   * @private
+   * 
+   * @description
+   * Creates a new dropped item element in the appropriate drop zone.
+   * Handles both cross-frame drops and intra-frame moves between zones.
+   * In receive-only mode, dropped items will not have drag handlers attached.
+   */
   onParentDrop(x, y, dragData) {
     // Find which drop zone is under the coordinates
     const element = document.elementFromPoint(x, y);
