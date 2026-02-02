@@ -192,6 +192,7 @@
         <li>Drag items from the Draggable Items window</li>
         <li>Drop them in the Drop Zones window</li>
         <li>Windows can be moved and positioned anywhere on your screen!</li>
+        <li><strong>Table Demo:</strong> Use the table buttons to drag rows between tables and use Ctrl+C/Ctrl+V to copy/paste</li>
       </ol>
     </div>
     
@@ -214,6 +215,19 @@
       </button>
       <button class="btn" style="background: #8b5cf6;" id="open-frame-b">
         🎯 Open Drop Zones (Custom)
+      </button>
+    </div>
+    
+    <div class="note" style="margin-top: 15px; margin-bottom: 15px; background: #ddd6fe; border-color: #7c3aed;">
+      <strong>Table Demo:</strong> Try the table version with drag-and-drop rows and keyboard copy/paste (Ctrl+C, Ctrl+V):
+    </div>
+    
+    <div class="button-group">
+      <button class="btn" style="background: #7c3aed;" id="open-frame-a-table">
+        📋 Open Source Table (Custom)
+      </button>
+      <button class="btn" style="background: #7c3aed;" id="open-frame-b-table">
+        📊 Open Calculation Table (Custom)
       </button>
     </div>
     
@@ -250,7 +264,9 @@
     // Windows registry
     const windows = {
       'frame-a': null,
-      'frame-b': null
+      'frame-b': null,
+      'frame-a-table': null,
+      'frame-b-table': null
     };
 
     // Initialize hybrid manager as coordinator
@@ -262,7 +278,9 @@
     // Track window status
     const windowStatus = {
       'frame-a': false,
-      'frame-b': false
+      'frame-b': false,
+      'frame-a-table': false,
+      'frame-b-table': false
     };
 
     // Update UI based on window status
@@ -276,6 +294,14 @@
         <div class="window-status">
           <div class="status-indicator ${windowStatus['frame-b'] ? '' : 'inactive'}"></div>
           <span class="window-name">Drop Zones Window</span>
+        </div>
+        <div class="window-status">
+          <div class="status-indicator ${windowStatus['frame-a-table'] ? '' : 'inactive'}"></div>
+          <span class="window-name">Source Table Window</span>
+        </div>
+        <div class="window-status">
+          <div class="status-indicator ${windowStatus['frame-b-table'] ? '' : 'inactive'}"></div>
+          <span class="window-name">Calculation Table Window</span>
         </div>
       `;
       statusList.innerHTML = statusHTML;
@@ -340,6 +366,53 @@
         broadcast.registerWindow('frame-b', windows['frame-b']);
       } else {
         console.error('[Coordinator] Failed to open frame-b - check popup blocker');
+      }
+    });
+
+    // Table version buttons
+    document.getElementById('open-frame-a-table').addEventListener('click', () => {
+      if (windows['frame-a-table'] && !windows['frame-a-table'].closed) {
+        windows['frame-a-table'].focus();
+        return;
+      }
+      
+      // Use unique window name to avoid reusing old windows
+      const uniqueName = `SourceTable_${Date.now()}`;
+      
+      windows['frame-a-table'] = window.open(
+        'window-frame-b-table.html',  // Note: frame-b-table is the source in table demo
+        uniqueName,
+        'width=600,height=700,left=100,top=100'
+      );
+      
+      // Register window for postMessage relay
+      if (windows['frame-a-table']) {
+        broadcast.registerWindow('frame-a-table', windows['frame-a-table']);
+      } else {
+        console.error('[Coordinator] Failed to open frame-a-table - check popup blocker');
+      }
+    });
+
+    document.getElementById('open-frame-b-table').addEventListener('click', () => {
+      if (windows['frame-b-table'] && !windows['frame-b-table'].closed) {
+        windows['frame-b-table'].focus();
+        return;
+      }
+      
+      // Use unique window name to avoid reusing old windows
+      const uniqueName = `CalculationTable_${Date.now()}`;
+      
+      windows['frame-b-table'] = window.open(
+        'window-frame-a-table.html',  // Note: frame-a-table is the target in table demo
+        uniqueName,
+        'width=700,height=700,left=750,top=100'
+      );
+      
+      // Register window for postMessage relay
+      if (windows['frame-b-table']) {
+        broadcast.registerWindow('frame-b-table', windows['frame-b-table']);
+      } else {
+        console.error('[Coordinator] Failed to open frame-b-table - check popup blocker');
       }
     });
 
