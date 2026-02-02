@@ -132,14 +132,18 @@
   <script type="module">
     import { HybridCommunicationManager } from './hybrid-communication.js';
 
-    const windowId = 'frame-a';
-    
-    // Debug: Log ALL postMessage events
-    window.addEventListener('message', (event) => {
-      console.log('[frame-a DEBUG] Received raw message event:', event.origin, event.data);
+    // Global error handler
+    window.addEventListener('error', (e) => {
+      console.error('[frame-a ERROR]', e.error || e.message);
     });
     
-    const broadcast = new HybridCommunicationManager({ windowId });
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('[frame-a PROMISE ERROR]', e.reason);
+    });
+
+    const windowId = 'frame-a';
+    
+    const broadcast = new HybridCommunicationManager({ windowId, debug: true });
     broadcast.initializeAsChild();
     
     // Show warning if no coordinator
