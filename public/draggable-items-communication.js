@@ -171,8 +171,10 @@ export class DraggableItemsManager {
       // Add to container
       container.appendChild(newItem);
       
-      // Set up drag handlers for the new item
-      newItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      // Set up drag handlers for the new item (only if this frame is not receive-only)
+      if (!this.receiveOnly) {
+        newItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      }
       
       // Animate in
       newItem.style.animation = 'dropIn 0.3s ease';
@@ -235,7 +237,10 @@ export class DraggableItemsManager {
       newItem.innerHTML = itemData.text;
       
       container.appendChild(newItem);
-      newItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      // Set up drag handler for the new item (only if not receive-only)
+      if (!this.receiveOnly) {
+        newItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      }
       newItem.style.animation = 'dropIn 0.3s ease';
       
       // Select the newly pasted item

@@ -150,7 +150,12 @@ export class IframeCommunicationManager {
 
     // The iframe sends us coordinates relative to its own viewport
     // We need to convert them to parent coordinates
-    const sourceFrame = this.getFrame(data.source);
+    // Normalize the source ID (e.g., 'frame-a-table' -> 'frame-a')
+    const normalizedSourceId =
+      typeof data.source === 'string'
+        ? data.source.replace(/-table$/, '')
+        : data.source;
+    const sourceFrame = this.getFrame(normalizedSourceId);
     if (!sourceFrame) return;
     
     const frameRect = sourceFrame.getBoundingClientRect();
@@ -175,7 +180,12 @@ export class IframeCommunicationManager {
 
     // The iframe sends us where the pointer was released
     // Convert to parent coordinates
-    const sourceFrame = this.getFrame(data.source);
+    // Normalize the source ID (e.g., 'frame-a-table' -> 'frame-a')
+    const normalizedSourceId =
+      typeof data.source === 'string'
+        ? data.source.replace(/-table$/, '')
+        : data.source;
+    const sourceFrame = this.getFrame(normalizedSourceId);
     if (!sourceFrame) return;
     
     const frameRect = sourceFrame.getBoundingClientRect();
@@ -189,10 +199,16 @@ export class IframeCommunicationManager {
     this.dragPreview.style.display = '';
 
     // Check which frame we're over and handle drop
+    // Normalize the source frame ID (e.g., 'frame-a-table' -> 'frame-a') before comparison
+    const normalizedDragSource =
+      this.dragData && typeof this.dragData.source === 'string'
+        ? this.dragData.source.replace(/-table$/, '')
+        : this.dragData && this.dragData.source;
+    
     for (const [targetFrameId, targetFrame] of this.frames.entries()) {
       const isOverFrame = this.isOverFrame(elementUnder, targetFrame, parentX, parentY);
       
-      if (isOverFrame && this.dragData.source !== targetFrameId) {
+      if (isOverFrame && normalizedDragSource !== targetFrameId) {
         const targetRect = targetFrame.getBoundingClientRect();
         const relativeX = parentX - targetRect.left;
         const relativeY = parentY - targetRect.top;
@@ -208,7 +224,7 @@ export class IframeCommunicationManager {
           // Remove item from source frame if it's a move operation (not copy)
           // Table demos use copy semantics (source ends with '-table')
           if (!this.dragData.source.endsWith('-table')) {
-            const sourceFrameElement = this.getFrame(this.dragData.source);
+            const sourceFrameElement = this.getFrame(normalizedDragSource);
             if (sourceFrameElement) {
               sourceFrameElement.contentWindow.postMessage({
                 type: 'removeItem',
@@ -254,8 +270,14 @@ export class IframeCommunicationManager {
       }
     }
 
+    // Normalize the source frame ID (e.g., 'frame-a-table' -> 'frame-a') before comparison
+    const sourceFrameId =
+      this.dragData && typeof this.dragData.source === 'string'
+        ? this.dragData.source.replace(/-table$/, '')
+        : this.dragData && this.dragData.source;
+
     // Send drag move to hovered frame if it's not the source
-    if (hoveredFrame && this.dragData.source !== hoveredFrameId) {
+    if (hoveredFrame && sourceFrameId !== hoveredFrameId) {
       const frameRect = hoveredFrame.getBoundingClientRect();
       const relativeX = clientX - frameRect.left;
       const relativeY = clientY - frameRect.top;
@@ -283,7 +305,7 @@ export class IframeCommunicationManager {
       }
     } else {
       // Not over any droppable frame - send drag leave to all frames
-      for (const [frameId, frame] of this.frames.entries()) {
+      for (const frame of this.frames.values()) {
         try {
           frame.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
         } catch (err) {
@@ -304,10 +326,16 @@ export class IframeCommunicationManager {
     const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
 
     // Check which frame we're over and handle drop
+    // Normalize the source frame ID (e.g., 'frame-a-table' -> 'frame-a') before comparison
+    const normalizedDragSource =
+      this.dragData && typeof this.dragData.source === 'string'
+        ? this.dragData.source.replace(/-table$/, '')
+        : this.dragData && this.dragData.source;
+    
     for (const [targetFrameId, targetFrame] of this.frames.entries()) {
       const isOverFrame = this.isOverFrame(elementUnder, targetFrame, e.clientX, e.clientY);
       
-      if (isOverFrame && this.dragData.source !== targetFrameId) {
+      if (isOverFrame && normalizedDragSource !== targetFrameId) {
         const targetRect = targetFrame.getBoundingClientRect();
         const relativeX = e.clientX - targetRect.left;
         const relativeY = e.clientY - targetRect.top;
@@ -322,7 +350,7 @@ export class IframeCommunicationManager {
 
           // Remove item from source frame if it's a move operation (not copy)
           if (!this.dragData.source.endsWith('-table')) {
-            const sourceFrame = this.getFrame(this.dragData.source);
+            const sourceFrame = this.getFrame(normalizedDragSource);
             if (sourceFrame) {
               sourceFrame.contentWindow.postMessage({
                 type: 'removeItem',
@@ -350,7 +378,7 @@ export class IframeCommunicationManager {
     }
 
     // Send drag leave to all frames to clear any hover states
-    for (const [frameId, frame] of this.frames.entries()) {
+    for (const frame of this.frames.values()) {
       try {
         if (frame && frame.contentWindow) {
           frame.contentWindow.postMessage({

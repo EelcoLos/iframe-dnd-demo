@@ -182,8 +182,10 @@ export class DropZonesManager {
       droppedItem.textContent = dragData.text;
       droppedItemsContainer.appendChild(droppedItem);
 
-      // Set up drag handler for the new item
-      droppedItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      // Set up drag handler for the new item only if this frame is not receive-only
+      if (!this.receiveOnly) {
+        droppedItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      }
 
       // Clear hover state
       dropZone.classList.remove('hover');
@@ -247,8 +249,10 @@ export class DropZonesManager {
       droppedItem.textContent = itemData.text;
       droppedItemsContainer.appendChild(droppedItem);
 
-      // Set up drag handler for the new item
-      droppedItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      // Set up drag handler for the new item (only if not receive-only)
+      if (!this.receiveOnly) {
+        droppedItem.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+      }
       
       // Visual feedback
       droppedItem.style.animation = 'dropIn 0.3s ease';
