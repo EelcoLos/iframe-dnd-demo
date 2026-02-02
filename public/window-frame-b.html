@@ -188,6 +188,30 @@
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-10px); }
     }
+    
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      transform: translate(-50%, -50%);
+    }
+    
+    .drag-preview.visible {
+      opacity: 0.8;
+    }
+    
+    .drag-preview-item {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+      white-space: nowrap;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -196,6 +220,10 @@
     <p>To drop an item, you must:</p>
     <p class="highlight">Move your mouse cursor into THIS window</p>
     <p>while holding the mouse button down</p>
+  </div>
+  
+  <div id="drag-preview" class="drag-preview">
+    <div class="drag-preview-item"></div>
   </div>
   
   <div id="status-indicator" class="status-indicator">Waiting for drag...</div>
@@ -261,6 +289,8 @@
     const dropZones = document.querySelectorAll('.drop-zone');
     const statusIndicator = document.getElementById('status-indicator');
     const dragInstruction = document.getElementById('drag-instruction');
+    const dragPreview = document.getElementById('drag-preview');
+    const dragPreviewItem = dragPreview.querySelector('.drag-preview-item');
     let currentHoveredZone = null;
     let isDragActive = false;
     let draggedItemElement = null;
@@ -278,12 +308,14 @@
         dragInstruction.classList.remove('visible');
         statusIndicator.textContent = '🎯 Drop zone ready!';
         statusIndicator.className = 'status-indicator active';
+        // Preview will be shown by next dragMove event
       }
     });
 
     document.addEventListener('mouseleave', () => {
       isMouseOverWindow = false;
       console.log('[frame-b] Mouse left window');
+      dragPreview.classList.remove('visible');
       clearHoverStates();
       if (isDragActive) {
         // Show instruction overlay again when mouse leaves
@@ -316,6 +348,27 @@
       
       // Show visual feedback that drag is active
       document.body.style.cursor = 'grabbing';
+      
+      // Set up drag preview with item text
+      dragPreviewItem.textContent = data.text;
+    });
+    
+    // Listen for drag move - show preview when mouse is over this window
+    broadcast.on('dragMove', (data) => {
+      if (!isDragActive) return;
+      
+      // Only show preview if mouse is over this window
+      if (isMouseOverWindow && data.screenX !== undefined && data.screenY !== undefined) {
+        // Convert screen coordinates to window-relative coordinates
+        const localX = data.screenX - window.screenX;
+        const localY = data.screenY - window.screenY;
+        
+        dragPreview.style.left = localX + 'px';
+        dragPreview.style.top = localY + 'px';
+        dragPreview.classList.add('visible');
+      } else {
+        dragPreview.classList.remove('visible');
+      }
     });
 
     // Listen for drag end
@@ -368,6 +421,7 @@
       currentDragData = null;
       document.body.style.cursor = '';
       document.body.classList.remove('drag-active');
+      dragPreview.classList.remove('visible');
       clearHoverStates();
     });
 
