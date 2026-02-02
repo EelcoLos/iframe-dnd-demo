@@ -190,6 +190,14 @@
     const windowId = 'frame-b-table-html5';
     let selectedRow = null;
     let copiedRowData = null;
+    let idCounter = 0;
+
+    // HTML escape function to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
     function formatCurrency(amount) {
       return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
@@ -307,13 +315,13 @@
       const newRow = document.createElement('tr');
       newRow.className = 'candidate-row highlight';
       newRow.draggable = true;
-      newRow.dataset.id = `pasted-${Date.now()}`;
+      newRow.dataset.id = `pasted-${Date.now()}-${++idCounter}`;
       newRow.dataset.description = copiedRowData.description;
       newRow.dataset.quantity = quantity;
       newRow.dataset.unitPrice = unitPrice;
       newRow.innerHTML = `
         <td><span class="drag-handle">⋮⋮</span></td>
-        <td>${copiedRowData.description}</td>
+        <td>${escapeHtml(copiedRowData.description)}</td>
         <td class="number">${quantity}</td>
         <td class="number">${formatCurrency(unitPrice)}</td>
         <td class="number">${formatCurrency(amount)}</td>
