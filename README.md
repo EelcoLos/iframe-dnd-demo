@@ -111,6 +111,26 @@ Cross-Window Mode lets you drag items between completely separate browser window
 
 The coordinator window manages communication between windows using BroadcastChannel (with automatic postMessage fallback for Firefox). Two implementations are available: HTML5 Drag & Drop API (default, simpler) and custom Pointer Events (advanced, more control).
 
+### Cross-Window Table Mode
+
+Cross-Window Table Mode extends the cross-window functionality with table-based drag-and-drop and keyboard copy/paste.
+
+1. From the coordinator page, click **"Open Available Items Table"** and **"Open Construction Calc Table"**
+2. Arrange the table windows on your screen
+3. **Drag rows** from the Available Items table to the Construction Calc table
+4. **Keyboard copy/paste**: 
+   - Click a row to select it
+   - Press **Ctrl+C** (or **Cmd+C** on Mac) to copy
+   - Focus the target window and press **Ctrl+V** (or **Cmd+V**) to paste
+5. The Construction Calc table automatically updates totals when rows are added
+
+Features:
+- ✅ Drag-and-drop table rows between windows
+- ✅ Cross-window keyboard copy/paste (Ctrl+C, Ctrl+V)
+- ✅ Automatic calculation updates
+- ✅ Visual feedback (selection, copy animation, drop placeholders)
+- ✅ Row data preserved (description, quantity, unit price, amount)
+
 ## 🛠️ Technical Implementation
 
 ### Pointer Events Flow
@@ -231,16 +251,23 @@ iframe-dnd-demo/
 │   ├── iframe-communication.js          # Parent coordination module
 │   ├── draggable-items-communication.js # Draggable items module
 │   ├── drop-zones-communication.js      # Drop zones module
-│   # Cross-Window Mode files (NEW)
+│   # Cross-Window Mode files
 │   ├── parent-windows.html              # Coordinator for managing windows
 │   ├── window-frame-a.html              # Standalone draggable items window
 │   ├── window-frame-b.html              # Standalone drop zones window
+│   ├── window-frame-a-html5.html        # HTML5 DnD API draggable items window
+│   ├── window-frame-b-html5.html        # HTML5 DnD API drop zones window
+│   ├── window-frame-a-table.html        # Standalone construction calc table (NEW)
+│   ├── window-frame-b-table.html        # Standalone available items table (NEW)
 │   ├── hybrid-communication.js          # Hybrid BroadcastChannel/postMessage manager (Firefox compatible)
 │   └── broadcast-communication.js       # BroadcastChannel manager (legacy, Chrome/Edge only)
 ├── src/
 │   └── ...                              # React app (not used in this demo)
 ├── e2e/
-│   └── *.spec.ts                        # Playwright E2E tests
+│   ├── drag-and-drop.spec.ts            # Basic drag-and-drop tests
+│   ├── keyboard-copy-paste.spec.ts      # Keyboard copy-paste tests
+│   ├── table-keyboard-copy-paste.spec.ts # Table keyboard copy-paste tests (iframe mode)
+│   └── cross-window-table.spec.ts       # Cross-window table tests (NEW)
 ├── index.html                           # Landing page with mode selection
 ├── package.json
 ├── vite.config.ts
