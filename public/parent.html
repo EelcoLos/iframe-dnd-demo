@@ -167,9 +167,12 @@
       const frameA = document.getElementById('frame-a');
       const frameB = document.getElementById('frame-b');
 
-      // Initialize iframe communication manager
+      // Initialize iframe communication manager with generic frame IDs
       iframeCommunicationManager = new IframeCommunicationManager();
-      iframeCommunicationManager.initialize(frameA, frameB);
+      iframeCommunicationManager.initialize([
+        { id: 'frame-a', element: frameA },
+        { id: 'frame-b', element: frameB }
+      ]);
 
       // Set up demo switching
       setupDemoSwitcher(frameA, frameB);

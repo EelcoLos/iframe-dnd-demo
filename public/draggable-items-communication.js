@@ -4,8 +4,23 @@
  */
 
 export class DraggableItemsManager {
-  constructor(frameName = 'frame-a') {
-    this.frameName = frameName;
+  /**
+   * Create a draggable items manager
+   * @param {Object} options - Configuration options
+   * @param {string} options.frameId - Unique identifier for this frame
+   * @param {boolean} [options.receiveOnly=false] - If true, frame can only receive drops, not send drags
+   */
+  constructor(options = {}) {
+    const { frameId, receiveOnly = false } = typeof options === 'string' 
+      ? { frameId: options, receiveOnly: false } 
+      : options;
+      
+    if (!frameId) {
+      throw new Error('frameId is required');
+    }
+    
+    this.frameId = frameId;
+    this.receiveOnly = receiveOnly;
     this.currentDragElement = null;
     this.dragStartX = 0;
     this.dragStartY = 0;
@@ -19,9 +34,11 @@ export class DraggableItemsManager {
    * Initialize the manager with draggable items
    */
   initialize() {
-    this.setupDraggables();
+    if (!this.receiveOnly) {
+      this.setupDraggables();
+      this.setupKeyboardHandlers();
+    }
     this.setupMessageListener();
-    this.setupKeyboardHandlers();
     this.addDropInAnimation();
   }
 
@@ -74,7 +91,7 @@ export class DraggableItemsManager {
         pointerId: e.pointerId,
         text: this.currentDragElement.textContent.trim(),
         id: this.currentDragElement.dataset.id,
-        source: this.frameName
+        source: this.frameId
       }, window.location.origin);
     }
 
@@ -85,7 +102,7 @@ export class DraggableItemsManager {
         type: 'dragMove',
         clientX: e.clientX,
         clientY: e.clientY,
-        source: this.frameName
+        source: this.frameId
       }, window.location.origin);
     }
   }
@@ -109,7 +126,7 @@ export class DraggableItemsManager {
         type: 'dragEnd',
         clientX: e.clientX,
         clientY: e.clientY,
-        source: this.frameName
+        source: this.frameId
       }, window.location.origin);
     }
 
@@ -144,7 +161,7 @@ export class DraggableItemsManager {
     const element = document.elementFromPoint(x, y);
     const container = element?.closest('.draggable-items');
 
-    if (container && dragData.source !== this.frameName) {
+    if (container && dragData.source !== this.frameId) {
       // Create a new draggable item
       const newItem = document.createElement('div');
       newItem.className = 'draggable';
@@ -169,7 +186,7 @@ export class DraggableItemsManager {
         type: 'dropSuccess',
         dragData: dragData
       }, window.location.origin);
-    } else if (dragData.source !== this.frameName) {
+    } else if (dragData.source !== this.frameId) {
       // Notify parent that the drop failed
       window.parent.postMessage({
         type: 'dropFailed',
@@ -211,7 +228,7 @@ export class DraggableItemsManager {
   handlePasteItem(itemData) {
     // Paste the item into this frame
     const container = document.querySelector('.draggable-items');
-    if (container && itemData.source !== this.frameName) {
+    if (container && itemData.source !== this.frameId) {
       const newItem = document.createElement('div');
       newItem.className = 'draggable';
       newItem.dataset.id = itemData.id || `pasted-${Date.now()}`;
@@ -265,7 +282,7 @@ export class DraggableItemsManager {
         this.copiedItemData = {
           text: this.selectedItem.textContent.trim(),
           id: this.selectedItem.dataset.id,
-          source: this.frameName
+          source: this.frameId
         };
         
         // Notify parent that an item was copied
@@ -287,7 +304,7 @@ export class DraggableItemsManager {
         // Request paste from parent
         window.parent.postMessage({
           type: 'requestPaste',
-          target: this.frameName
+          target: this.frameId
         }, window.location.origin);
       }
     });

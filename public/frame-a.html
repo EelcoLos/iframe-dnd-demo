@@ -114,8 +114,8 @@
   <script type="module">
     import { DraggableItemsManager } from './draggable-items-communication.js';
 
-    // Initialize draggable items manager
-    const manager = new DraggableItemsManager('frame-a');
+    // Initialize draggable items manager with generic frame ID
+    const manager = new DraggableItemsManager({ frameId: 'frame-a' });
     manager.initialize();
   </script>
 </body>

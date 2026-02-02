@@ -8,19 +8,24 @@ export class IframeCommunicationManager {
     this.isDragging = false;
     this.dragData = null;
     this.dragPreview = null;
-    this.frameA = null;
-    this.frameB = null;
+    this.frames = new Map(); // Map of frameId -> iframe element
     this.clipboardData = null;
   }
 
   /**
    * Initialize the manager with iframe elements
-   * @param {HTMLIFrameElement} frameA - First iframe element
-   * @param {HTMLIFrameElement} frameB - Second iframe element
+   * @param {Array<{id: string, element: HTMLIFrameElement}>} frames - Array of frame configurations
+   * @example
+   * manager.initialize([
+   *   { id: 'source-frame', element: document.getElementById('frame-a') },
+   *   { id: 'target-frame', element: document.getElementById('frame-b') }
+   * ]);
    */
-  initialize(frameA, frameB) {
-    this.frameA = frameA;
-    this.frameB = frameB;
+  initialize(frames) {
+    // Store frames in a map for easy lookup
+    frames.forEach(({ id, element }) => {
+      this.frames.set(id, element);
+    });
 
     // Listen for messages from frames
     window.addEventListener('message', (event) => this.handleMessage(event));
@@ -28,6 +33,27 @@ export class IframeCommunicationManager {
     // Set up pointer event listeners on the parent
     document.addEventListener('pointermove', (e) => this.handlePointerMove(e));
     document.addEventListener('pointerup', (e) => this.handlePointerUp(e));
+  }
+
+  /**
+   * Get frame element by ID
+   * @param {string} frameId - The frame identifier
+   * @returns {HTMLIFrameElement|null}
+   */
+  getFrame(frameId) {
+    return this.frames.get(frameId) || null;
+  }
+
+  /**
+   * Get frame ID by element
+   * @param {HTMLIFrameElement} element - The iframe element
+   * @returns {string|null}
+   */
+  getFrameId(element) {
+    for (const [id, iframe] of this.frames.entries()) {
+      if (iframe === element) return id;
+    }
+    return null;
   }
 
   /**
@@ -52,16 +78,21 @@ export class IframeCommunicationManager {
    */
   handleMessage(event) {
     // Validate that the message is from one of our iframes
-    const isFromFrameA = event.source === this.frameA?.contentWindow;
-    const isFromFrameB = event.source === this.frameB?.contentWindow;
     const isSameOrigin = event.origin === window.location.origin;
     
-    if ((!isFromFrameA && !isFromFrameB) || !isSameOrigin) {
+    // Find which frame sent this message
+    let sourceFrameId = null;
+    for (const [id, iframe] of this.frames.entries()) {
+      if (event.source === iframe?.contentWindow) {
+        sourceFrameId = id;
+        break;
+      }
+    }
+    
+    if (!sourceFrameId || !isSameOrigin) {
       // Ignore messages from unknown sources or different origins
       return;
     }
-
-    const { type, data } = event.data;
 
     switch (event.data.type) {
       case 'dragStart':
@@ -74,7 +105,7 @@ export class IframeCommunicationManager {
         this.handleIframeDragMove(event.data);
         break;
       case 'dropSuccess':
-        this.handleDropSuccess(event.data.dragData, isFromFrameA ? 'frame-a' : 'frame-b');
+        this.handleDropSuccess(event.data.dragData, sourceFrameId);
         break;
       case 'dropFailed':
         this.handleDropFailed(event.data.dragData);
@@ -89,12 +120,15 @@ export class IframeCommunicationManager {
         this.handlePasteRequest(event.data.target);
         break;
       case 'pasteSuccess':
-        if (this.clipboardData && this.clipboardData.source === 'frame-a') {
-          this.frameA.contentWindow.postMessage({
-            type: 'removeItem',
-            id: this.clipboardData.id
-          }, window.location.origin);
-          this.clipboardData = null;
+        if (this.clipboardData && this.clipboardData.source) {
+          const sourceFrame = this.getFrame(this.clipboardData.source);
+          if (sourceFrame) {
+            sourceFrame.contentWindow.postMessage({
+              type: 'removeItem',
+              id: this.clipboardData.id
+            }, window.location.origin);
+            this.clipboardData = null;
+          }
         }
         break;
     }
@@ -116,7 +150,9 @@ export class IframeCommunicationManager {
 
     // The iframe sends us coordinates relative to its own viewport
     // We need to convert them to parent coordinates
-    const sourceFrame = data.source === 'frame-a' ? this.frameA : this.frameB;
+    const sourceFrame = this.getFrame(data.source);
+    if (!sourceFrame) return;
+    
     const frameRect = sourceFrame.getBoundingClientRect();
     
     const parentX = frameRect.left + data.clientX;
@@ -139,7 +175,9 @@ export class IframeCommunicationManager {
 
     // The iframe sends us where the pointer was released
     // Convert to parent coordinates
-    const sourceFrame = data.source === 'frame-a' ? this.frameA : this.frameB;
+    const sourceFrame = this.getFrame(data.source);
+    if (!sourceFrame) return;
+    
     const frameRect = sourceFrame.getBoundingClientRect();
     
     const parentX = frameRect.left + data.clientX;
@@ -150,50 +188,38 @@ export class IframeCommunicationManager {
     const elementUnder = document.elementFromPoint(parentX, parentY);
     this.dragPreview.style.display = '';
 
-    // Check if we're over each frame using the helper function
-    const overFrameA = this.isOverFrame(elementUnder, this.frameA, parentX, parentY);
-    const overFrameB = this.isOverFrame(elementUnder, this.frameB, parentX, parentY);
+    // Check which frame we're over and handle drop
+    for (const [targetFrameId, targetFrame] of this.frames.entries()) {
+      const isOverFrame = this.isOverFrame(elementUnder, targetFrame, parentX, parentY);
+      
+      if (isOverFrame && this.dragData.source !== targetFrameId) {
+        const targetRect = targetFrame.getBoundingClientRect();
+        const relativeX = parentX - targetRect.left;
+        const relativeY = parentY - targetRect.top;
 
-    // Check if we're dropping on frame-a
-    if (overFrameA && this.dragData.source !== 'frame-a' && this.dragData.source !== 'frame-a-table') {
-      const frameARect = this.frameA.getBoundingClientRect();
-      const relativeX = parentX - frameARect.left;
-      const relativeY = parentY - frameARect.top;
-
-      try {
-        this.frameA.contentWindow.postMessage({
-          type: 'parentDrop',
-          x: relativeX,
-          y: relativeY,
-          dragData: this.dragData
-        }, window.location.origin);
-        
-        // Remove item from source frame (Frame B) - but not for table demo (copy semantics)
-        if (this.dragData.source === 'frame-b') {
-          this.frameB.contentWindow.postMessage({
-            type: 'removeItem',
-            id: this.dragData.id
+        try {
+          targetFrame.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: relativeX,
+            y: relativeY,
+            dragData: this.dragData
           }, window.location.origin);
+          
+          // Remove item from source frame if it's a move operation (not copy)
+          // Table demos use copy semantics (source ends with '-table')
+          if (!this.dragData.source.endsWith('-table')) {
+            const sourceFrameElement = this.getFrame(this.dragData.source);
+            if (sourceFrameElement) {
+              sourceFrameElement.contentWindow.postMessage({
+                type: 'removeItem',
+                id: this.dragData.id
+              }, window.location.origin);
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to send drop message to ${targetFrameId}:`, err);
         }
-      } catch (err) {
-        console.error('Failed to send drop message to frame-a:', err);
-      }
-    }
-    // Check if we're dropping on frame-b
-    else if (overFrameB) {
-      const frameBRect = this.frameB.getBoundingClientRect();
-      const relativeX = parentX - frameBRect.left;
-      const relativeY = parentY - frameBRect.top;
-
-      try {
-        this.frameB.contentWindow.postMessage({
-          type: 'parentDrop',
-          x: relativeX,
-          y: relativeY,
-          dragData: this.dragData
-        }, window.location.origin);
-      } catch (err) {
-        console.error('Failed to send drop message to frame-b:', err);
+        break; // Only drop on one frame
       }
     }
 
@@ -216,70 +242,53 @@ export class IframeCommunicationManager {
   }
 
   updateFrameHover(elementUnder, clientX, clientY) {
-    // Determine which frame we're over using the helper function
-    const overFrameA = this.isOverFrame(elementUnder, this.frameA, clientX, clientY);
-    const overFrameB = this.isOverFrame(elementUnder, this.frameB, clientX, clientY);
+    // Find which frame we're over
+    let hoveredFrameId = null;
+    let hoveredFrame = null;
+    
+    for (const [frameId, frame] of this.frames.entries()) {
+      if (this.isOverFrame(elementUnder, frame, clientX, clientY)) {
+        hoveredFrameId = frameId;
+        hoveredFrame = frame;
+        break;
+      }
+    }
 
-    // Handle Frame A
-    if (overFrameA && this.dragData.source !== 'frame-a' && this.dragData.source !== 'frame-a-table') {
-      // Dragging from Frame B to Frame A
-      const frameARect = this.frameA.getBoundingClientRect();
-      const relativeX = clientX - frameARect.left;
-      const relativeY = clientY - frameARect.top;
+    // Send drag move to hovered frame if it's not the source
+    if (hoveredFrame && this.dragData.source !== hoveredFrameId) {
+      const frameRect = hoveredFrame.getBoundingClientRect();
+      const relativeX = clientX - frameRect.left;
+      const relativeY = clientY - frameRect.top;
 
       try {
-        this.frameA.contentWindow.postMessage({
+        hoveredFrame.contentWindow.postMessage({
           type: 'parentDragMove',
           x: relativeX,
           y: relativeY,
           dragData: this.dragData
         }, window.location.origin);
       } catch (err) {
-        console.error('Failed to send message to frame-a:', err);
+        console.error(`Failed to send message to ${hoveredFrameId}:`, err);
       }
 
-      // Send drag leave to Frame B
-      try {
-        this.frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
-      } catch (err) {
-        // Ignore
+      // Send drag leave to all other frames
+      for (const [frameId, frame] of this.frames.entries()) {
+        if (frameId !== hoveredFrameId) {
+          try {
+            frame.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
+          } catch (err) {
+            // Ignore
+          }
+        }
       }
-    } 
-    // Handle Frame B
-    else if (overFrameB) {
-      // Dragging to Frame B (from either frame)
-      const frameBRect = this.frameB.getBoundingClientRect();
-      const relativeX = clientX - frameBRect.left;
-      const relativeY = clientY - frameBRect.top;
-
-      try {
-        this.frameB.contentWindow.postMessage({
-          type: 'parentDragMove',
-          x: relativeX,
-          y: relativeY,
-          dragData: this.dragData
-        }, window.location.origin);
-      } catch (err) {
-        console.error('Failed to send message to frame-b:', err);
-      }
-
-      // Send drag leave to Frame A if dragging from B or B-table
-      if (this.dragData.source === 'frame-b' || this.dragData.source === 'frame-b-table') {
+    } else {
+      // Not over any droppable frame - send drag leave to all frames
+      for (const [frameId, frame] of this.frames.entries()) {
         try {
-          this.frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
+          frame.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
         } catch (err) {
           // Ignore
         }
-      }
-    } 
-    // Not over any frame
-    else {
-      // Send drag leave to both frames
-      try {
-        this.frameA.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
-        this.frameB.contentWindow.postMessage({ type: 'parentDragLeave' }, window.location.origin);
-      } catch (err) {
-        // Ignore
       }
     }
   }
@@ -294,50 +303,37 @@ export class IframeCommunicationManager {
     
     const elementUnder = document.elementFromPoint(e.clientX, e.clientY);
 
-    // Check if we're over each frame using the helper function
-    const overFrameA = this.isOverFrame(elementUnder, this.frameA, e.clientX, e.clientY);
-    const overFrameB = this.isOverFrame(elementUnder, this.frameB, e.clientX, e.clientY);
+    // Check which frame we're over and handle drop
+    for (const [targetFrameId, targetFrame] of this.frames.entries()) {
+      const isOverFrame = this.isOverFrame(elementUnder, targetFrame, e.clientX, e.clientY);
+      
+      if (isOverFrame && this.dragData.source !== targetFrameId) {
+        const targetRect = targetFrame.getBoundingClientRect();
+        const relativeX = e.clientX - targetRect.left;
+        const relativeY = e.clientY - targetRect.top;
 
-    // Check if we're dropping on frame-a
-    if (overFrameA && this.dragData.source !== 'frame-a' && this.dragData.source !== 'frame-a-table') {
-      const frameARect = this.frameA.getBoundingClientRect();
-      const relativeX = e.clientX - frameARect.left;
-      const relativeY = e.clientY - frameARect.top;
-
-      try {
-        this.frameA.contentWindow.postMessage({
-          type: 'parentDrop',
-          x: relativeX,
-          y: relativeY,
-          dragData: this.dragData
-        }, window.location.origin);
-
-        // Remove item from source frame (Frame B) - but not for table demo (copy semantics)
-        if (this.dragData.source === 'frame-b') {
-          this.frameB.contentWindow.postMessage({
-            type: 'removeItem',
-            id: this.dragData.id
+        try {
+          targetFrame.contentWindow.postMessage({
+            type: 'parentDrop',
+            x: relativeX,
+            y: relativeY,
+            dragData: this.dragData
           }, window.location.origin);
-        }
-      } catch (err) {
-        console.error('Failed to send drop message to frame-a:', err);
-      }
-    }
-    // Check if we're dropping on frame-b
-    else if (overFrameB) {
-      const frameBRect = this.frameB.getBoundingClientRect();
-      const relativeX = e.clientX - frameBRect.left;
-      const relativeY = e.clientY - frameBRect.top;
 
-      try {
-        this.frameB.contentWindow.postMessage({
-          type: 'parentDrop',
-          x: relativeX,
-          y: relativeY,
-          dragData: this.dragData
-        }, window.location.origin);
-      } catch (err) {
-        console.error('Failed to send drop message to frame-b:', err);
+          // Remove item from source frame if it's a move operation (not copy)
+          if (!this.dragData.source.endsWith('-table')) {
+            const sourceFrame = this.getFrame(this.dragData.source);
+            if (sourceFrame) {
+              sourceFrame.contentWindow.postMessage({
+                type: 'removeItem',
+                id: this.dragData.id
+              }, window.location.origin);
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to send drop message to ${targetFrameId}:`, err);
+        }
+        break; // Only drop on one frame
       }
     }
 
@@ -353,33 +349,26 @@ export class IframeCommunicationManager {
       this.dragPreview = null;
     }
 
-    // Send drag leave to both frames to clear any hover states
-    try {
-      if (this.frameA && this.frameA.contentWindow) {
-        this.frameA.contentWindow.postMessage({
-          type: 'parentDragLeave'
-        }, window.location.origin);
+    // Send drag leave to all frames to clear any hover states
+    for (const [frameId, frame] of this.frames.entries()) {
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({
+            type: 'parentDragLeave'
+          }, window.location.origin);
+        }
+      } catch (err) {
+        // Ignore
       }
-      if (this.frameB && this.frameB.contentWindow) {
-        this.frameB.contentWindow.postMessage({
-          type: 'parentDragLeave'
-        }, window.location.origin);
-      }
-    } catch (err) {
-      // Ignore
     }
   }
   
-  handleDropSuccess(dragData, targetFrame) {
+  handleDropSuccess(dragData, targetFrameId) {
     // Only remove item from source if this is a cross-frame drop
-    if (dragData.source !== targetFrame) {
-      if (dragData.source === 'frame-a') {
-        this.frameA.contentWindow.postMessage({
-          type: 'removeItem',
-          id: dragData.id
-        }, window.location.origin);
-      } else if (dragData.source === 'frame-b') {
-        this.frameB.contentWindow.postMessage({
+    if (dragData.source !== targetFrameId) {
+      const sourceFrame = this.getFrame(dragData.source);
+      if (sourceFrame) {
+        sourceFrame.contentWindow.postMessage({
           type: 'removeItem',
           id: dragData.id
         }, window.location.origin);
@@ -393,36 +382,29 @@ export class IframeCommunicationManager {
   }
 
   handleRowCopied(data) {
-    // Relay copied row data to both frames so they can paste
+    // Relay copied row data to all frames so they can paste
     console.log('Parent relaying rowCopied:', data.rowData?.description);
-    try {
-      if (this.frameA && this.frameA.contentWindow) {
-        this.frameA.contentWindow.postMessage({
-          type: 'rowCopied',
-          rowData: data.rowData
-        }, window.location.origin);
-        console.log('Sent rowCopied to Frame A');
-      } else {
-        console.warn('Frame A not ready for postMessage');
+    for (const [frameId, frame] of this.frames.entries()) {
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({
+            type: 'rowCopied',
+            rowData: data.rowData
+          }, window.location.origin);
+          console.log(`Sent rowCopied to ${frameId}`);
+        } else {
+          console.warn(`${frameId} not ready for postMessage`);
+        }
+      } catch (err) {
+        console.error(`Failed to relay copied row data to ${frameId}:`, err);
       }
-      if (this.frameB && this.frameB.contentWindow) {
-        this.frameB.contentWindow.postMessage({
-          type: 'rowCopied',
-          rowData: data.rowData
-        }, window.location.origin);
-        console.log('Sent rowCopied to Frame B');
-      } else {
-        console.warn('Frame B not ready for postMessage');
-      }
-    } catch (err) {
-      console.error('Failed to relay copied row data:', err);
     }
   }
 
-  handlePasteRequest(target) {
+  handlePasteRequest(targetFrameId) {
     if (!this.clipboardData) return;
     
-    const targetFrame = target === 'frame-a' ? this.frameA : this.frameB;
+    const targetFrame = this.getFrame(targetFrameId);
     
     try {
       targetFrame.contentWindow.postMessage({

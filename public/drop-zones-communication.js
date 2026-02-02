@@ -4,8 +4,23 @@
  */
 
 export class DropZonesManager {
-  constructor(frameName = 'frame-b') {
-    this.frameName = frameName;
+  /**
+   * Create a drop zones manager
+   * @param {Object} options - Configuration options
+   * @param {string} options.frameId - Unique identifier for this frame
+   * @param {boolean} [options.receiveOnly=false] - If true, frame can only receive drops, not send drags
+   */
+  constructor(options = {}) {
+    const { frameId, receiveOnly = false } = typeof options === 'string' 
+      ? { frameId: options, receiveOnly: false } 
+      : options;
+      
+    if (!frameId) {
+      throw new Error('frameId is required');
+    }
+    
+    this.frameId = frameId;
+    this.receiveOnly = receiveOnly;
     this.currentHoverZone = null;
     this.currentDragElement = null;
     this.dragStartX = 0;
@@ -18,9 +33,11 @@ export class DropZonesManager {
    * Initialize the manager
    */
   initialize() {
-    this.setupDragHandlers();
+    if (!this.receiveOnly) {
+      this.setupDragHandlers();
+      this.setupKeyboardHandlers();
+    }
     this.setupMessageListener();
-    this.setupKeyboardHandlers();
   }
 
   /**
@@ -76,7 +93,7 @@ export class DropZonesManager {
         pointerId: e.pointerId,
         text: this.currentDragElement.textContent.trim(),
         id: this.currentDragElement.dataset.id || `item-${Date.now()}`,
-        source: this.frameName
+        source: this.frameId
       }, window.location.origin);
     }
 
@@ -87,7 +104,7 @@ export class DropZonesManager {
         type: 'dragMove',
         clientX: e.clientX,
         clientY: e.clientY,
-        source: this.frameName
+        source: this.frameId
       }, window.location.origin);
     }
   }
@@ -111,7 +128,7 @@ export class DropZonesManager {
         type: 'dragEnd',
         clientX: e.clientX,
         clientY: e.clientY,
-        source: this.frameName
+        source: this.frameId
       }, window.location.origin);
     }
 
@@ -149,7 +166,7 @@ export class DropZonesManager {
     if (dropZone) {
       // If dragging within the same frame, remove the old item first
       // This prevents duplicate IDs when moving between zones
-      if (dragData.source === this.frameName) {
+      if (dragData.source === this.frameId) {
         const oldItem = Array.from(document.querySelectorAll('.dropped-item'))
           .find(item => item.dataset.id === dragData.id);
         if (oldItem) {
@@ -285,7 +302,7 @@ export class DropZonesManager {
         // Request paste from parent
         window.parent.postMessage({
           type: 'requestPaste',
-          target: this.frameName
+          target: this.frameId
         }, window.location.origin);
       }
     });

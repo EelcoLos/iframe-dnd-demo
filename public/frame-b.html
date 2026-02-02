@@ -162,8 +162,8 @@
   <script type="module">
     import { DropZonesManager } from './drop-zones-communication.js';
 
-    // Initialize drop zones manager
-    const manager = new DropZonesManager('frame-b');
+    // Initialize drop zones manager with generic frame ID
+    const manager = new DropZonesManager({ frameId: 'frame-b' });
     manager.initialize();
   </script>
 </body>
