@@ -251,10 +251,10 @@ export class HybridCommunicationManager {
       
       // Additional validation - verify window is accessible
       try {
-        // Try to access window.name to verify window is accessible
-        const windowName = windowRef.name || 'unknown';
+        // Access window.name to verify window is accessible
+        windowRef.name;
       } catch (e) {
-        console.warn(`[HybridComm] Cannot access window.name for ${windowId}:`, e.message);
+        console.warn(`[HybridComm] Cannot access window for ${windowId}:`, e.message);
       }
       
       try {
