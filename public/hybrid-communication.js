@@ -102,7 +102,7 @@ export class HybridCommunicationManager {
   async testBroadcastChannel() {
     if (!this.useBroadcastChannel) return;
     
-    const testId = Math.random().toString(36).substr(2, 9);
+    const testId = Math.random().toString(36).slice(2, 11);
     let received = false;
     
     const handler = (data) => {
