@@ -1,24 +1,123 @@
 /**
- * Parent iframe communication module
- * Handles drag and drop coordination between multiple iframes
+ * @fileoverview Parent iframe communication module for coordinating drag and drop between multiple iframes.
+ * 
+ * @module iframe-communication
+ * @description
+ * This module provides the `IframeCommunicationManager` class which acts as a central coordinator
+ * for cross-iframe drag and drop operations. It manages communication between parent and child iframes,
+ * handles pointer events, and coordinates drag preview rendering.
+ * 
+ * @example
+ * // Initialize the manager with multiple frames
+ * import { IframeCommunicationManager } from './iframe-communication.js';
+ * 
+ * const manager = new IframeCommunicationManager();
+ * manager.initialize([
+ *   { id: 'source-panel', element: document.getElementById('frame-a') },
+ *   { id: 'target-panel', element: document.getElementById('frame-b') }
+ * ]);
+ * 
+ * @author iframe-dnd-demo
+ * @version 1.0.0
  */
 
+/**
+ * @typedef {Object} FrameConfig
+ * @property {string} id - Unique identifier for the frame
+ * @property {HTMLIFrameElement} element - The iframe DOM element
+ */
+
+/**
+ * @typedef {Object} DragData
+ * @property {string} text - The text content being dragged
+ * @property {string} id - Unique identifier for the dragged item
+ * @property {string} source - The frame ID where the drag originated
+ * @property {number} [pointerId] - The pointer ID for the drag event
+ */
+
+/**
+ * Central manager for coordinating drag and drop operations between multiple iframes.
+ * 
+ * @class IframeCommunicationManager
+ * @description
+ * Manages cross-iframe drag and drop by:
+ * - Tracking registered iframes via a Map
+ * - Coordinating pointer events across parent and child windows
+ * - Managing drag preview rendering
+ * - Routing messages between frames
+ * - Handling clipboard operations
+ * 
+ * @example
+ * const manager = new IframeCommunicationManager();
+ * manager.initialize([
+ *   { id: 'editor', element: document.getElementById('editor-frame') },
+ *   { id: 'preview', element: document.getElementById('preview-frame') }
+ * ]);
+ */
 export class IframeCommunicationManager {
+  /**
+   * Creates a new IframeCommunicationManager instance.
+   * 
+   * @constructor
+   * @description
+   * Initializes the manager with empty state. Call `initialize()` to register frames
+   * and set up event listeners.
+   */
   constructor() {
+    /**
+     * Whether a drag operation is currently in progress
+     * @type {boolean}
+     * @private
+     */
     this.isDragging = false;
+    
+    /**
+     * Data about the current drag operation
+     * @type {DragData|null}
+     * @private
+     */
     this.dragData = null;
+    
+    /**
+     * The DOM element used as a drag preview
+     * @type {HTMLDivElement|null}
+     * @private
+     */
     this.dragPreview = null;
-    this.frames = new Map(); // Map of frameId -> iframe element
+    
+    /**
+     * Map of frame IDs to iframe elements
+     * @type {Map<string, HTMLIFrameElement>}
+     * @private
+     */
+    this.frames = new Map();
+    
+    /**
+     * Data stored in clipboard for copy/paste operations
+     * @type {Object|null}
+     * @private
+     */
     this.clipboardData = null;
   }
 
   /**
-   * Initialize the manager with iframe elements
-   * @param {Array<{id: string, element: HTMLIFrameElement}>} frames - Array of frame configurations
+   * Initialize the manager with iframe elements and set up event listeners.
+   * 
+   * @param {FrameConfig[]} frames - Array of frame configurations
+   * @throws {TypeError} If frames is not an array or contains invalid configurations
+   * 
    * @example
    * manager.initialize([
    *   { id: 'source-frame', element: document.getElementById('frame-a') },
    *   { id: 'target-frame', element: document.getElementById('frame-b') }
+   * ]);
+   * 
+   * @example
+   * // With three frames for a more complex layout
+   * manager.initialize([
+   *   { id: 'sidebar', element: document.getElementById('sidebar-frame') },
+   *   { id: 'main', element: document.getElementById('main-frame') },
+   *   { id: 'preview', element: document.getElementById('preview-frame') }
    * ]);
    */
   initialize(frames) {
@@ -36,18 +135,30 @@ export class IframeCommunicationManager {
   }
 
   /**
-   * Get frame element by ID
+   * Get frame element by ID.
+   * 
    * @param {string} frameId - The frame identifier
-   * @returns {HTMLIFrameElement|null}
+   * @returns {HTMLIFrameElement|null} The iframe element or null if not found
+   * 
+   * @example
+   * const frame = manager.getFrame('source-panel');
+   * if (frame) {
+   *   console.log('Frame found:', frame.src);
+   * }
    */
   getFrame(frameId) {
     return this.frames.get(frameId) || null;
   }
 
   /**
-   * Get frame ID by element
+   * Get frame ID by element.
+   * 
    * @param {HTMLIFrameElement} element - The iframe element
-   * @returns {string|null}
+   * @returns {string|null} The frame ID or null if not found
+   * 
+   * @example
+   * const frameId = manager.getFrameId(document.getElementById('my-frame'));
+   * console.log('Frame ID:', frameId);
    */
   getFrameId(element) {
     for (const [id, iframe] of this.frames.entries()) {
@@ -57,8 +168,25 @@ export class IframeCommunicationManager {
   }
 
   /**
-   * Check if a pointer position is over a specific iframe
-   * Uses both elementFromPoint and coordinate bounds for reliable detection
+   * Check if a pointer position is over a specific iframe.
+   * 
+   * @param {Element|null} elementUnder - The element returned by elementFromPoint
+   * @param {HTMLIFrameElement} frameElement - The iframe to check against
+   * @param {number} clientX - X coordinate of the pointer
+   * @param {number} clientY - Y coordinate of the pointer
+   * @returns {boolean} True if the pointer is over the iframe
+   * 
+   * @description
+   * Uses both elementFromPoint and coordinate bounds for reliable detection.
+   * This dual approach handles browser inconsistencies, particularly in Firefox.
+   * 
+   * @example
+   * const isOver = manager.isOverFrame(
+   *   document.elementFromPoint(100, 200),
+   *   frameElement,
+   *   100,
+   *   200
+   * );
    */
   isOverFrame(elementUnder, frameElement, clientX, clientY) {
     if (!frameElement) return false;
@@ -74,7 +202,25 @@ export class IframeCommunicationManager {
   }
 
   /**
-   * Handle messages from iframes
+   * Handle messages from iframes.
+   * 
+   * @param {MessageEvent} event - The message event from postMessage
+   * @private
+   * 
+   * @description
+   * Processes messages from child iframes and routes them to appropriate handlers.
+   * Validates message origin and source before processing.
+   * 
+   * Supported message types:
+   * - dragStart: Initiate a drag operation
+   * - dragEnd: Complete a drag operation
+   * - dragMove: Update drag position
+   * - dropSuccess: Item was successfully dropped
+   * - dropFailed: Drop operation failed
+   * - rowCopied: Row was copied (table demo)
+   * - itemCopied: Item was copied to clipboard
+   * - requestPaste: Request to paste clipboard data
+   * - pasteSuccess: Paste operation succeeded
    */
   handleMessage(event) {
     // Validate that the message is from one of our iframes
@@ -134,6 +280,16 @@ export class IframeCommunicationManager {
     }
   }
 
+  /**
+   * Start a drag operation.
+   * 
+   * @param {DragData} data - Data about the drag operation
+   * @private
+   * 
+   * @description
+   * Creates a visual drag preview element and sets the drag state.
+   * The preview follows the cursor during the drag operation.
+   */
   startDrag(data) {
     this.isDragging = true;
     this.dragData = data;
@@ -145,6 +301,20 @@ export class IframeCommunicationManager {
     document.body.appendChild(this.dragPreview);
   }
 
+  /**
+   * Handle drag move events from iframes.
+   * 
+   * @param {Object} data - Drag move data from the iframe
+   * @param {string} data.source - Source frame ID
+   * @param {number} data.clientX - X coordinate relative to iframe
+   * @param {number} data.clientY - Y coordinate relative to iframe
+   * @private
+   * 
+   * @description
+   * Converts iframe-relative coordinates to parent coordinates and updates
+   * the drag preview position. Also determines which frame is being hovered
+   * and notifies it.
+   */
   handleIframeDragMove(data) {
     if (!this.isDragging || !this.dragPreview) return;
 
@@ -175,6 +345,20 @@ export class IframeCommunicationManager {
     this.updateFrameHover(elementUnder, parentX, parentY);
   }
 
+  /**
+   * Handle drag end events from iframes.
+   * 
+   * @param {Object} data - Drag end data from the iframe
+   * @param {string} data.source - Source frame ID
+   * @param {number} data.clientX - X coordinate relative to iframe where drag ended
+   * @param {number} data.clientY - Y coordinate relative to iframe where drag ended
+   * @private
+   * 
+   * @description
+   * Determines the drop target and sends the appropriate messages to complete
+   * the drag and drop operation. Handles both move and copy semantics.
+   * Table frames (ending with '-table' suffix) use copy semantics by default.
+   */
   handleIframeDragEnd(data) {
     if (!this.isDragging || !this.dragPreview) return;
 
@@ -242,6 +426,16 @@ export class IframeCommunicationManager {
     this.endDrag();
   }
 
+  /**
+   * Handle pointer move events in the parent window.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Updates the drag preview position and determines which frame is being
+   * hovered over during a drag operation.
+   */
   handlePointerMove(e) {
     if (!this.isDragging || !this.dragPreview) return;
 
@@ -257,6 +451,18 @@ export class IframeCommunicationManager {
     this.updateFrameHover(elementUnder, e.clientX, e.clientY);
   }
 
+  /**
+   * Update frame hover states during a drag operation.
+   * 
+   * @param {Element|null} elementUnder - Element under the pointer
+   * @param {number} clientX - X coordinate of pointer
+   * @param {number} clientY - Y coordinate of pointer
+   * @private
+   * 
+   * @description
+   * Sends parentDragMove messages to the hovered frame and parentDragLeave
+   * messages to all other frames. This provides visual feedback during drag.
+   */
   updateFrameHover(elementUnder, clientX, clientY) {
     // Find which frame we're over
     let hoveredFrameId = null;
@@ -315,6 +521,16 @@ export class IframeCommunicationManager {
     }
   }
 
+  /**
+   * Handle pointer up events in the parent window.
+   * 
+   * @param {PointerEvent} e - The pointer event
+   * @private
+   * 
+   * @description
+   * Completes a drag operation initiated in the parent window.
+   * Determines the drop target and sends appropriate drop messages.
+   */
   handlePointerUp(e) {
     if (!this.isDragging) return;
 
@@ -368,6 +584,15 @@ export class IframeCommunicationManager {
     this.endDrag();
   }
 
+  /**
+   * End the current drag operation and clean up.
+   * 
+   * @private
+   * 
+   * @description
+   * Removes the drag preview, resets state, and sends dragLeave messages
+   * to all frames to clear hover states.
+   */
   endDrag() {
     this.isDragging = false;
     this.dragData = null;
@@ -391,6 +616,17 @@ export class IframeCommunicationManager {
     }
   }
   
+  /**
+   * Handle successful drop operations.
+   * 
+   * @param {DragData} dragData - Data about the dropped item
+   * @param {string} targetFrameId - ID of the frame where item was dropped
+   * @private
+   * 
+   * @description
+   * Removes the item from the source frame if it was a cross-frame drop.
+   * Items dropped within the same frame are not removed.
+   */
   handleDropSuccess(dragData, targetFrameId) {
     // Only remove item from source if this is a cross-frame drop
     if (dragData.source !== targetFrameId) {
@@ -404,11 +640,31 @@ export class IframeCommunicationManager {
     }
   }
   
+  /**
+   * Handle failed drop operations.
+   * 
+   * @param {DragData} dragData - Data about the dropped item
+   * @private
+   * 
+   * @description
+   * Logs the failure. Item remains in the source frame.
+   */
   handleDropFailed(dragData) {
     // Do nothing - item stays in source frame
     console.log('Drop failed - item will remain in source frame');
   }
 
+  /**
+   * Handle row copied events from table frames.
+   * 
+   * @param {Object} data - Row copy data
+   * @param {Object} data.rowData - The copied row data
+   * @private
+   * 
+   * @description
+   * Relays the copied row data to all frames so they can handle paste operations.
+   * This is specific to the table demo functionality.
+   */
   handleRowCopied(data) {
     // Relay copied row data to all frames so they can paste
     console.log('Parent relaying rowCopied:', data.rowData?.description);
@@ -429,6 +685,16 @@ export class IframeCommunicationManager {
     }
   }
 
+  /**
+   * Handle paste requests from frames.
+   * 
+   * @param {string} targetFrameId - ID of the frame requesting paste
+   * @private
+   * 
+   * @description
+   * Sends the clipboard data to the requesting frame if available.
+   * Used for keyboard-based copy/paste operations.
+   */
   handlePasteRequest(targetFrameId) {
     if (!this.clipboardData) return;
     
