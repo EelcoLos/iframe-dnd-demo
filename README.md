@@ -8,31 +8,16 @@ View the live demo at: **[https://eelcolos.github.io/iframe-dnd-demo/](https://e
 
 ## 📋 Overview
 
-This demo offers two modes of drag-and-drop implementation:
+This demo implements cross-iframe and cross-window drag-and-drop systems:
 
-### 🖼️ iFrame Mode
-Classic drag-and-drop between two same-origin iframes:
-- **Parent page** (`/parent.html`) that hosts two iframes
-- **Frame A** (`/frame-a.html`) containing draggable items
-- **Frame B** (`/frame-b.html`) containing drop zones
-- Custom **Pointer Events-based** drag and drop implementation
-- Cross-iframe coordinate conversion
-- Real-time hover highlighting
-- Visual drag preview
+**iFrame Mode** - Classic drag-and-drop between two same-origin iframes
+**Cross-Window Mode** - Drag and drop between separate browser windows/tabs
 
-### 🪟 Cross-Window Mode (NEW!)
-Drag and drop between **separate browser windows/tabs**:
-- **Coordinator page** (`/parent-windows.html`) for managing windows
-- **Standalone draggable items window** (`/window-frame-a.html`)
-- **Standalone drop zones window** (`/window-frame-b.html`)
-- Uses **BroadcastChannel API** for cross-window communication
-- Windows can be positioned anywhere on your screen
-- Real-time synchronization between windows
-- Works across multiple browser tabs
+Both modes use custom Pointer Events for precise control and cross-context coordinate conversion.
 
 ## 🏗️ Architecture
 
-### iFrame Mode Architecture
+### iFrame Mode
 
 #### Parent Page
 - Hosts both iframes
@@ -53,32 +38,16 @@ Drag and drop between **separate browser windows/tabs**:
 - Listens for messages from parent to handle hover and drop events
 - Uses `elementFromPoint` to determine which drop zone is under the cursor
 
-### Cross-Window Mode Architecture
+### Cross-Window Mode
 
-#### BroadcastChannel Communication
-- Uses `BroadcastChannel` API for publish-subscribe messaging
-- All windows subscribe to the same channel name
-- Messages are broadcast to all connected windows
-- Window join/leave tracking for status management
+Uses BroadcastChannel/postMessage for cross-window communication. Provides both HTML5 Drag & Drop API implementation (default, simpler) and custom Pointer Events implementation (advanced, more control).
 
-#### Coordinator Window
-- Manages opening and closing of child windows
-- Displays real-time status of connected windows
-- Provides instructions for usage
-- Does not participate in drag operations
+**Usage:**
+1. Click "Cross-Window Mode" tab to open coordinator
+2. Open Draggable Items and Drop Zones windows
+3. Drag items between windows
 
-#### Draggable Items Window
-- Standalone window with draggable items
-- Broadcasts `dragStart`, `dragMove`, and `dragEnd` events
-- Shows local drag preview
-- Listens for `removeItem` messages to remove dropped items
-
-#### Drop Zones Window
-- Standalone window with drop zones
-- Listens for drag events from other windows
-- Highlights zones on mouse hover during drag
-- Handles drops when drag ends while mouse is over a zone
-- Can send dragged items back to other windows
+Windows can be positioned anywhere on your screen and across multiple monitors.
 
 ## 🚀 Getting Started
 
@@ -128,37 +97,11 @@ The root index page will show a selection screen to choose between iFrame Mode a
 
 ### Cross-Window Mode
 
-**Important:** Cross-window mode requires opening windows in a specific order through the Coordinator.
 
-1. Click "Cross-Window Mode" tab in the main demo (or open `/parent-windows.html` directly)
-   - This opens the **Coordinator window**
-2. In the Coordinator window, click "📦 Open Draggable Items Window"
-   - A new window opens with draggable items
-3. In the Coordinator window, click "🎯 Open Drop Zones Window"
-   - Another new window opens with drop zones
-4. Position the windows side-by-side on your screen
-5. Drag items from the Draggable Items window
-6. Drop them in the Drop Zones window
-7. Items are synchronized between windows in real-time!
-
-**Important Notes:**
-- ✅ Windows MUST be opened using the buttons in the Coordinator
-- ❌ Do NOT directly navigate to `window-frame-a.html` or `window-frame-b.html` 
-- 🔒 Make sure pop-ups are not blocked by your browser
-- 🪟 Keep all three windows open during drag operations
-
-**Troubleshooting:**
-If drag and drop isn't working, see the comprehensive guides:
-- **[HOW-TO-USE-CROSS-WINDOW.md](./HOW-TO-USE-CROSS-WINDOW.md)** - ⭐ **START HERE** - Complete usage guide explaining mouse requirements
-- [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) - Technical setup and architecture
-- [DEBUGGING.md](./DEBUGGING.md) - Detailed debugging with console logs
-- [SUMMARY.md](./SUMMARY.md) - Root cause analysis and fixes
-
-**Critical**: You must physically move your mouse into the Drop Zones window while dragging! See [HOW-TO-USE-CROSS-WINDOW.md](./HOW-TO-USE-CROSS-WINDOW.md) for detailed explanation of browser limitations and proper usage.
 
 ## 🛠️ Technical Implementation
 
-### iFrame Mode - Pointer Events Flow
+### Pointer Events Flow
 
 1. **Drag Start** (Frame A):
    - User presses pointer on draggable item
@@ -179,55 +122,13 @@ If drag and drop isn't working, see the comprehensive guides:
    - Frame B adds item to the drop zone
    - Parent cleans up drag state
 
-### Cross-Window Mode - BroadcastChannel Flow
-
-1. **Window Initialization**:
-   - Each window creates a `HybridCommunicationManager`
-   - Tries BroadcastChannel first, tests if it works
-   - Falls back to window.postMessage if BroadcastChannel is partitioned
-   - Coordinator registers child window references for message relay
-   - Announces presence with `windowJoined` message
-
-2. **Drag Start**:
-   - User drags item in Draggable Items window
-   - Broadcasts `dragStart` event (via BroadcastChannel or postMessage)
-   - Shows local drag preview in source window
-   - Drop Zones window enters "drag active" state
-
-3. **Drag Detection**:
-   - Drop Zones window uses `mouseenter`/`mouseleave` events
-   - Highlights zones when mouse hovers during active drag
-   - Tracks which zone is currently hovered
-
-4. **Drop**:
-   - On `pointerup`, source window broadcasts `dragEnd`
-   - Drop Zones window checks if mouse is over window and a zone
-   - If yes, adds item to zone and broadcasts `removeItem`
-   - Source window removes item from its list
-   - All windows update their state
-
-5. **Firefox Compatibility**:
-   - Automatically detects BroadcastChannel partitioning
-   - Seamlessly switches to postMessage relay
-   - Coordinator window relays messages between children
-   - No user configuration needed
-
-### Key Features - Both Modes
+### Key Features
 
 - **No HTML5 DnD**: Uses Pointer Events API for better control
 - **Visual Feedback**: Hover highlights and drag preview
 - **Pointer Capture**: Ensures reliable drag tracking even with fast mouse movements
-
-**iFrame Mode Specific:**
 - **Same-Origin**: All iframes are served from the same origin
 - **Coordinate Conversion**: Parent converts its coordinates to Frame B's coordinate system
-
-**Cross-Window Mode Specific:**
-- **Hybrid Communication**: BroadcastChannel with automatic postMessage fallback
-- **Firefox Compatible**: Works perfectly on Firefox despite ETP restrictions
-- **Window Registry**: Automatic tracking of active windows
-- **Independent Windows**: Can be positioned anywhere on screen
-- **Graceful Degradation**: Checks for BroadcastChannel support and adapts
 
 ## 📦 Build
 
