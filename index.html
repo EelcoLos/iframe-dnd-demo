@@ -4,13 +4,122 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>iframe-dnd-demo</title>
-    <script>
-      // Redirect to the parent.html demo page
-      window.location.href = 'parent.html';
-    </script>
+    <title>iframe-dnd-demo - Choose Demo Mode</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      
+      .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        padding: 50px;
+        max-width: 700px;
+        width: 100%;
+      }
+      
+      h1 {
+        color: #4f46e5;
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 2.5em;
+      }
+      
+      .subtitle {
+        text-align: center;
+        color: #64748b;
+        margin-bottom: 40px;
+        font-size: 1.1em;
+      }
+      
+      .options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 30px;
+      }
+      
+      .option-card {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      
+      .option-card:hover {
+        transform: translateY(-5px);
+        border-color: #4f46e5;
+        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);
+      }
+      
+      .option-icon {
+        font-size: 4em;
+        margin-bottom: 15px;
+      }
+      
+      .option-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 10px;
+      }
+      
+      .option-description {
+        color: #64748b;
+        line-height: 1.6;
+        font-size: 0.95em;
+      }
+      
+      @media (max-width: 640px) {
+        .options {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
-    <p>Redirecting to demo...</p>
+    <div class="container">
+      <h1>🎯 Drag & Drop Demo</h1>
+      <p class="subtitle">Choose your demo mode</p>
+      
+      <div class="options">
+        <a href="parent.html" class="option-card">
+          <div class="option-icon">🖼️</div>
+          <div class="option-title">iFrame Mode</div>
+          <div class="option-description">
+            Drag and drop between two iframes in a single page. Classic demo with parent coordination.
+          </div>
+        </a>
+        
+        <a href="parent-windows.html" class="option-card">
+          <div class="option-icon">🪟</div>
+          <div class="option-title">Cross-Window Mode</div>
+          <div class="option-description">
+            Drag and drop between separate browser windows using BroadcastChannel API.
+          </div>
+        </a>
+      </div>
+    </div>
   </body>
 </html>
