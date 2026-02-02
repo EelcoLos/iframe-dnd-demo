@@ -150,7 +150,6 @@
       const headerA = document.getElementById('header-a');
       const headerB = document.getElementById('header-b');
       const iframeContainer = document.getElementById('iframe-container');
-      const crossWindowContainer = document.getElementById('cross-window-container');
       
       if (demo === 'cross-window') {
         // Open cross-window coordinator in a new window
@@ -165,9 +164,8 @@
           }
         }, 100);
       } else {
-        // Show iframe container, hide cross-window container
+        // Show iframe container
         iframeContainer.style.display = 'flex';
-        crossWindowContainer.style.display = 'none';
         
         if (demo === 'table') {
           frameA.src = 'frame-a-table.html';
