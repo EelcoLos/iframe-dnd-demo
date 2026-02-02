@@ -226,13 +226,18 @@ export class HybridCommunicationManager {
         continue;
       }
       
-      // Additional validation
+      // Additional validation - verify window identity
       try {
         // Try to access a property to verify window is accessible
-        const isAccessible = windowRef.location !== undefined || true;
-        console.log(`[HybridComm] Window ${windowId} is open and accessible:`, !windowRef.closed);
+        const windowName = windowRef.name || 'unknown';
+        console.log(`[HybridComm] Window ${windowId} name:`, windowName, 'expected:', windowId === 'frame-a' ? 'DraggableItems' : 'DropZones');
+        
+        // Check if this is actually the window we think it is
+        if (windowName !== (windowId === 'frame-a' ? 'DraggableItems' : 'DropZones')) {
+          console.error(`[HybridComm] Window name mismatch! Expected ${windowId === 'frame-a' ? 'DraggableItems' : 'DropZones'} but got ${windowName}`);
+        }
       } catch (e) {
-        console.warn(`[HybridComm] Window ${windowId} exists but may be cross-origin:`, e.message);
+        console.warn(`[HybridComm] Cannot access window.name for ${windowId}:`, e.message);
       }
       
       try {

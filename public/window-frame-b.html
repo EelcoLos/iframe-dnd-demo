@@ -188,6 +188,10 @@
     // Listen for drag start
     broadcast.on('dragStart', (data) => {
       console.log('[frame-b] dragStart handler called with data:', data);
+      
+      // Send acknowledgment back to coordinator
+      broadcast.broadcast('messageReceived', { originalType: 'dragStart', receivedBy: 'frame-b' });
+      
       isDragActive = true;
       currentDragData = data;
       console.log('[frame-b] Drag started from another window, isDragActive:', isDragActive);
@@ -199,6 +203,10 @@
     // Listen for drag end
     broadcast.on('dragEnd', (data) => {
       console.log('[frame-b] dragEnd handler called, isDragActive:', isDragActive);
+      
+      // Send acknowledgment back to coordinator
+      broadcast.broadcast('messageReceived', { originalType: 'dragEnd', receivedBy: 'frame-b' });
+      
       if (!isDragActive) {
         console.warn('[frame-b] Ignoring dragEnd because isDragActive is false');
         return;

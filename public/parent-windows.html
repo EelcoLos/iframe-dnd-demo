@@ -290,9 +290,12 @@
         return;
       }
       
+      // Use unique window name to avoid reusing old windows
+      const uniqueName = `DraggableItems_${Date.now()}`;
+      
       windows['frame-a'] = window.open(
         'window-frame-a.html',
-        'DraggableItems',
+        uniqueName,
         'width=500,height=600,left=100,top=100'
       );
       
@@ -325,9 +328,12 @@
         return;
       }
       
+      // Use unique window name to avoid reusing old windows  
+      const uniqueName = `DropZones_${Date.now()}`;
+      
       windows['frame-b'] = window.open(
         'window-frame-b.html',
-        'DropZones',
+        uniqueName,
         'width=500,height=600,left=650,top=100'
       );
       
