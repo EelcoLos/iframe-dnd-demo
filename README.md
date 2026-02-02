@@ -128,15 +128,26 @@ The root index page will show a selection screen to choose between iFrame Mode a
 
 ### Cross-Window Mode
 
-1. Select "Cross-Window Mode" from the index page (or go to `/parent-windows.html`)
-2. Click "Open Draggable Items Window" to open the first window
-3. Click "Open Drop Zones Window" to open the second window
-4. Position the windows side-by-side or anywhere on your screen
+**Important:** Cross-window mode requires opening windows in a specific order through the Coordinator.
+
+1. Click "Cross-Window Mode" tab in the main demo (or open `/parent-windows.html` directly)
+   - This opens the **Coordinator window**
+2. In the Coordinator window, click "📦 Open Draggable Items Window"
+   - A new window opens with draggable items
+3. In the Coordinator window, click "🎯 Open Drop Zones Window"
+   - Another new window opens with drop zones
+4. Position the windows side-by-side on your screen
 5. Drag items from the Draggable Items window
 6. Drop them in the Drop Zones window
 7. Items are synchronized between windows in real-time!
 
-**Note:** Make sure pop-ups are not blocked by your browser for the cross-window mode to work.
+**Important Notes:**
+- ✅ Windows MUST be opened using the buttons in the Coordinator
+- ❌ Do NOT directly navigate to `window-frame-a.html` or `window-frame-b.html` 
+- 🔒 Make sure pop-ups are not blocked by your browser
+- 🪟 Keep all three windows open during drag operations
+
+If you open child windows incorrectly, you'll see a warning banner with instructions. See [CROSS-WINDOW-GUIDE.md](./CROSS-WINDOW-GUIDE.md) for detailed troubleshooting.
 
 ## 🛠️ Technical Implementation
 

@@ -299,6 +299,9 @@
       // Register window for postMessage relay
       if (windows['frame-a']) {
         broadcast.registerWindow('frame-a', windows['frame-a']);
+        console.log('[Coordinator] Opened and registered frame-a window');
+      } else {
+        console.error('[Coordinator] Failed to open frame-a - check popup blocker');
       }
     });
 
@@ -317,6 +320,9 @@
       // Register window for postMessage relay
       if (windows['frame-b']) {
         broadcast.registerWindow('frame-b', windows['frame-b']);
+        console.log('[Coordinator] Opened and registered frame-b window');
+      } else {
+        console.error('[Coordinator] Failed to open frame-b - check popup blocker');
       }
     });
 

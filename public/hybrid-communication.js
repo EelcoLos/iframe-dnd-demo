@@ -193,6 +193,8 @@ export class HybridCommunicationManager {
   relayMessage(message, sourceId) {
     if (!this.isCoordinator) return;
     
+    console.log(`[HybridComm] Coordinator relaying message type="${message.type}" from ${sourceId} to other windows`);
+    
     // Mark as relayed to prevent loops
     const relayedMessage = { ...message, relay: false };
     
@@ -208,6 +210,7 @@ export class HybridCommunicationManager {
       }
       
       try {
+        console.log(`[HybridComm] Relaying to ${windowId}`);
         windowRef.postMessage(relayedMessage, window.location.origin);
       } catch (e) {
         console.warn(`Failed to relay message to ${windowId}:`, e);
