@@ -144,17 +144,26 @@
 
     const windowId = 'frame-b';
     
+    console.log('[frame-b] Script loading, window.opener:', window.opener);
+    
     // Debug: Log ALL postMessage events
     window.addEventListener('message', (event) => {
       console.log('[frame-b DEBUG] Received raw message event:', event.origin, event.data);
-    });
+    }, false); // Explicitly set to bubble phase
+    
+    console.log('[frame-b] Raw message listener registered');
     
     const broadcast = new HybridCommunicationManager({ windowId });
     broadcast.initializeAsChild();
     
+    console.log('[frame-b] HybridCommunicationManager initialized');
+    
     // Show warning if no coordinator
     if (!window.opener || window.opener.closed) {
       document.getElementById('no-coordinator-warning').style.display = 'block';
+      console.error('[frame-b] NO COORDINATOR - window.opener is', window.opener);
+    } else {
+      console.log('[frame-b] Coordinator found:', window.opener);
     }
 
     const dropZones = document.querySelectorAll('.drop-zone');

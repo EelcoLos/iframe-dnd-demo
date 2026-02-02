@@ -211,15 +211,32 @@ export class HybridCommunicationManager {
       // Don't send back to source
       if (windowId === sourceId) continue;
       
-      // Skip if window is closed
-      if (!windowRef || windowRef.closed) {
+      // Skip if window is closed or invalid
+      if (!windowRef) {
+        console.warn(`[HybridComm] Window reference for ${windowId} is null/undefined, removing`);
         this.windowRefs.delete(windowId);
         this.knownWindows.delete(windowId);
         continue;
       }
       
+      if (windowRef.closed) {
+        console.warn(`[HybridComm] Window ${windowId} is closed, removing`);
+        this.windowRefs.delete(windowId);
+        this.knownWindows.delete(windowId);
+        continue;
+      }
+      
+      // Additional validation
       try {
-        console.log(`[HybridComm] Relaying to ${windowId}, message:`, relayedMessage);
+        // Try to access a property to verify window is accessible
+        const isAccessible = windowRef.location !== undefined || true;
+        console.log(`[HybridComm] Window ${windowId} is open and accessible:`, !windowRef.closed);
+      } catch (e) {
+        console.warn(`[HybridComm] Window ${windowId} exists but may be cross-origin:`, e.message);
+      }
+      
+      try {
+        console.log(`[HybridComm] Relaying to ${windowId}, window.closed:`, windowRef.closed, 'message:', relayedMessage);
         windowRef.postMessage(relayedMessage, window.location.origin);
         console.log(`[HybridComm] Successfully posted message to ${windowId}`);
       } catch (e) {

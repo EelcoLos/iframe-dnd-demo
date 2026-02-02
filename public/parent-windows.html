@@ -298,8 +298,22 @@
       
       // Register window for postMessage relay
       if (windows['frame-a']) {
+        console.log('[Coordinator] Window opened:', windows['frame-a']);
+        console.log('[Coordinator] Window name:', windows['frame-a'].name);
+        console.log('[Coordinator] Window closed?:', windows['frame-a'].closed);
         broadcast.registerWindow('frame-a', windows['frame-a']);
         console.log('[Coordinator] Opened and registered frame-a window');
+        
+        // Test posting a message immediately
+        setTimeout(() => {
+          console.log('[Coordinator] Testing immediate message to frame-a');
+          try {
+            windows['frame-a'].postMessage({type: 'test', source: 'coordinator', data: {}, timestamp: Date.now()}, window.location.origin);
+            console.log('[Coordinator] Test message posted to frame-a');
+          } catch (e) {
+            console.error('[Coordinator] Failed to post test message to frame-a:', e);
+          }
+        }, 1000);
       } else {
         console.error('[Coordinator] Failed to open frame-a - check popup blocker');
       }
@@ -319,8 +333,22 @@
       
       // Register window for postMessage relay
       if (windows['frame-b']) {
+        console.log('[Coordinator] Window opened:', windows['frame-b']);
+        console.log('[Coordinator] Window name:', windows['frame-b'].name);
+        console.log('[Coordinator] Window closed?:', windows['frame-b'].closed);
         broadcast.registerWindow('frame-b', windows['frame-b']);
         console.log('[Coordinator] Opened and registered frame-b window');
+        
+        // Test posting a message immediately
+        setTimeout(() => {
+          console.log('[Coordinator] Testing immediate message to frame-b');
+          try {
+            windows['frame-b'].postMessage({type: 'test', source: 'coordinator', data: {}, timestamp: Date.now()}, window.location.origin);
+            console.log('[Coordinator] Test message posted to frame-b');
+          } catch (e) {
+            console.error('[Coordinator] Failed to post test message to frame-b:', e);
+          }
+        }, 1000);
       } else {
         console.error('[Coordinator] Failed to open frame-b - check popup blocker');
       }
