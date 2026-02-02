@@ -54,6 +54,7 @@
     tbody tr {
       border-bottom: 1px solid #e2e8f0;
       cursor: move;
+      -webkit-user-select: none;
       user-select: none;
       transition: all 0.2s ease;
     }
@@ -119,6 +120,12 @@
       cursor: grabbing;
     }
 
+    /* Column widths */
+    th.col-handle { width: 40px; }
+    th.col-quantity { width: 100px; }
+    th.col-unit-price { width: 100px; }
+    th.col-amount { width: 120px; }
+
     td.number {
       text-align: right;
       font-variant-numeric: tabular-nums;
@@ -138,11 +145,11 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 40px;"></th>
+          <th class="col-handle"></th>
           <th>Description</th>
-          <th style="width: 100px;">Quantity</th>
-          <th style="width: 100px;">Unit Price</th>
-          <th style="width: 120px;">Amount</th>
+          <th class="col-quantity">Quantity</th>
+          <th class="col-unit-price">Unit Price</th>
+          <th class="col-amount">Amount</th>
         </tr>
       </thead>
       <tbody id="table-body">

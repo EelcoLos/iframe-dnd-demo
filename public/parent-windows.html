@@ -177,6 +177,45 @@
     .note strong {
       color: #92400e;
     }
+
+    .note-purple {
+      background: #e0e7ff;
+      border-color: #6366f1;
+    }
+
+    .note-violet {
+      background: #ddd6fe;
+      border-color: #7c3aed;
+    }
+
+    .note-emerald {
+      background: #d1fae5;
+      border-color: #10b981;
+    }
+
+    .btn-purple {
+      background: #8b5cf6;
+    }
+
+    .btn-purple:hover {
+      background: #7c3aed;
+    }
+
+    .btn-violet {
+      background: #7c3aed;
+    }
+
+    .btn-violet:hover {
+      background: #6d28d9;
+    }
+
+    .btn-emerald {
+      background: #10b981;
+    }
+
+    .btn-emerald:hover {
+      background: #059669;
+    }
   </style>
 </head>
 <body>
@@ -205,28 +244,41 @@
       </button>
     </div>
     
-    <div class="note" style="margin-top: 15px; margin-bottom: 15px; background: #e0e7ff; border-color: #6366f1;">
+    <div class="note note-purple">
       <strong>Advanced:</strong> Try the custom Pointer Events implementation (more control, cross-browser consistent visuals):
     </div>
     
     <div class="button-group">
-      <button class="btn" style="background: #8b5cf6;" id="open-frame-a">
+      <button class="btn btn-purple" id="open-frame-a">
         📦 Open Draggable Items (Custom)
       </button>
-      <button class="btn" style="background: #8b5cf6;" id="open-frame-b">
+      <button class="btn btn-purple" id="open-frame-b">
         🎯 Open Drop Zones (Custom)
       </button>
     </div>
     
-    <div class="note" style="margin-top: 15px; margin-bottom: 15px; background: #ddd6fe; border-color: #7c3aed;">
+    <div class="note note-violet">
       <strong>Table Demo:</strong> Try the table version with drag-and-drop rows and keyboard copy/paste (Ctrl+C, Ctrl+V):
     </div>
     
     <div class="button-group">
-      <button class="btn" style="background: #7c3aed;" id="open-frame-a-table">
+      <button class="btn" id="open-frame-a-table-html5">
+        📋 Open Available Items Table
+      </button>
+      <button class="btn" id="open-frame-b-table-html5">
+        📊 Open Construction Calc Table
+      </button>
+    </div>
+    
+    <div class="note note-emerald">
+      <strong>Table Demo (Custom):</strong> Custom Pointer Events version with advanced features:
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-violet" id="open-frame-a-table">
         📦 Open Available Items Table (Custom)
       </button>
-      <button class="btn" style="background: #7c3aed;" id="open-frame-b-table">
+      <button class="btn btn-violet" id="open-frame-b-table">
         📊 Open Construction Calc Table (Custom)
       </button>
     </div>
@@ -448,6 +500,29 @@
         'window-frame-b-html5.html',
         `DropZonesHTML5_${Date.now()}`,
         'width=500,height=600,left=650,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
+    });
+
+    // HTML5 Table version buttons
+    document.getElementById('open-frame-a-table-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-b-table-html5.html',  // Note: frame-b-table is the source in table demo
+        `SourceTableHTML5_${Date.now()}`,
+        'width=600,height=700,left=100,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
+    });
+
+    document.getElementById('open-frame-b-table-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-a-table-html5.html',  // Note: frame-a-table is the target in table demo
+        `CalculationTableHTML5_${Date.now()}`,
+        'width=700,height=700,left=750,top=100'
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
