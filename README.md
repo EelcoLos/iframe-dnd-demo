@@ -161,22 +161,113 @@ The test suite includes:
 ```bash
 # Run linter
 npm run lint
+
+# Generate API documentation
+npm run docs
+
+# Generate and serve API documentation
+npm run docs:serve
 ```
+
+## 📚 API Documentation
+
+This project includes comprehensive JSDoc documentation for all modules. To generate and view the full API documentation:
+
+```bash
+npm install  # Install JSDoc dependencies
+npm run docs  # Generate documentation in docs/ directory
+```
+
+For a quick API overview, see [API.md](./API.md).
+
+### Documentation Features
+- ✅ Complete JSDoc comments for all classes and methods
+- ✅ Type definitions and parameter documentation
+- ✅ Usage examples and code samples
+- ✅ Module architecture explanations
+- ✅ Message protocol documentation
+- ✅ Browser compatibility notes
 
 ## 📝 Project Structure
 
 ```
 iframe-dnd-demo/
 ├── public/
-│   ├── parent.html      # Parent page hosting iframes
-│   ├── frame-a.html     # Draggable items iframe
-│   └── frame-b.html     # Drop zones iframe
+│   ├── parent.html                      # Parent page hosting iframes
+│   ├── frame-a.html                     # Draggable items iframe
+│   ├── frame-b.html                     # Drop zones iframe
+│   ├── iframe-communication.js          # Parent coordination module
+│   ├── draggable-items-communication.js # Draggable items module
+│   └── drop-zones-communication.js      # Drop zones module
 ├── src/
-│   └── ...              # React app (not used in this demo)
+│   └── ...                              # React app (not used in this demo)
 ├── package.json
 ├── vite.config.ts
 └── README.md
 ```
+
+## 🔧 Using the Modules
+
+The iframe communication has been modularized into reusable ES6 modules. Here's how to use them:
+
+### Parent Window (Coordinator)
+
+```javascript
+import { IframeCommunicationManager } from './iframe-communication.js';
+
+const manager = new IframeCommunicationManager();
+
+// Initialize with any number of frames using generic IDs
+manager.initialize([
+  { id: 'source-panel', element: document.getElementById('frame-a') },
+  { id: 'target-panel', element: document.getElementById('frame-b') },
+  { id: 'preview-panel', element: document.getElementById('frame-c') }
+]);
+```
+
+### Child Frame (Draggable Items)
+
+```javascript
+import { DraggableItemsManager } from './draggable-items-communication.js';
+
+// Standard usage with drag capability
+const manager = new DraggableItemsManager({ 
+  frameId: 'source-panel' 
+});
+manager.initialize();
+
+// Receive-only mode (can only receive drops, not send drags)
+const receiveOnlyManager = new DraggableItemsManager({ 
+  frameId: 'preview-panel',
+  receiveOnly: true 
+});
+receiveOnlyManager.initialize();
+```
+
+### Child Frame (Drop Zones)
+
+```javascript
+import { DropZonesManager } from './drop-zones-communication.js';
+
+// Standard usage
+const manager = new DropZonesManager({ 
+  frameId: 'target-panel' 
+});
+manager.initialize();
+
+// Receive-only mode
+const receiveOnlyManager = new DropZonesManager({ 
+  frameId: 'locked-panel',
+  receiveOnly: true 
+});
+receiveOnlyManager.initialize();
+```
+
+**Key Features:**
+- ✅ **Generic frame IDs**: No hardcoded 'frame-a' or 'frame-b' - use any identifier
+- ✅ **Receive-only mode**: Frames can be configured to only receive drops
+- ✅ **Scalable**: Support for any number of frames
+- ✅ **Backward compatible**: Still supports simple string constructor for frameId
 
 ## 🎨 Features
 

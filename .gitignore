@@ -17,6 +17,9 @@ dist-ssr
 /playwright-report/
 /playwright/.cache/
 
+# Documentation (generated)
+/docs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
