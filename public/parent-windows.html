@@ -318,7 +318,11 @@
       'frame-a': null,
       'frame-b': null,
       'frame-a-table': null,
-      'frame-b-table': null
+      'frame-b-table': null,
+      'frame-a-html5': null,
+      'frame-b-html5': null,
+      'frame-a-table-html5': null,
+      'frame-b-table-html5': null
     };
 
     // Initialize hybrid manager as coordinator
@@ -507,6 +511,8 @@
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-a-html5'] = win;
       }
     });
     
@@ -518,6 +524,8 @@
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-b-html5'] = win;
       }
     });
 
@@ -530,6 +538,8 @@
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-a-table-html5'] = win;  // Storing as frame-a-table-html5 for clarity
       }
     });
 
@@ -541,6 +551,8 @@
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-b-table-html5'] = win;  // Storing as frame-b-table-html5 for clarity
       }
     });
 
