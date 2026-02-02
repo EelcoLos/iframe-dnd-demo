@@ -392,7 +392,7 @@ export class IframeCommunicationManager {
     for (const [targetFrameId, targetFrame] of this.frames.entries()) {
       const isOverFrame = this.isOverFrame(elementUnder, targetFrame, parentX, parentY);
       
-      if (isOverFrame && normalizedDragSource !== targetFrameId) {
+      if (isOverFrame) {
         const targetRect = targetFrame.getBoundingClientRect();
         const relativeX = parentX - targetRect.left;
         const relativeY = parentY - targetRect.top;
@@ -405,9 +405,10 @@ export class IframeCommunicationManager {
             dragData: this.dragData
           }, window.location.origin);
           
-          // Remove item from source frame if it's a move operation (not copy)
+          // Remove item from source frame if it's a move operation (not copy) AND dropping to a different frame
           // Table demos use copy semantics (source ends with '-table')
-          if (!this.dragData.source.endsWith('-table')) {
+          // For same-frame drops, the target frame will handle removing the old item before adding to new zone
+          if (!this.dragData.source.endsWith('-table') && normalizedDragSource !== targetFrameId) {
             const sourceFrameElement = this.getFrame(normalizedDragSource);
             if (sourceFrameElement) {
               sourceFrameElement.contentWindow.postMessage({
