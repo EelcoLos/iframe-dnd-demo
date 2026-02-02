@@ -222,7 +222,7 @@
     <p>while holding the mouse button down</p>
   </div>
   
-  <div id="drag-preview" class="drag-preview" role="status" aria-live="polite" aria-atomic="true">
+  <div id="drag-preview" class="drag-preview" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
     <div class="drag-preview-item"></div>
   </div>
   
@@ -264,26 +264,13 @@
 
     const windowId = 'frame-b';
     
-    console.log('[frame-b] Script loading, window.opener:', window.opener);
-    
-    // Debug: Log ALL postMessage events
-    window.addEventListener('message', (event) => {
-      console.log('[frame-b DEBUG] Received raw message event:', event.origin, event.data);
-    }, false); // Explicitly set to bubble phase
-    
-    console.log('[frame-b] Raw message listener registered');
-    
     const broadcast = new HybridCommunicationManager({ windowId });
     broadcast.initializeAsChild();
-    
-    console.log('[frame-b] HybridCommunicationManager initialized');
     
     // Show warning if no coordinator
     if (!window.opener || window.opener.closed) {
       document.getElementById('no-coordinator-warning').style.display = 'block';
       console.error('[frame-b] NO COORDINATOR - window.opener is', window.opener);
-    } else {
-      console.log('[frame-b] Coordinator found:', window.opener);
     }
 
     const dropZones = document.querySelectorAll('.drop-zone');
@@ -303,7 +290,6 @@
     // Track if mouse is over this window
     document.addEventListener('mouseenter', () => {
       isMouseOverWindow = true;
-      console.log('[frame-b] Mouse entered window');
       if (isDragActive) {
         // Hide instruction overlay when mouse enters
         dragInstruction.classList.remove('visible');
@@ -315,8 +301,8 @@
 
     document.addEventListener('mouseleave', () => {
       isMouseOverWindow = false;
-      console.log('[frame-b] Mouse left window');
       dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
       clearHoverStates();
       if (isDragActive) {
         // Show instruction overlay again when mouse leaves
@@ -328,8 +314,6 @@
 
     // Listen for drag start
     broadcast.on('dragStart', (data) => {
-      console.log('[frame-b] ✅ dragStart handler called with data:', data);
-      
       // VISUAL FEEDBACK
       statusIndicator.textContent = `🎬 Drag started: ${data.text}`;
       statusIndicator.className = 'status-indicator active';
@@ -345,7 +329,6 @@
       
       isDragActive = true;
       currentDragData = data;
-      console.log('[frame-b] Drag started from another window, isDragActive:', isDragActive);
       
       // Show visual feedback that drag is active
       document.body.style.cursor = 'grabbing';
@@ -379,8 +362,10 @@
         dragPreview.style.left = localX + 'px';
         dragPreview.style.top = localY + 'px';
         dragPreview.classList.add('visible');
+        dragPreview.setAttribute('aria-hidden', 'false');
       } else {
         dragPreview.classList.remove('visible');
+        dragPreview.setAttribute('aria-hidden', 'true');
       }
     });
 
@@ -401,7 +386,6 @@
         return;
       }
       
-      console.log('[frame-b] Drag ended, mouse over window:', isMouseOverWindow);
       
       // If mouse was over this window and over a zone, handle the drop
       if (isMouseOverWindow && currentHoveredZone && currentDragData) {
@@ -435,6 +419,7 @@
       document.body.style.cursor = '';
       document.body.classList.remove('drag-active');
       dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
       clearHoverStates();
     });
 
@@ -449,7 +434,6 @@
         if (isDragActive && currentDragData) {
           currentHoveredZone = zone;
           zone.classList.add('hover');
-          console.log('Hovering over zone:', zone.dataset.zone);
         }
       });
       
@@ -481,7 +465,6 @@
       // Make it draggable back out
       setupDraggableItem(item);
       
-      console.log('Item added to zone:', dragData.text);
     }
 
     // Setup dragging for items in drop zones
@@ -561,12 +544,31 @@
 
     // Listen for parent drop messages (for receiving items)
     broadcast.on('parentDrop', (data) => {
-      if (!data.dragData) return;
-      
-      // Find which zone should receive this
-      // This would need coordinate translation in a real implementation
-      // For now, we'll default to the first zone
-      const targetZone = dropZones[0];
+      if (!data || !data.dragData) return;
+      if (!dropZones || dropZones.length === 0) return;
+
+      // Find the drop zone at the given coordinates
+      let targetZone = null;
+      if (typeof data.clientX === 'number' && typeof data.clientY === 'number') {
+        for (const zone of dropZones) {
+          const rect = zone.getBoundingClientRect();
+          if (
+            data.clientX >= rect.left &&
+            data.clientX <= rect.right &&
+            data.clientY >= rect.top &&
+            data.clientY <= rect.bottom
+          ) {
+            targetZone = zone;
+            break;
+          }
+        }
+      }
+
+      // Fallback to the first zone if coordinates don't match any zone
+      if (!targetZone) {
+        targetZone = dropZones[0];
+      }
+
       addItemToZone(targetZone, data.dragData);
     });
 

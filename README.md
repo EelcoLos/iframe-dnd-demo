@@ -97,7 +97,19 @@ The root index page will show a selection screen to choose between iFrame Mode a
 
 ### Cross-Window Mode
 
+Cross-Window Mode lets you drag items between completely separate browser windows.
 
+1. From the index page, select **"Cross-Window Mode"**
+2. A coordinator page opens. Use the controls on this page to open:
+   - a **Draggable Items** window, and
+   - a **Drop Zones** window
+3. Arrange the separate windows anywhere on your desktop (including across multiple monitors)
+4. In the **Draggable Items** window, click and start dragging any item
+5. While holding the mouse button (or touch), move the pointer into the **Drop Zones** window
+6. Hover over a drop zone; it will respond visually when it can accept a drop
+7. Release the pointer to drop the item into the hovered zone
+
+The coordinator window manages communication between windows using BroadcastChannel (with automatic postMessage fallback for Firefox). Two implementations are available: HTML5 Drag & Drop API (default, simpler) and custom Pointer Events (advanced, more control).
 
 ## 🛠️ Technical Implementation
 

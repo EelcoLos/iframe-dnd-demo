@@ -283,7 +283,7 @@
       const newItem = document.createElement('div');
       newItem.className = 'draggable';
       newItem.dataset.id = data.dragData.id;
-      newItem.innerHTML = data.dragData.text;
+      newItem.textContent = data.dragData.text;
       
       container.appendChild(newItem);
       

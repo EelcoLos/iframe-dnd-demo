@@ -13,16 +13,29 @@
  */
 
 /**
+ * @typedef {Object} HybridCommunicationOptions
+ * @property {string} windowId - Unique identifier for this window
+ * @property {string} [channelName='iframe-dnd-channel'] - Channel name for BroadcastChannel
+ * @property {boolean} [debug=false] - Enable debug logging
+ */
+
+/**
  * Hybrid manager for cross-window communication.
  * Uses BroadcastChannel when available, postMessage as fallback.
  */
 export class HybridCommunicationManager {
+  /**
+   * Create a hybrid communication manager.
+   * @param {HybridCommunicationOptions} options - Configuration options
+   */
   constructor(options = {}) {
-    const { windowId, channelName = 'iframe-dnd-channel' } = options;
+    const { windowId, channelName = 'iframe-dnd-channel', debug = false } = options;
     
     if (!windowId) {
       throw new Error('windowId is required');
     }
+    
+    this.debug = debug;
     
     this.windowId = windowId;
     this.channelName = channelName;
@@ -43,6 +56,16 @@ export class HybridCommunicationManager {
         console.warn('BroadcastChannel failed, using postMessage fallback:', e);
         this.useBroadcastChannel = false;
       }
+    }
+  }
+  
+  /**
+   * Log debug messages if debug mode is enabled.
+   * @private
+   */
+  log(...args) {
+    if (this.debug) {
+      console.log('[HybridComm]', ...args);
     }
   }
   
@@ -226,17 +249,10 @@ export class HybridCommunicationManager {
         continue;
       }
       
-      // Additional validation - verify window identity
+      // Additional validation - verify window is accessible
       try {
         // Try to access window.name to verify window is accessible
         const windowName = windowRef.name || 'unknown';
-        const expectedPrefix = windowId === 'frame-a' ? 'DraggableItems' : 'DropZones';
-        console.log(`[HybridComm] Window ${windowId} name:`, windowName, 'expected prefix:', expectedPrefix);
-        
-        // Check if this is actually the window we think it is
-        if (!windowName.startsWith(expectedPrefix)) {
-          console.error(`[HybridComm] Window name mismatch! Expected name starting with ${expectedPrefix} but got ${windowName}`);
-        }
       } catch (e) {
         console.warn(`[HybridComm] Cannot access window.name for ${windowId}:`, e.message);
       }
