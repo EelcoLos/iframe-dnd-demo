@@ -16,6 +16,11 @@
       padding: 20px;
       background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
       min-height: 100vh;
+      transition: background 0.3s ease;
+    }
+    
+    body.drag-active {
+      background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
     }
 
     h2 {
@@ -105,9 +110,43 @@
       font-style: italic;
       padding: 20px;
     }
+    
+    .status-indicator {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #1e293b;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      display: none;
+    }
+    
+    .status-indicator.active {
+      display: block;
+      background: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+    
+    .status-indicator.success {
+      display: block;
+      background: #10b981;
+      animation: none;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
   </style>
 </head>
 <body>
+  <div id="status-indicator" class="status-indicator">Waiting for drag...</div>
+  
   <h2>🎯 Drop Zones</h2>
   <div class="drop-zones">
     <div class="drop-zone" data-zone="todo">
@@ -167,6 +206,7 @@
     }
 
     const dropZones = document.querySelectorAll('.drop-zone');
+    const statusIndicator = document.getElementById('status-indicator');
     let currentHoveredZone = null;
     let isDragActive = false;
     let draggedItemElement = null;
@@ -178,16 +218,31 @@
     // Track if mouse is over this window
     document.addEventListener('mouseenter', () => {
       isMouseOverWindow = true;
+      console.log('[frame-b] Mouse entered window');
+      if (isDragActive) {
+        statusIndicator.textContent = '🎯 Drop zone ready!';
+        statusIndicator.className = 'status-indicator active';
+      }
     });
 
     document.addEventListener('mouseleave', () => {
       isMouseOverWindow = false;
+      console.log('[frame-b] Mouse left window');
       clearHoverStates();
+      if (isDragActive) {
+        statusIndicator.textContent = '⚠️ Move mouse over window to drop';
+        statusIndicator.className = 'status-indicator active';
+      }
     });
 
     // Listen for drag start
     broadcast.on('dragStart', (data) => {
-      console.log('[frame-b] dragStart handler called with data:', data);
+      console.log('[frame-b] ✅ dragStart handler called with data:', data);
+      
+      // VISUAL FEEDBACK
+      statusIndicator.textContent = `🎬 Drag started: ${data.text}`;
+      statusIndicator.className = 'status-indicator active';
+      document.body.classList.add('drag-active');
       
       // Send acknowledgment back to coordinator
       broadcast.broadcast('messageReceived', { originalType: 'dragStart', receivedBy: 'frame-b' });
@@ -202,13 +257,15 @@
 
     // Listen for drag end
     broadcast.on('dragEnd', (data) => {
-      console.log('[frame-b] dragEnd handler called, isDragActive:', isDragActive);
+      console.log('[frame-b] ✅ dragEnd handler called, isDragActive:', isDragActive);
       
       // Send acknowledgment back to coordinator
       broadcast.broadcast('messageReceived', { originalType: 'dragEnd', receivedBy: 'frame-b' });
       
       if (!isDragActive) {
         console.warn('[frame-b] Ignoring dragEnd because isDragActive is false');
+        statusIndicator.textContent = '⚠️ dragEnd ignored (not active)';
+        statusIndicator.className = 'status-indicator';
         return;
       }
       
@@ -216,20 +273,35 @@
       
       // If mouse was over this window and over a zone, handle the drop
       if (isMouseOverWindow && currentHoveredZone && currentDragData) {
-        console.log('[frame-b] Dropping item into zone:', currentHoveredZone.dataset.zone);
+        console.log('[frame-b] ✅ Dropping item into zone:', currentHoveredZone.dataset.zone);
         addItemToZone(currentHoveredZone, currentDragData);
+        
+        // VISUAL FEEDBACK
+        statusIndicator.textContent = `✅ Dropped into ${currentHoveredZone.dataset.zone}!`;
+        statusIndicator.className = 'status-indicator success';
+        setTimeout(() => {
+          statusIndicator.style.display = 'none';
+        }, 3000);
         
         // Notify that item was dropped successfully
         broadcast.broadcast('removeItem', {
           id: currentDragData.id
         });
       } else {
-        console.log('[frame-b] Not dropping - isMouseOverWindow:', isMouseOverWindow, 'currentHoveredZone:', currentHoveredZone, 'currentDragData:', currentDragData);
+        console.log('[frame-b] ❌ Not dropping - isMouseOverWindow:', isMouseOverWindow, 'currentHoveredZone:', currentHoveredZone, 'currentDragData:', currentDragData);
+        
+        // VISUAL FEEDBACK
+        statusIndicator.textContent = '❌ Drop failed: Move mouse over window & zone';
+        statusIndicator.className = 'status-indicator';
+        setTimeout(() => {
+          statusIndicator.style.display = 'none';
+        }, 5000);
       }
       
       isDragActive = false;
       currentDragData = null;
       document.body.style.cursor = '';
+      document.body.classList.remove('drag-active');
       clearHoverStates();
     });
 
