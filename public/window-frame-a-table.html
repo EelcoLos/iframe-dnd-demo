@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frame A - Construction Table</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 14px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    tbody tr.data-row {
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+    }
+
+    tbody tr.data-row:hover {
+      background: #f8fafc;
+    }
+
+    tbody tr.dragging {
+      opacity: 0.5;
+    }
+
+    tbody tr.highlight {
+      background: #dbeafe;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
+    tbody tr.preview-insert {
+      background: #ede9fe;
+    }
+
+    tbody tr.selected {
+      background: #dbeafe;
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
+
+    tbody tr.copied {
+      animation: copiedFlash 0.5s ease;
+    }
+
+    @keyframes copiedFlash {
+      0%, 100% { background: transparent; }
+      50% { background: #86efac; }
+    }
+
+    tbody tr.drop-placeholder {
+      height: 4px;
+      background: #8b5cf6;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.5);
+    }
+
+    tbody tr.drop-placeholder td {
+      padding: 0;
+      height: 4px;
+      border: none;
+    }
+
+    td {
+      padding: 12px;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: #94a3b8;
+      font-size: 16px;
+      padding: 0 8px;
+      display: inline-block;
+    }
+
+    .drag-handle:hover {
+      color: #64748b;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    td.number {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.total {
+      font-weight: 600;
+      background: #f8fafc;
+    }
+
+    .hint {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9em;
+      margin-top: 15px;
+    }
+    
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      transform: translate(-50%, -50%);
+    }
+    
+    .drag-preview.visible {
+      opacity: 0.8;
+    }
+    
+    .drag-preview-item {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+      white-space: nowrap;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <h2>🏗️ Construction Calculation</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Description</th>
+          <th style="width: 100px;">Quantity</th>
+          <th style="width: 100px;">Unit Price</th>
+          <th style="width: 120px;">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="data-row" data-id="row-1" data-description="Foundation" data-quantity="1" data-unit-price="5000">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Foundation</td>
+          <td class="number">1</td>
+          <td class="number">$5,000.00</td>
+          <td class="number">$5,000.00</td>
+        </tr>
+        <tr class="data-row" data-id="row-2" data-description="Framing" data-quantity="1" data-unit-price="8000">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Framing</td>
+          <td class="number">1</td>
+          <td class="number">$8,000.00</td>
+          <td class="number">$8,000.00</td>
+        </tr>
+        <tr class="data-row" data-id="row-3" data-description="Roofing" data-quantity="1" data-unit-price="3500">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Roofing</td>
+          <td class="number">1</td>
+          <td class="number">$3,500.00</td>
+          <td class="number">$3,500.00</td>
+        </tr>
+        <tr>
+          <td colspan="4" class="total">Subtotal</td>
+          <td class="number total" id="subtotal">$16,500.00</td>
+        </tr>
+        <tr>
+          <td colspan="4" class="total">Grand Total</td>
+          <td class="number total" id="grand-total">$16,500.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hint">Drag rows from Frame B to insert them here | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
+
+  <div id="no-coordinator-warning" style="display: none; background: #fee; border: 2px solid #c33; border-radius: 8px; padding: 15px; margin-top: 20px; color: #a00;">
+    <strong>⚠️ Warning:</strong> This window was not opened from the Coordinator!
+    <br>
+    <small>Cross-window drag & drop requires opening windows from <a href="parent-windows.html" target="_blank">parent-windows.html</a></small>
+  </div>
+  
+  <div id="drag-preview" class="drag-preview" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <div class="drag-preview-item"></div>
+  </div>
+
+  <script type="module">
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Global error handler
+    window.addEventListener('error', (e) => {
+      console.error('[frame-a-table ERROR]', e.error || e.message);
+    });
+    
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('[frame-a-table PROMISE ERROR]', e.reason);
+    });
+
+    const windowId = 'frame-a-table';
+    
+    const broadcast = new HybridCommunicationManager({ windowId, debug: true });
+    broadcast.initializeAsChild();
+    
+    // Show warning if no coordinator
+    if (!window.opener || window.opener.closed) {
+      document.getElementById('no-coordinator-warning').style.display = 'block';
+    }
+
+    const dragPreview = document.getElementById('drag-preview');
+    const dragPreviewItem = dragPreview.querySelector('.drag-preview-item');
+    let currentDragElement = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
+    let previewRow = null;
+    let placeholderRow = null;
+    let previewData = null;
+    let selectedRow = null;
+    let copiedRowData = null;
+    let isMouseOverWindow = false;
+    const DRAG_THRESHOLD = 5;
+
+    // Track if mouse is over this window
+    document.addEventListener('mouseenter', () => {
+      isMouseOverWindow = true;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      isMouseOverWindow = false;
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+    });
+
+    // Calculate totals
+    function calculateTotals() {
+      const rows = document.querySelectorAll('.data-row');
+      let subtotal = 0;
+      
+      rows.forEach(row => {
+        const quantity = parseFloat(row.dataset.quantity || 0);
+        const unitPrice = parseFloat(row.dataset.unitPrice || 0);
+        subtotal += quantity * unitPrice;
+      });
+
+      const grandTotal = subtotal;
+
+      document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+      document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
+    }
+
+    function formatCurrency(amount) {
+      return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    // Set up draggable rows
+    function setupDraggables() {
+      document.querySelectorAll('.data-row').forEach(row => {
+        row.addEventListener('pointerdown', handlePointerDown);
+        row.addEventListener('click', handleRowClick);
+      });
+    }
+
+    setupDraggables();
+
+    // Handle row selection
+    function handleRowClick(e) {
+      if (isDragging) return;
+      
+      window.focus();
+      
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      
+      selectedRow = e.currentTarget;
+      selectedRow.classList.add('selected');
+    }
+
+    // Keyboard shortcuts for copy/paste
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+C or Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedRow) {
+          e.preventDefault();
+          copiedRowData = {
+            id: selectedRow.dataset.id,
+            description: selectedRow.dataset.description,
+            quantity: selectedRow.dataset.quantity,
+            unitPrice: selectedRow.dataset.unitPrice,
+            source: windowId
+          };
+          
+          selectedRow.classList.add('copied');
+          setTimeout(() => {
+            if (selectedRow) {
+              selectedRow.classList.remove('copied');
+            }
+          }, 500);
+          
+          console.log('Copied row:', copiedRowData.description);
+          
+          // Share copied data via broadcast
+          broadcast.broadcast('rowCopied', { rowData: copiedRowData });
+        }
+      }
+      
+      // Ctrl+V or Cmd+V
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if (copiedRowData) {
+          e.preventDefault();
+          pasteRow();
+        }
+      }
+    });
+
+    function handlePointerDown(e) {
+      e.preventDefault();
+      
+      currentDragElement = e.currentTarget;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      currentDragElement.setPointerCapture(e.pointerId);
+
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    }
+
+    function handlePointerMove(e) {
+      if (!currentDragElement) return;
+
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+
+      if (!isDragging && (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD)) {
+        isDragging = true;
+        currentDragElement.classList.add('dragging');
+
+        const dragData = {
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: windowId,
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          }
+        };
+
+        // Show drag preview
+        dragPreviewItem.textContent = dragData.text;
+        dragPreview.style.left = e.clientX + 'px';
+        dragPreview.style.top = e.clientY + 'px';
+        dragPreview.classList.add('visible');
+        dragPreview.setAttribute('aria-hidden', 'false');
+
+        broadcast.broadcast('dragStart', dragData);
+      }
+
+      if (isDragging) {
+        // Update preview position
+        dragPreview.style.left = e.clientX + 'px';
+        dragPreview.style.top = e.clientY + 'px';
+
+        broadcast.broadcast('dragMove', {
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: windowId,
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          },
+          clientX: e.clientX,
+          clientY: e.clientY,
+          screenX: e.screenX,
+          screenY: e.screenY
+        });
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!currentDragElement) return;
+
+      if (currentDragElement.hasPointerCapture(e.pointerId)) {
+        currentDragElement.releasePointerCapture(e.pointerId);
+      }
+
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDragging) {
+        broadcast.broadcast('dragEnd', {
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: windowId,
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          },
+          clientX: e.clientX,
+          clientY: e.clientY,
+          screenX: e.screenX,
+          screenY: e.screenY
+        });
+      }
+
+      currentDragElement.classList.remove('dragging');
+      currentDragElement = null;
+      isDragging = false;
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+    }
+
+    // Listen for dragMove events from other windows
+    broadcast.on('dragMove', (data) => {
+      if (data.source === windowId) return;
+
+      if (!data.screenX || !data.screenY) return;
+
+      // Convert screen coordinates to window-relative coordinates
+      const windowX = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+      const windowY = window.screenTop !== undefined ? window.screenTop : window.screenY;
+      
+      const localX = data.screenX - windowX;
+      const localY = data.screenY - windowY;
+
+      // Check if within window bounds
+      if (localX < 0 || localX > window.innerWidth || localY < 0 || localY > window.innerHeight) {
+        // Remove placeholder and preview when dragging outside
+        if (placeholderRow) {
+          placeholderRow.remove();
+          placeholderRow = null;
+        }
+        if (previewRow) {
+          previewRow.remove();
+          previewRow = null;
+        }
+        previewData = null;
+        calculateTotals();
+        return;
+      }
+
+      const element = document.elementFromPoint(localX, localY);
+      const tbody = document.getElementById('table-body');
+      
+      let targetRow = element?.closest('.data-row');
+      
+      if (element && tbody.contains(element)) {
+        const rows = Array.from(tbody.querySelectorAll('.data-row'));
+        let insertIndex = rows.length;
+        
+        if (targetRow) {
+          insertIndex = rows.indexOf(targetRow);
+          const rect = targetRow.getBoundingClientRect();
+          const midpoint = rect.top + rect.height / 2;
+          
+          if (localY > midpoint) {
+            insertIndex++;
+          }
+        }
+
+        if (!placeholderRow) {
+          placeholderRow = document.createElement('tr');
+          placeholderRow.className = 'drop-placeholder';
+          placeholderRow.innerHTML = '<td colspan="5"></td>';
+        }
+
+        if (!previewRow) {
+          const quantity = parseFloat(data.rowData?.quantity || 1);
+          const unitPrice = parseFloat(data.rowData?.unitPrice || 0);
+          const amount = quantity * unitPrice;
+
+          previewRow = document.createElement('tr');
+          previewRow.className = 'data-row preview-insert';
+          previewRow.innerHTML = `
+            <td><span class="drag-handle">⋮⋮</span></td>
+            <td>${data.rowData?.description || data.text}</td>
+            <td class="number">${quantity}</td>
+            <td class="number">${formatCurrency(unitPrice)}</td>
+            <td class="number">${formatCurrency(amount)}</td>
+          `;
+          previewRow.dataset.quantity = quantity;
+          previewRow.dataset.unitPrice = unitPrice;
+
+          previewData = data.rowData;
+        }
+
+        let referenceRow = null;
+        if (insertIndex < rows.length) {
+          referenceRow = rows[insertIndex];
+        } else {
+          referenceRow = tbody.querySelector('tr:not(.data-row)');
+        }
+
+        if (referenceRow) {
+          if (previewRow.nextSibling !== referenceRow || !tbody.contains(previewRow)) {
+            tbody.insertBefore(placeholderRow, referenceRow);
+            tbody.insertBefore(previewRow, referenceRow);
+            
+            calculateTotals();
+          }
+        }
+      } else {
+        if (placeholderRow) {
+          placeholderRow.remove();
+          placeholderRow = null;
+        }
+        if (previewRow) {
+          previewRow.remove();
+          previewRow = null;
+        }
+        previewData = null;
+        calculateTotals();
+      }
+    });
+
+    // Listen for dragEnd events
+    broadcast.on('dragEnd', (data) => {
+      if (data.source === windowId) return;
+
+      if (!data.screenX || !data.screenY) {
+        // Clean up preview
+        if (placeholderRow) {
+          placeholderRow.remove();
+          placeholderRow = null;
+        }
+        if (previewRow) {
+          previewRow.remove();
+          previewRow = null;
+        }
+        previewData = null;
+        calculateTotals();
+        return;
+      }
+
+      // Convert screen coordinates to window-relative coordinates
+      const windowX = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+      const windowY = window.screenTop !== undefined ? window.screenTop : window.screenY;
+      
+      const localX = data.screenX - windowX;
+      const localY = data.screenY - windowY;
+
+      // Remove placeholder
+      if (placeholderRow) {
+        placeholderRow.remove();
+        placeholderRow = null;
+      }
+
+      // Check if drop is within window bounds
+      if (localX >= 0 && localX <= window.innerWidth && localY >= 0 && localY <= window.innerHeight) {
+        const element = document.elementFromPoint(localX, localY);
+        const tbody = document.getElementById('table-body');
+
+        if (element && tbody.contains(element)) {
+          // Convert preview row to actual row
+          if (previewRow) {
+            previewRow.classList.remove('preview-insert');
+            previewRow.classList.add('highlight');
+            previewRow.dataset.id = data.id || `dropped-${Date.now()}`;
+            previewRow.dataset.description = data.rowData?.description || data.text;
+            
+            previewRow.addEventListener('pointerdown', handlePointerDown);
+            previewRow.addEventListener('click', handleRowClick);
+
+            setTimeout(() => {
+              if (previewRow) {
+                previewRow.classList.remove('highlight');
+              }
+            }, 1000);
+
+            previewRow = null;
+          }
+
+          previewData = null;
+          calculateTotals();
+
+          // Notify source to remove item
+          broadcast.broadcast('removeItem', { id: data.id });
+          return;
+        }
+      }
+
+      // Drop failed - remove preview
+      if (previewRow) {
+        previewRow.remove();
+        previewRow = null;
+      }
+      previewData = null;
+      calculateTotals();
+    });
+
+    // Listen for removeItem messages
+    broadcast.on('removeItem', (data) => {
+      const rowToRemove = document.querySelector(`[data-id="${data.id}"]`);
+      if (rowToRemove) {
+        rowToRemove.style.transition = 'all 0.2s ease';
+        rowToRemove.style.opacity = '0';
+        rowToRemove.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          rowToRemove.remove();
+          calculateTotals();
+        }, 200);
+      }
+    });
+
+    // Listen for rowCopied messages
+    broadcast.on('rowCopied', (data) => {
+      copiedRowData = data.rowData;
+      console.log('Received copied row data:', copiedRowData.description);
+    });
+
+    // Paste row function
+    function pasteRow() {
+      if (!copiedRowData) return;
+      
+      const tbody = document.getElementById('table-body');
+      const quantity = parseFloat(copiedRowData.quantity || 1);
+      const unitPrice = parseFloat(copiedRowData.unitPrice || 0);
+      const amount = quantity * unitPrice;
+      
+      const newRow = document.createElement('tr');
+      newRow.className = 'data-row highlight';
+      newRow.dataset.id = `pasted-${Date.now()}`;
+      newRow.dataset.description = copiedRowData.description;
+      newRow.dataset.quantity = quantity;
+      newRow.dataset.unitPrice = unitPrice;
+      newRow.innerHTML = `
+        <td><span class="drag-handle">⋮⋮</span></td>
+        <td>${copiedRowData.description}</td>
+        <td class="number">${quantity}</td>
+        <td class="number">${formatCurrency(unitPrice)}</td>
+        <td class="number">${formatCurrency(amount)}</td>
+      `;
+      
+      const subtotalRow = tbody.querySelector('tr:not(.data-row)');
+      if (selectedRow && selectedRow.parentNode === tbody) {
+        const nextSibling = selectedRow.nextElementSibling;
+        if (nextSibling && nextSibling.classList.contains('data-row')) {
+          tbody.insertBefore(newRow, nextSibling);
+        } else {
+          tbody.insertBefore(newRow, subtotalRow);
+        }
+      } else {
+        tbody.insertBefore(newRow, subtotalRow);
+      }
+      
+      newRow.addEventListener('pointerdown', handlePointerDown);
+      newRow.addEventListener('click', handleRowClick);
+      
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      selectedRow = newRow;
+      selectedRow.classList.add('selected');
+      
+      setTimeout(() => {
+        if (newRow) {
+          newRow.classList.remove('highlight');
+        }
+      }, 1000);
+      
+      calculateTotals();
+      console.log('Pasted row:', copiedRowData.description);
+    }
+
+    // Initial calculation
+    calculateTotals();
+  </script>
+</body>
+</html>
