@@ -232,6 +232,8 @@ export class HybridCommunicationManager {
    * Process incoming message
    */
   processMessage(message) {
+    console.log(`[HybridComm] ${this.windowId} processing message type="${message.type}"`, message);
+    
     // Track known windows
     if (message.type === 'windowJoined' && message.data?.windowId) {
       this.knownWindows.add(message.data.windowId);
@@ -243,6 +245,7 @@ export class HybridCommunicationManager {
     // Call registered handlers
     const handlers = this.messageHandlers.get(message.type);
     if (handlers) {
+      console.log(`[HybridComm] ${this.windowId} found ${handlers.length} handler(s) for type "${message.type}"`);
       handlers.forEach(handler => {
         try {
           handler(message.data, message.source);
@@ -250,6 +253,8 @@ export class HybridCommunicationManager {
           console.error('Error in message handler:', error);
         }
       });
+    } else {
+      console.warn(`[HybridComm] ${this.windowId} NO handlers registered for message type "${message.type}"`);
     }
   }
   

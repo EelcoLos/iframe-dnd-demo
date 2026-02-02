@@ -178,9 +178,10 @@
 
     // Listen for drag start
     broadcast.on('dragStart', (data) => {
+      console.log('[frame-b] dragStart handler called with data:', data);
       isDragActive = true;
       currentDragData = data;
-      console.log('Drag started from another window:', data);
+      console.log('[frame-b] Drag started from another window, isDragActive:', isDragActive);
       
       // Show visual feedback that drag is active
       document.body.style.cursor = 'grabbing';
@@ -188,18 +189,25 @@
 
     // Listen for drag end
     broadcast.on('dragEnd', (data) => {
-      if (!isDragActive) return;
+      console.log('[frame-b] dragEnd handler called, isDragActive:', isDragActive);
+      if (!isDragActive) {
+        console.warn('[frame-b] Ignoring dragEnd because isDragActive is false');
+        return;
+      }
       
-      console.log('Drag ended, mouse over window:', isMouseOverWindow);
+      console.log('[frame-b] Drag ended, mouse over window:', isMouseOverWindow);
       
       // If mouse was over this window and over a zone, handle the drop
       if (isMouseOverWindow && currentHoveredZone && currentDragData) {
+        console.log('[frame-b] Dropping item into zone:', currentHoveredZone.dataset.zone);
         addItemToZone(currentHoveredZone, currentDragData);
         
         // Notify that item was dropped successfully
         broadcast.broadcast('removeItem', {
           id: currentDragData.id
         });
+      } else {
+        console.log('[frame-b] Not dropping - isMouseOverWindow:', isMouseOverWindow, 'currentHoveredZone:', currentHoveredZone, 'currentDragData:', currentDragData);
       }
       
       isDragActive = false;
