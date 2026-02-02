@@ -105,24 +105,31 @@ export class HybridCommunicationManager {
     const testId = Math.random().toString(36).slice(2, 11);
     let received = false;
     
-    const handler = (data) => {
-      if (data.testId === testId) {
+    // Set up a temporary listener that processes ALL messages for testing
+    const testHandler = (event) => {
+      const message = event.data;
+      if (message.type === 'broadcastTest' && message.data?.testId === testId) {
         received = true;
+        console.log('[HybridComm] BroadcastChannel test message received - channel is working');
       }
     };
     
-    this.on('broadcastTest', handler);
+    this.channel.addEventListener('message', testHandler);
+    
+    console.log('[HybridComm] Testing BroadcastChannel connectivity for', this.windowId);
     this.broadcast('broadcastTest', { testId });
     
-    // Wait to see if we receive our own message
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait to see if we receive our own message (BroadcastChannel sends to all including self)
+    await new Promise(resolve => setTimeout(resolve, 200));
     
-    this.off('broadcastTest', handler);
+    this.channel.removeEventListener('message', testHandler);
     
     // If we didn't receive our own broadcast, it's partitioned
-    if (!received && !this.isCoordinator) {
-      console.warn('BroadcastChannel appears to be partitioned, using postMessage fallback');
+    if (!received) {
+      console.warn('[HybridComm] BroadcastChannel appears to be partitioned for', this.windowId, '- using postMessage fallback');
       this.useBroadcastChannel = false;
+    } else {
+      console.log('[HybridComm] BroadcastChannel is working for', this.windowId);
     }
   }
   
@@ -163,6 +170,8 @@ export class HybridCommunicationManager {
     
     // Ignore messages from self
     if (message.source === this.windowId) return;
+    
+    console.log(`[HybridComm] ${this.windowId} received via postMessage:`, message.type, 'from', message.source);
     
     // If we're the coordinator, relay to other windows
     if (this.isCoordinator && message.relay !== false) {
@@ -255,13 +264,15 @@ export class HybridCommunicationManager {
       relay: true
     };
     
+    console.log(`[HybridComm] ${this.windowId} broadcasting:`, type, this.useBroadcastChannel ? '(via BroadcastChannel)' : '(via postMessage)');
+    
     // Try BroadcastChannel first
     if (this.useBroadcastChannel && this.channel) {
       try {
         this.channel.postMessage(message);
         return; // Success, no need for fallback
       } catch (error) {
-        console.warn('BroadcastChannel failed, using postMessage:', error);
+        console.warn('[HybridComm] BroadcastChannel failed, using postMessage:', error);
         this.useBroadcastChannel = false;
       }
     }
