@@ -533,6 +533,19 @@
       } else if (event.data.type === 'rowCopied') {
         copiedRowData = event.data.data.rowData;
         console.log('Received copied row data:', copiedRowData.description);
+      } else if (event.data.type === 'html5DragStart') {
+        // Store drag data from other window for preview
+        currentDragData = event.data.data;
+        console.log('[HTML5 DnD] Received drag start from other window:', currentDragData.description);
+      } else if (event.data.type === 'html5DragEnd') {
+        // Clear drag data and preview when drag ends
+        console.log('[HTML5 DnD] Received drag end from other window');
+        currentDragData = null;
+        if (previewRow) {
+          previewRow.remove();
+          previewRow = null;
+          calculateTotals();
+        }
       }
     });
 

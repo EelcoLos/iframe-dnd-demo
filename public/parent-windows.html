@@ -374,6 +374,21 @@
       }
     });
 
+    // Relay HTML5 drag messages between windows (for table HTML5 versions)
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      
+      // Relay html5DragStart and html5DragEnd to all open windows
+      if (event.data.type === 'html5DragStart' || event.data.type === 'html5DragEnd' || event.data.type === 'rowCopied') {
+        // Broadcast to all windows except the sender
+        Object.entries(windows).forEach(([id, win]) => {
+          if (win && !win.closed && win !== event.source) {
+            win.postMessage(event.data, window.location.origin);
+          }
+        });
+      }
+    });
+
     // Open window buttons
     document.getElementById('open-frame-a').addEventListener('click', () => {
       if (windows['frame-a'] && !windows['frame-a'].closed) {
