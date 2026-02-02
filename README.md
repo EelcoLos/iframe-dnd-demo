@@ -164,14 +164,15 @@ The root index page will show a selection screen to choose between iFrame Mode a
 ### Cross-Window Mode - BroadcastChannel Flow
 
 1. **Window Initialization**:
-   - Each window creates a `BroadcastCommunicationManager`
-   - Connects to shared channel (default: 'iframe-dnd-channel')
+   - Each window creates a `HybridCommunicationManager`
+   - Tries BroadcastChannel first, tests if it works
+   - Falls back to window.postMessage if BroadcastChannel is partitioned
+   - Coordinator registers child window references for message relay
    - Announces presence with `windowJoined` message
-   - Other windows respond to build registry of active windows
 
 2. **Drag Start**:
    - User drags item in Draggable Items window
-   - Broadcasts `dragStart` event to all windows
+   - Broadcasts `dragStart` event (via BroadcastChannel or postMessage)
    - Shows local drag preview in source window
    - Drop Zones window enters "drag active" state
 
@@ -187,6 +188,12 @@ The root index page will show a selection screen to choose between iFrame Mode a
    - Source window removes item from its list
    - All windows update their state
 
+5. **Firefox Compatibility**:
+   - Automatically detects BroadcastChannel partitioning
+   - Seamlessly switches to postMessage relay
+   - Coordinator window relays messages between children
+   - No user configuration needed
+
 ### Key Features - Both Modes
 
 - **No HTML5 DnD**: Uses Pointer Events API for better control
@@ -198,10 +205,11 @@ The root index page will show a selection screen to choose between iFrame Mode a
 - **Coordinate Conversion**: Parent converts its coordinates to Frame B's coordinate system
 
 **Cross-Window Mode Specific:**
-- **BroadcastChannel API**: Real-time communication between windows/tabs
+- **Hybrid Communication**: BroadcastChannel with automatic postMessage fallback
+- **Firefox Compatible**: Works perfectly on Firefox despite ETP restrictions
 - **Window Registry**: Automatic tracking of active windows
 - **Independent Windows**: Can be positioned anywhere on screen
-- **Graceful Degradation**: Checks for BroadcastChannel support
+- **Graceful Degradation**: Checks for BroadcastChannel support and adapts
 
 ## 📦 Build
 
@@ -296,7 +304,8 @@ iframe-dnd-demo/
 │   ├── parent-windows.html              # Coordinator for managing windows
 │   ├── window-frame-a.html              # Standalone draggable items window
 │   ├── window-frame-b.html              # Standalone drop zones window
-│   └── broadcast-communication.js       # BroadcastChannel manager
+│   ├── hybrid-communication.js          # Hybrid BroadcastChannel/postMessage manager (Firefox compatible)
+│   └── broadcast-communication.js       # BroadcastChannel manager (legacy, Chrome/Edge only)
 ├── src/
 │   └── ...                              # React app (not used in this demo)
 ├── e2e/
@@ -376,7 +385,58 @@ receiveOnlyManager.initialize();
 
 The BroadcastChannel-based communication enables drag and drop between separate windows:
 
-#### BroadcastCommunicationManager
+#### HybridCommunicationManager (Recommended for Cross-Window)
+
+```javascript
+import { HybridCommunicationManager } from './hybrid-communication.js';
+
+// Coordinator window (opens child windows)
+const coordinator = new HybridCommunicationManager({
+  windowId: 'coordinator',
+  channelName: 'iframe-dnd-channel' // optional
+});
+
+coordinator.initializeAsCoordinator();
+
+// Register child windows for postMessage relay (Firefox compatibility)
+const childWindow = window.open('child.html', 'Child', 'width=500,height=600');
+coordinator.registerWindow('child-window', childWindow);
+
+// Child window
+const child = new HybridCommunicationManager({
+  windowId: 'child-window'
+});
+
+child.initializeAsChild();
+
+// Listen for messages (same API for both coordinator and child)
+child.on('dragStart', (data, sourceWindowId) => {
+  console.log('Drag started from', sourceWindowId, data);
+});
+
+// Broadcast to all windows
+child.broadcast('dragStart', {
+  text: 'Item 1',
+  id: '1'
+});
+
+// Send to specific window
+child.sendTo('target-window', 'drop', { itemId: '1' });
+
+// Get list of connected windows
+const windows = child.getKnownWindows();
+```
+
+**Key Features:**
+- ✅ **Hybrid Communication**: BroadcastChannel with automatic postMessage fallback
+- ✅ **Firefox Compatible**: Detects and handles BroadcastChannel partitioning
+- ✅ **Pub/Sub Pattern**: Broadcast messages to all connected windows
+- ✅ **Window Registry**: Automatic tracking of active windows
+- ✅ **Event Handlers**: Register callbacks for specific message types
+- ✅ **Coordinator Pattern**: Central relay for message routing when needed
+- ✅ **Graceful Cleanup**: Announces window departure on close
+
+#### BroadcastCommunicationManager (Legacy - Chrome/Edge only)
 
 ```javascript
 import { BroadcastCommunicationManager } from './broadcast-communication.js';
@@ -407,12 +467,7 @@ broadcast.sendTo('target-window', 'drop', { itemId: '1' });
 const windows = broadcast.getKnownWindows();
 ```
 
-**Key Features:**
-- ✅ **Pub/Sub Pattern**: Broadcast messages to all connected windows
-- ✅ **Window Registry**: Automatic tracking of active windows
-- ✅ **Event Handlers**: Register callbacks for specific message types
-- ✅ **Graceful Cleanup**: Announces window departure on close
-- ✅ **Browser Support Check**: Validates BroadcastChannel availability
+**Note:** This manager only uses BroadcastChannel and may not work on Firefox. Use `HybridCommunicationManager` for cross-browser compatibility.
 
 ## 🎨 Features
 
@@ -449,9 +504,10 @@ The Cross-Window mode requires the BroadcastChannel API, which is supported in:
 **Not supported in:**
 - ❌ Internet Explorer (use iFrame mode instead)
 
-The cross-window demo will show an error if BroadcastChannel is not available.
+**Firefox Compatibility:**
+Firefox's Enhanced Tracking Protection (ETP) partitions BroadcastChannel between windows opened with `window.open()`. The demo automatically detects this and falls back to `window.postMessage` relay through the coordinator window. This ensures the cross-window demo works perfectly on Firefox without any user configuration needed.
 
-### Firefox Enhanced Tracking Protection
+### iFrame Mode - Firefox Enhanced Tracking Protection
 
 Firefox's Enhanced Tracking Protection (ETP) can interfere with cross-iframe communication when using wildcard (`'*'`) as the target origin in `postMessage` calls. This project has been updated to use explicit origins (`window.location.origin`) instead of wildcards to ensure compatibility with Firefox's default and strict ETP settings.
 
