@@ -165,7 +165,9 @@
         if (!data) {
           const text = e.dataTransfer.getData('text/plain');
           if (text) {
-            data = { text, id: Date.now().toString() };
+            // Use crypto.randomUUID() for robust ID generation
+            const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            data = { text, id };
           }
         }
 

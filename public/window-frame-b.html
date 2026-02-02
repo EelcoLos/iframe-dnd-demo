@@ -222,7 +222,7 @@
     <p>while holding the mouse button down</p>
   </div>
   
-  <div id="drag-preview" class="drag-preview">
+  <div id="drag-preview" class="drag-preview" role="status" aria-live="polite" aria-atomic="true">
     <div class="drag-preview-item"></div>
   </div>
   
@@ -298,6 +298,7 @@
     let currentDragData = null;
     let isMouseOverWindow = false;
     const DRAG_THRESHOLD = 5;
+    const BOUNDARY_MARGIN = 50; // Pixels of margin around window bounds for showing preview
 
     // Track if mouse is over this window
     document.addEventListener('mouseenter', () => {
@@ -370,9 +371,9 @@
       const localX = data.screenX - windowX;
       const localY = data.screenY - windowY;
       
-      // Check if cursor would be within our window bounds (with some margin)
-      const isWithinBounds = localX >= -50 && localX <= window.innerWidth + 50 &&
-                            localY >= -50 && localY <= window.innerHeight + 50;
+      // Check if cursor would be within our window bounds (with margin for smooth transition)
+      const isWithinBounds = localX >= -BOUNDARY_MARGIN && localX <= window.innerWidth + BOUNDARY_MARGIN &&
+                            localY >= -BOUNDARY_MARGIN && localY <= window.innerHeight + BOUNDARY_MARGIN;
       
       if (isWithinBounds) {
         dragPreview.style.left = localX + 'px';
