@@ -271,7 +271,7 @@ export class HybridCommunicationManager {
    * Process incoming message
    */
   processMessage(message) {
-    console.log(`[HybridComm] ${this.windowId} processing message type="${message.type}"`, message);
+    console.log('[HybridComm] %s processing message type="%s"', this.windowId, message.type, message);
     
     // Track known windows
     if (message.type === 'windowJoined' && message.data?.windowId) {
