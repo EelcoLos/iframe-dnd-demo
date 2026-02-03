@@ -193,18 +193,13 @@
   </div>
   <div class="hint">Drag items to Frame A's calculation table | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
 
-  <script>
+  <script type="module">
+    import { escapeHtml, validateId, isValidRowData, createMessageHandler } from './html5-window-communication.js';
+
     const windowId = 'frame-b-table-html5';
     let selectedRow = null;
     let copiedRowData = null;
     let idCounter = 0;
-
-    // HTML escape function to prevent XSS
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
 
     function formatCurrency(amount) {
       return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
@@ -354,26 +349,43 @@
     }
 
     // Listen for messages from other windows
-    window.addEventListener('message', (event) => {
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data.type === 'removeItem' && event.data.data?.id) {
-        const row = document.querySelector(`[data-id="${event.data.data.id}"]`);
+    const messageHandlers = {
+      removeItem: (data) => {
+        const id = validateId(data.data?.id);
+        if (!id) {
+          console.warn('[HTML5 DnD] Ignoring removeItem with invalid id:', data.data?.id);
+          return;
+        }
+
+        const row = document.querySelector(`[data-id="${id}"]`);
         if (row) {
           row.style.animation = 'fadeOut 0.3s ease';
           setTimeout(() => row.remove(), 300);
         }
-      } else if (event.data.type === 'rowCopied') {
-        copiedRowData = event.data.data.rowData;
+      },
+
+      rowCopied: (data) => {
+        const rowData = data.data?.rowData;
+        if (!isValidRowData(rowData)) {
+          console.warn('[HTML5 DnD] Ignoring invalid rowCopied data:', rowData);
+          return;
+        }
+        copiedRowData = rowData;
         console.log('Received copied row data:', copiedRowData.description);
-      } else if (event.data.type === 'html5DragStart') {
-        console.log('[HTML5 DnD] Drag started in other window:', event.data.data);
+      },
+
+      html5DragStart: (data) => {
+        console.log('[HTML5 DnD] Drag started in other window:', data.data);
         document.body.classList.add('drag-active');
-      } else if (event.data.type === 'html5DragEnd') {
+      },
+
+      html5DragEnd: (data) => {
         console.log('[HTML5 DnD] Drag ended in other window');
         document.body.classList.remove('drag-active');
       }
-    });
+    };
+
+    window.addEventListener('message', createMessageHandler(messageHandlers, window.location.origin));
   </script>
 </body>
 </html>

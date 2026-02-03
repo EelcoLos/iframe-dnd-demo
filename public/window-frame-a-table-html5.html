@@ -184,7 +184,9 @@
   </div>
   <div class="hint">Drag rows from Frame B to insert them here | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
 
-  <script>
+  <script type="module">
+    import { escapeHtml, validateId, isValidRowData, createMessageHandler } from './html5-window-communication.js';
+
     const windowId = 'frame-a-table-html5';
     let selectedRow = null;
     let copiedRowData = null;
@@ -192,13 +194,6 @@
     let idCounter = 0;
     let previewRow = null;  // Preview row shown during dragover
     let currentDragData = null;  // Data from current drag operation
-
-    // HTML escape function to prevent XSS
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
 
     // Calculate totals
     function calculateTotals() {
@@ -516,11 +511,15 @@
     });
 
     // Listen for messages from other windows
-    window.addEventListener('message', (event) => {
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data.type === 'removeItem' && event.data.data?.id) {
-        const rowToRemove = document.querySelector(`[data-id="${event.data.data.id}"]`);
+    const messageHandlers = {
+      removeItem: (data) => {
+        const id = validateId(data.data?.id);
+        if (!id) {
+          console.warn('[HTML5 DnD] Ignoring removeItem with invalid id:', data.data?.id);
+          return;
+        }
+
+        const rowToRemove = document.querySelector(`[data-id="${id}"]`);
         if (rowToRemove && rowToRemove.classList.contains('data-row')) {
           rowToRemove.style.transition = 'all 0.2s ease';
           rowToRemove.style.opacity = '0';
@@ -530,15 +529,29 @@
             calculateTotals();
           }, 200);
         }
-      } else if (event.data.type === 'rowCopied') {
-        copiedRowData = event.data.data.rowData;
+      },
+
+      rowCopied: (data) => {
+        const rowData = data.data?.rowData;
+        if (!isValidRowData(rowData)) {
+          console.warn('[HTML5 DnD] Ignoring invalid rowCopied data:', rowData);
+          return;
+        }
+        copiedRowData = rowData;
         console.log('Received copied row data:', copiedRowData.description);
-      } else if (event.data.type === 'html5DragStart') {
-        // Store drag data from other window for preview
-        currentDragData = event.data.data;
+      },
+
+      html5DragStart: (data) => {
+        const dragData = data.data;
+        if (!isValidRowData(dragData)) {
+          console.warn('[HTML5 DnD] Ignoring invalid drag start data:', dragData);
+          return;
+        }
+        currentDragData = dragData;
         console.log('[HTML5 DnD] Received drag start from other window:', currentDragData.description);
-      } else if (event.data.type === 'html5DragEnd') {
-        // Clear drag data and preview when drag ends
+      },
+
+      html5DragEnd: (data) => {
         console.log('[HTML5 DnD] Received drag end from other window');
         currentDragData = null;
         if (previewRow) {
@@ -547,7 +560,9 @@
           calculateTotals();
         }
       }
-    });
+    };
+
+    window.addEventListener('message', createMessageHandler(messageHandlers, window.location.origin));
 
     // Paste row function
     function pasteRow() {

@@ -379,18 +379,28 @@
     });
 
     // Relay HTML5 drag messages between windows (for table HTML5 versions)
+    const RELAYED_MESSAGE_TYPES = new Set(['html5DragStart', 'html5DragEnd', 'rowCopied']);
+
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin) return;
-      
-      // Relay html5DragStart and html5DragEnd to all open windows
-      if (event.data.type === 'html5DragStart' || event.data.type === 'html5DragEnd' || event.data.type === 'rowCopied') {
-        // Broadcast to all windows except the sender
-        Object.entries(windows).forEach(([id, win]) => {
-          if (win && !win.closed && win !== event.source) {
-            win.postMessage(event.data, window.location.origin);
-          }
-        });
+
+      const data = event.data;
+      // Validate message structure before relaying
+      if (
+        typeof data !== 'object' ||
+        data === null ||
+        typeof data.type !== 'string' ||
+        !RELAYED_MESSAGE_TYPES.has(data.type)
+      ) {
+        return;
       }
+
+      // Relay validated messages to all open windows except the sender
+      Object.entries(windows).forEach(([id, win]) => {
+        if (win && !win.closed && win !== event.source) {
+          win.postMessage(data, window.location.origin);
+        }
+      });
     });
 
     // Open window buttons
