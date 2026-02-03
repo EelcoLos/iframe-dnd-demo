@@ -44,8 +44,7 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
       const firstRow = document.querySelector('tbody tr.candidate-row') as HTMLElement;
       const dragStartEvent = new DragEvent('dragstart', {
         bubbles: true,
-        cancelable: true,
-        dataTransfer: new DataTransfer()
+        cancelable: true
       });
       
       // Set up data transfer
@@ -101,8 +100,7 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
         bubbles: true,
         cancelable: true,
         clientX: rect.left + rect.width / 2,
-        clientY: rect.top + 5, // Near the top of the first row
-        dataTransfer: new DataTransfer()
+        clientY: rect.top + 5 // Near the top of the first row
       });
       
       // Set up data transfer with the row data
@@ -187,8 +185,7 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
         bubbles: true,
         cancelable: true,
         clientX: rect.left + rect.width / 2,
-        clientY: rect.top + 5, // Near the top of the second row
-        dataTransfer: new DataTransfer()
+        clientY: rect.top + 5 // Near the top of the second row
       });
       
       Object.defineProperty(dropEvent, 'dataTransfer', {
@@ -256,8 +253,7 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
         bubbles: true,
         cancelable: true,
         clientX: rect.left + rect.width / 2,
-        clientY: rect.bottom + 50, // Well below the last row
-        dataTransfer: new DataTransfer()
+        clientY: rect.bottom + 50 // Well below the last row
       });
       
       Object.defineProperty(dropEvent, 'dataTransfer', {
