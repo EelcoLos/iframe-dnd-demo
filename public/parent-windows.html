@@ -177,6 +177,45 @@
     .note strong {
       color: #92400e;
     }
+
+    .note-purple {
+      background: #e0e7ff;
+      border-color: #6366f1;
+    }
+
+    .note-violet {
+      background: #ddd6fe;
+      border-color: #7c3aed;
+    }
+
+    .note-emerald {
+      background: #d1fae5;
+      border-color: #10b981;
+    }
+
+    .btn-purple {
+      background: #8b5cf6;
+    }
+
+    .btn-purple:hover {
+      background: #7c3aed;
+    }
+
+    .btn-violet {
+      background: #7c3aed;
+    }
+
+    .btn-violet:hover {
+      background: #6d28d9;
+    }
+
+    .btn-emerald {
+      background: #10b981;
+    }
+
+    .btn-emerald:hover {
+      background: #059669;
+    }
   </style>
 </head>
 <body>
@@ -192,6 +231,7 @@
         <li>Drag items from the Draggable Items window</li>
         <li>Drop them in the Drop Zones window</li>
         <li>Windows can be moved and positioned anywhere on your screen!</li>
+        <li><strong>Table Demo:</strong> Use the table buttons to drag rows between tables and use Ctrl+C/Ctrl+V to copy/paste</li>
       </ol>
     </div>
     
@@ -204,16 +244,42 @@
       </button>
     </div>
     
-    <div class="note" style="margin-top: 15px; margin-bottom: 15px; background: #e0e7ff; border-color: #6366f1;">
+    <div class="note note-purple">
       <strong>Advanced:</strong> Try the custom Pointer Events implementation (more control, cross-browser consistent visuals):
     </div>
     
     <div class="button-group">
-      <button class="btn" style="background: #8b5cf6;" id="open-frame-a">
+      <button class="btn btn-purple" id="open-frame-a">
         📦 Open Draggable Items (Custom)
       </button>
-      <button class="btn" style="background: #8b5cf6;" id="open-frame-b">
+      <button class="btn btn-purple" id="open-frame-b">
         🎯 Open Drop Zones (Custom)
+      </button>
+    </div>
+    
+    <div class="note note-violet">
+      <strong>Table Demo:</strong> Try the table version with drag-and-drop rows and keyboard copy/paste (Ctrl+C, Ctrl+V):
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-emerald" id="open-frame-a-table-html5">
+        📋 Open Available Items Table
+      </button>
+      <button class="btn btn-emerald" id="open-frame-b-table-html5">
+        📊 Open Construction Calc Table
+      </button>
+    </div>
+    
+    <div class="note note-emerald">
+      <strong>Table Demo (Custom):</strong> Custom Pointer Events version with advanced features:
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-violet" id="open-frame-a-table">
+        📦 Open Available Items Table (Custom)
+      </button>
+      <button class="btn btn-violet" id="open-frame-b-table">
+        📊 Open Construction Calc Table (Custom)
       </button>
     </div>
     
@@ -250,7 +316,13 @@
     // Windows registry
     const windows = {
       'frame-a': null,
-      'frame-b': null
+      'frame-b': null,
+      'frame-a-table': null,
+      'frame-b-table': null,
+      'frame-a-html5': null,
+      'frame-b-html5': null,
+      'frame-a-table-html5': null,
+      'frame-b-table-html5': null
     };
 
     // Initialize hybrid manager as coordinator
@@ -262,7 +334,9 @@
     // Track window status
     const windowStatus = {
       'frame-a': false,
-      'frame-b': false
+      'frame-b': false,
+      'frame-a-table': false,
+      'frame-b-table': false
     };
 
     // Update UI based on window status
@@ -276,6 +350,14 @@
         <div class="window-status">
           <div class="status-indicator ${windowStatus['frame-b'] ? '' : 'inactive'}"></div>
           <span class="window-name">Drop Zones Window</span>
+        </div>
+        <div class="window-status">
+          <div class="status-indicator ${windowStatus['frame-a-table'] ? '' : 'inactive'}"></div>
+          <span class="window-name">Available Items Table</span>
+        </div>
+        <div class="window-status">
+          <div class="status-indicator ${windowStatus['frame-b-table'] ? '' : 'inactive'}"></div>
+          <span class="window-name">Construction Calc Table</span>
         </div>
       `;
       statusList.innerHTML = statusHTML;
@@ -294,6 +376,31 @@
         windowStatus[data.windowId] = false;
         updateWindowStatus();
       }
+    });
+
+    // Relay HTML5 drag messages between windows (for table HTML5 versions)
+    const RELAYED_MESSAGE_TYPES = new Set(['html5DragStart', 'html5DragEnd', 'rowCopied']);
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+
+      const data = event.data;
+      // Validate message structure before relaying
+      if (
+        typeof data !== 'object' ||
+        data === null ||
+        typeof data.type !== 'string' ||
+        !RELAYED_MESSAGE_TYPES.has(data.type)
+      ) {
+        return;
+      }
+
+      // Relay validated messages to all open windows except the sender
+      Object.entries(windows).forEach(([id, win]) => {
+        if (win && !win.closed && win !== event.source) {
+          win.postMessage(data, window.location.origin);
+        }
+      });
     });
 
     // Open window buttons
@@ -343,6 +450,53 @@
       }
     });
 
+    // Table version buttons
+    document.getElementById('open-frame-a-table').addEventListener('click', () => {
+      if (windows['frame-a-table'] && !windows['frame-a-table'].closed) {
+        windows['frame-a-table'].focus();
+        return;
+      }
+      
+      // Use unique window name to avoid reusing old windows
+      const uniqueName = `SourceTable_${Date.now()}`;
+      
+      windows['frame-a-table'] = window.open(
+        'window-frame-b-table.html',  // Note: frame-b-table is the source in table demo
+        uniqueName,
+        'width=600,height=700,left=100,top=100'
+      );
+      
+      // Register window for postMessage relay
+      if (windows['frame-a-table']) {
+        broadcast.registerWindow('frame-a-table', windows['frame-a-table']);
+      } else {
+        console.error('[Coordinator] Failed to open frame-a-table - check popup blocker');
+      }
+    });
+
+    document.getElementById('open-frame-b-table').addEventListener('click', () => {
+      if (windows['frame-b-table'] && !windows['frame-b-table'].closed) {
+        windows['frame-b-table'].focus();
+        return;
+      }
+      
+      // Use unique window name to avoid reusing old windows
+      const uniqueName = `CalculationTable_${Date.now()}`;
+      
+      windows['frame-b-table'] = window.open(
+        'window-frame-a-table.html',  // Note: frame-a-table is the target in table demo
+        uniqueName,
+        'width=700,height=700,left=750,top=100'
+      );
+      
+      // Register window for postMessage relay
+      if (windows['frame-b-table']) {
+        broadcast.registerWindow('frame-b-table', windows['frame-b-table']);
+      } else {
+        console.error('[Coordinator] Failed to open frame-b-table - check popup blocker');
+      }
+    });
+
     // Close all windows
     document.getElementById('close-all').addEventListener('click', () => {
       Object.values(windows).forEach(win => {
@@ -367,6 +521,8 @@
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-a-html5'] = win;
       }
     });
     
@@ -378,6 +534,35 @@
       );
       if (!win) {
         alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-b-html5'] = win;
+      }
+    });
+
+    // HTML5 Table version buttons
+    document.getElementById('open-frame-a-table-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-b-table-html5.html',  // Note: frame-b-table is the source in table demo
+        `SourceTableHTML5_${Date.now()}`,
+        'width=600,height=700,left=100,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-a-table-html5'] = win;  // Storing as frame-a-table-html5 for clarity
+      }
+    });
+
+    document.getElementById('open-frame-b-table-html5').addEventListener('click', () => {
+      const win = window.open(
+        'window-frame-a-table-html5.html',  // Note: frame-a-table is the target in table demo
+        `CalculationTableHTML5_${Date.now()}`,
+        'width=700,height=700,left=750,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
+      } else {
+        windows['frame-b-table-html5'] = win;  // Storing as frame-b-table-html5 for clarity
       }
     });
 

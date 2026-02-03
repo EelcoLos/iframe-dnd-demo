@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frame B - Candidate Rows</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+      transition: background 0.3s ease;
+    }
+    
+    body.drag-active {
+      background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    }
+
+    h2 {
+      color: #4f46e5;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 14px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      cursor: move;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+      transition: all 0.2s ease;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    tbody tr.dragging {
+      opacity: 0.5;
+    }
+
+    tbody tr.selected {
+      background: #dbeafe;
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
+
+    tbody tr.copied {
+      animation: copiedFlash 0.5s ease;
+    }
+
+    @keyframes copiedFlash {
+      0%, 100% { background: transparent; }
+      50% { background: #86efac; }
+    }
+
+    tbody tr.highlight {
+      background: #dbeafe;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
+    td {
+      padding: 12px;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: #94a3b8;
+      font-size: 16px;
+      padding: 0 8px;
+      display: inline-block;
+    }
+
+    .drag-handle:hover {
+      color: #64748b;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    td.number {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9em;
+      margin-top: 15px;
+    }
+    
+    .drag-instruction-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(79, 70, 229, 0.95);
+      color: white;
+      padding: 3rem 4rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border: 4px solid white;
+    }
+    
+    .drag-instruction-overlay.visible {
+      opacity: 1;
+    }
+    
+    .drag-instruction-overlay h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      animation: bounce 1s infinite;
+      color: white;
+    }
+    
+    .drag-instruction-overlay p {
+      font-size: 1.3rem;
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+    
+    .drag-instruction-overlay .highlight {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fbbf24;
+      text-decoration: underline;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+      transform: translate(-50%, -50%);
+    }
+    
+    .drag-preview.visible {
+      opacity: 0.8;
+    }
+    
+    .drag-preview-item {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+      white-space: nowrap;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Column widths */
+    th.col-handle { width: 40px; }
+    th.col-quantity { width: 100px; }
+    th.col-unit-price { width: 100px; }
+    th.col-amount { width: 120px; }
+
+    /* Warning message styling */
+    .no-coordinator-warning {
+      display: none;
+      background: #fee;
+      border: 2px solid #c33;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      color: #a00;
+    }
+
+    .no-coordinator-warning.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="drag-instruction" class="drag-instruction-overlay">
+    <h2>👆 MOVE YOUR MOUSE HERE!</h2>
+    <p>To drop an item, you must:</p>
+    <p class="highlight">Move your mouse cursor into THIS window</p>
+    <p>while holding the mouse button down</p>
+  </div>
+  
+  <div id="drag-preview" class="drag-preview" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <div class="drag-preview-item"></div>
+  </div>
+
+  <h2>📦 Available Items</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-handle"></th>
+          <th>Description</th>
+          <th class="col-quantity">Quantity</th>
+          <th class="col-unit-price">Unit Price</th>
+          <th class="col-amount">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="candidate-row" data-id="candidate-1" data-description="Electrical Wiring" data-quantity="1" data-unit-price="4500">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Electrical Wiring</td>
+          <td class="number">1</td>
+          <td class="number">$4,500.00</td>
+          <td class="number">$4,500.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-2" data-description="Plumbing" data-quantity="1" data-unit-price="3200">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Plumbing</td>
+          <td class="number">1</td>
+          <td class="number">$3,200.00</td>
+          <td class="number">$3,200.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-3" data-description="Interior Finishing" data-quantity="1" data-unit-price="6500">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Interior Finishing</td>
+          <td class="number">1</td>
+          <td class="number">$6,500.00</td>
+          <td class="number">$6,500.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-4" data-description="HVAC System" data-quantity="1" data-unit-price="5800">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>HVAC System</td>
+          <td class="number">1</td>
+          <td class="number">$5,800.00</td>
+          <td class="number">$5,800.00</td>
+        </tr>
+        <tr class="candidate-row" data-id="candidate-5" data-description="Windows & Doors" data-quantity="1" data-unit-price="4200">
+          <td><span class="drag-handle">⋮⋮</span></td>
+          <td>Windows & Doors</td>
+          <td class="number">1</td>
+          <td class="number">$4,200.00</td>
+          <td class="number">$4,200.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hint">Drag items to Frame A's calculation table | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
+
+  <div id="no-coordinator-warning" class="no-coordinator-warning">
+    <strong>⚠️ Warning:</strong> This window was not opened from the Coordinator!
+    <br>
+    <small>Cross-window drag & drop requires opening windows from <a href="parent-windows.html" target="_blank">parent-windows.html</a></small>
+  </div>
+
+  <script type="module">
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Global error handler
+    window.addEventListener('error', (e) => {
+      console.error('[frame-b-table ERROR]', e.error || e.message);
+    });
+    
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('[frame-b-table PROMISE ERROR]', e.reason);
+    });
+
+    const windowId = 'frame-b-table';
+    
+    const broadcast = new HybridCommunicationManager({ windowId, debug: true });
+    broadcast.initializeAsChild();
+    
+    // Show warning if no coordinator
+    if (!window.opener || window.opener.closed) {
+      document.getElementById('no-coordinator-warning').classList.add('show');
+    }
+
+    // HTML escape function to prevent XSS
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = String(text);
+      return div.innerHTML;
+    }
+
+    // Validate ID for use in querySelector
+    function validateId(id) {
+      const strId = String(id || '');
+      // Only allow alphanumeric, hyphen, and underscore
+      return /^[A-Za-z0-9_-]+$/.test(strId) ? strId : null;
+    }
+
+    const dragInstruction = document.getElementById('drag-instruction');
+    const dragPreview = document.getElementById('drag-preview');
+    const dragPreviewItem = dragPreview.querySelector('.drag-preview-item');
+    let currentDragElement = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
+    let selectedRow = null;
+    let copiedRowData = null;
+    let isMouseOverWindow = false;
+    let isDragActive = false;
+    const DRAG_THRESHOLD = 5;
+    const BOUNDARY_MARGIN = 50;
+
+    // Track if mouse is over this window
+    document.addEventListener('mouseenter', () => {
+      isMouseOverWindow = true;
+      if (isDragActive) {
+        dragInstruction.classList.remove('visible');
+      }
+    });
+
+    document.addEventListener('mouseleave', () => {
+      isMouseOverWindow = false;
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+      if (isDragActive) {
+        dragInstruction.classList.add('visible');
+      }
+    });
+
+    function formatCurrency(amount) {
+      return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    // Set up draggable rows
+    function setupDraggables() {
+      document.querySelectorAll('.candidate-row').forEach(row => {
+        row.addEventListener('pointerdown', handlePointerDown);
+        row.addEventListener('click', handleRowClick);
+      });
+    }
+
+    setupDraggables();
+
+    // Handle row selection
+    function handleRowClick(e) {
+      if (isDragging) return;
+      
+      window.focus();
+      
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      
+      selectedRow = e.currentTarget;
+      selectedRow.classList.add('selected');
+    }
+
+    // Keyboard shortcuts for copy/paste
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+C or Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedRow) {
+          e.preventDefault();
+          copiedRowData = {
+            id: selectedRow.dataset.id,
+            description: selectedRow.dataset.description,
+            quantity: selectedRow.dataset.quantity,
+            unitPrice: selectedRow.dataset.unitPrice,
+            source: windowId
+          };
+          
+          selectedRow.classList.add('copied');
+          setTimeout(() => {
+            if (selectedRow) {
+              selectedRow.classList.remove('copied');
+            }
+          }, 500);
+          
+          console.log('Copied row:', copiedRowData.description);
+          
+          // Share copied data via broadcast
+          broadcast.broadcast('rowCopied', { rowData: copiedRowData });
+        }
+      }
+      
+      // Ctrl+V or Cmd+V
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if (copiedRowData) {
+          e.preventDefault();
+          pasteRow();
+        }
+      }
+    });
+
+    // Paste row function
+    function pasteRow() {
+      if (!copiedRowData) return;
+      
+      const tbody = document.getElementById('table-body');
+      const quantity = parseFloat(copiedRowData.quantity || 1);
+      const unitPrice = parseFloat(copiedRowData.unitPrice || 0);
+      const amount = quantity * unitPrice;
+      
+      const newRow = document.createElement('tr');
+      newRow.className = 'candidate-row highlight';
+      newRow.dataset.id = `pasted-${Date.now()}`;
+      newRow.dataset.description = copiedRowData.description;
+      newRow.dataset.quantity = quantity;
+      newRow.dataset.unitPrice = unitPrice;
+      newRow.innerHTML = `
+        <td><span class="drag-handle">⋮⋮</span></td>
+        <td>${escapeHtml(copiedRowData.description)}</td>
+        <td class="number">${quantity}</td>
+        <td class="number">${formatCurrency(unitPrice)}</td>
+        <td class="number">${formatCurrency(amount)}</td>
+      `;
+      
+      tbody.appendChild(newRow);
+      
+      newRow.addEventListener('pointerdown', handlePointerDown);
+      newRow.addEventListener('click', handleRowClick);
+      
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+      selectedRow = newRow;
+      selectedRow.classList.add('selected');
+      
+      setTimeout(() => {
+        if (newRow) {
+          newRow.classList.remove('highlight');
+        }
+      }, 1000);
+      
+      console.log('Pasted row:', copiedRowData.description);
+    }
+
+    function handlePointerDown(e) {
+      e.preventDefault();
+      
+      currentDragElement = e.currentTarget;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      isDragging = false;
+
+      currentDragElement.setPointerCapture(e.pointerId);
+
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    }
+
+    function handlePointerMove(e) {
+      if (!currentDragElement) return;
+
+      const deltaX = Math.abs(e.clientX - dragStartX);
+      const deltaY = Math.abs(e.clientY - dragStartY);
+
+      if (!isDragging && (deltaX > DRAG_THRESHOLD || deltaY > DRAG_THRESHOLD)) {
+        isDragging = true;
+        currentDragElement.classList.add('dragging');
+
+        const dragData = {
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: windowId,
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          }
+        };
+
+        // Show drag preview
+        dragPreviewItem.textContent = dragData.text;
+        dragPreview.style.left = e.clientX + 'px';
+        dragPreview.style.top = e.clientY + 'px';
+        dragPreview.classList.add('visible');
+        dragPreview.setAttribute('aria-hidden', 'false');
+
+        broadcast.broadcast('dragStart', dragData);
+      }
+
+      if (isDragging) {
+        // Update preview position
+        dragPreview.style.left = e.clientX + 'px';
+        dragPreview.style.top = e.clientY + 'px';
+
+        broadcast.broadcast('dragMove', {
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: windowId,
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          },
+          clientX: e.clientX,
+          clientY: e.clientY,
+          screenX: e.screenX,
+          screenY: e.screenY
+        });
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!currentDragElement) return;
+
+      if (currentDragElement.hasPointerCapture(e.pointerId)) {
+        currentDragElement.releasePointerCapture(e.pointerId);
+      }
+
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDragging) {
+        broadcast.broadcast('dragEnd', {
+          text: currentDragElement.dataset.description,
+          id: currentDragElement.dataset.id,
+          source: windowId,
+          rowData: {
+            id: currentDragElement.dataset.id,
+            description: currentDragElement.dataset.description,
+            quantity: currentDragElement.dataset.quantity,
+            unitPrice: currentDragElement.dataset.unitPrice
+          },
+          clientX: e.clientX,
+          clientY: e.clientY,
+          screenX: e.screenX,
+          screenY: e.screenY
+        });
+      }
+
+      currentDragElement.classList.remove('dragging');
+      currentDragElement = null;
+      isDragging = false;
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+    }
+
+    // Listen for drag start from other windows
+    broadcast.on('dragStart', (data) => {
+      if (data.source === windowId) return;
+      
+      isDragActive = true;
+      document.body.classList.add('drag-active');
+      
+      if (!isMouseOverWindow) {
+        dragInstruction.classList.add('visible');
+      }
+      
+      dragPreviewItem.textContent = data.text;
+    });
+
+    // Listen for drag move from other windows
+    broadcast.on('dragMove', (data) => {
+      if (data.source === windowId) return;
+      if (!isDragActive) return;
+      
+      if (typeof data.screenX !== 'number' || typeof data.screenY !== 'number') {
+        return;
+      }
+      
+      // Convert screen coordinates to window-relative coordinates
+      const windowX = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+      const windowY = window.screenTop !== undefined ? window.screenTop : window.screenY;
+      
+      const localX = data.screenX - windowX;
+      const localY = data.screenY - windowY;
+      
+      // Check if cursor would be within our window bounds (with margin)
+      const isWithinBounds = localX >= -BOUNDARY_MARGIN && localX <= window.innerWidth + BOUNDARY_MARGIN &&
+                            localY >= -BOUNDARY_MARGIN && localY <= window.innerHeight + BOUNDARY_MARGIN;
+      
+      if (isWithinBounds) {
+        dragPreview.style.left = localX + 'px';
+        dragPreview.style.top = localY + 'px';
+        dragPreview.classList.add('visible');
+        dragPreview.setAttribute('aria-hidden', 'false');
+      } else {
+        dragPreview.classList.remove('visible');
+        dragPreview.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    // Listen for drag end from other windows
+    broadcast.on('dragEnd', (data) => {
+      if (data.source === windowId) return;
+      
+      dragInstruction.classList.remove('visible');
+      
+      isDragActive = false;
+      document.body.classList.remove('drag-active');
+      dragPreview.classList.remove('visible');
+      dragPreview.setAttribute('aria-hidden', 'true');
+    });
+
+    // Listen for rowCopied messages
+    broadcast.on('rowCopied', (data) => {
+      copiedRowData = data.rowData;
+      console.log('Received copied row data:', copiedRowData.description);
+    });
+  </script>
+</body>
+</html>
