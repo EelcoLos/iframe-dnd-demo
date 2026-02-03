@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
   test('should drop item at correct row position when dragging from frame-b to frame-a', async ({ page, context }) => {
@@ -31,16 +31,6 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
     const initialDescriptions = await targetTablePage.evaluate(() => {
       const rows = Array.from(document.querySelectorAll('tbody .data-row'));
       return rows.map(row => (row as HTMLElement).dataset.description);
-    });
-    
-    // Get the first row from source table to drag
-    const sourceRowData = await sourceTablePage.evaluate(() => {
-      const firstRow = document.querySelector('tbody tr.candidate-row') as HTMLElement;
-      return {
-        description: firstRow.dataset.description,
-        quantity: firstRow.dataset.quantity,
-        unitPrice: firstRow.dataset.unitPrice
-      };
     });
     
     // Perform HTML5 drag and drop from source to target
