@@ -164,6 +164,27 @@
       white-space: nowrap;
       border: 2px solid rgba(255, 255, 255, 0.3);
     }
+
+    /* Column widths */
+    th.col-handle { width: 40px; }
+    th.col-quantity { width: 100px; }
+    th.col-unit-price { width: 100px; }
+    th.col-amount { width: 120px; }
+
+    /* Warning message styling */
+    .no-coordinator-warning {
+      display: none;
+      background: #fee;
+      border: 2px solid #c33;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      color: #a00;
+    }
+
+    .no-coordinator-warning.show {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -172,11 +193,11 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 40px;"></th>
+          <th class="col-handle"></th>
           <th>Description</th>
-          <th style="width: 100px;">Quantity</th>
-          <th style="width: 100px;">Unit Price</th>
-          <th style="width: 120px;">Amount</th>
+          <th class="col-quantity">Quantity</th>
+          <th class="col-unit-price">Unit Price</th>
+          <th class="col-amount">Amount</th>
         </tr>
       </thead>
       <tbody id="table-body">
@@ -214,7 +235,7 @@
   </div>
   <div class="hint">Drag rows from Frame B to insert them here | Click to select, Ctrl+C to copy, Ctrl+V to paste</div>
 
-  <div id="no-coordinator-warning" style="display: none; background: #fee; border: 2px solid #c33; border-radius: 8px; padding: 15px; margin-top: 20px; color: #a00;">
+  <div id="no-coordinator-warning" class="no-coordinator-warning">
     <strong>⚠️ Warning:</strong> This window was not opened from the Coordinator!
     <br>
     <small>Cross-window drag & drop requires opening windows from <a href="parent-windows.html" target="_blank">parent-windows.html</a></small>
@@ -243,7 +264,7 @@
     
     // Show warning if no coordinator
     if (!window.opener || window.opener.closed) {
-      document.getElementById('no-coordinator-warning').style.display = 'block';
+      document.getElementById('no-coordinator-warning').classList.add('show');
     }
 
     const dragPreview = document.getElementById('drag-preview');
@@ -290,6 +311,21 @@
 
     function formatCurrency(amount) {
       return '$' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    // HTML escape function to prevent XSS
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = String(text);
+      return div.innerHTML;
+    }
+
+    // Validate ID for use in querySelector
+    function validateId(id) {
+      const strId = String(id || '');
+      // Only allow alphanumeric, hyphen, and underscore
+      return /^[A-Za-z0-9_-]+$/.test(strId) ? strId : null;
     }
 
     // Set up draggable rows
@@ -520,7 +556,7 @@
           previewRow.className = 'data-row preview-insert';
           previewRow.innerHTML = `
             <td><span class="drag-handle">⋮⋮</span></td>
-            <td>${data.rowData?.description || data.text}</td>
+            <td>${escapeHtml(data.rowData?.description || data.text)}</td>
             <td class="number">${quantity}</td>
             <td class="number">${formatCurrency(unitPrice)}</td>
             <td class="number">${formatCurrency(amount)}</td>
@@ -637,7 +673,13 @@
 
     // Listen for removeItem messages
     broadcast.on('removeItem', (data) => {
-      const rowToRemove = document.querySelector(`[data-id="${data.id}"]`);
+      const id = validateId(data.id);
+      if (!id) {
+        console.warn('Ignoring removeItem with invalid id:', data.id);
+        return;
+      }
+
+      const rowToRemove = document.querySelector(`[data-id="${id}"]`);
       if (rowToRemove) {
         rowToRemove.style.transition = 'all 0.2s ease';
         rowToRemove.style.opacity = '0';
@@ -672,7 +714,7 @@
       newRow.dataset.unitPrice = unitPrice;
       newRow.innerHTML = `
         <td><span class="drag-handle">⋮⋮</span></td>
-        <td>${copiedRowData.description}</td>
+        <td>${escapeHtml(copiedRowData.description)}</td>
         <td class="number">${quantity}</td>
         <td class="number">${formatCurrency(unitPrice)}</td>
         <td class="number">${formatCurrency(amount)}</td>
