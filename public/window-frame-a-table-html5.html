@@ -404,8 +404,6 @@
       if (rowData) {
         console.log('[HTML5 DnD] Dropped data:', rowData);
         
-        // Find the target row
-        const targetElement = e.target.closest('.data-row');
         const quantity = parseFloat(rowData.quantity || 1);
         const unitPrice = parseFloat(rowData.unitPrice || 0);
         const amount = quantity * unitPrice;
@@ -425,13 +423,22 @@
           <td class="number">${formatCurrency(amount)}</td>
         `;
         
-        // Insert the new row
+        // Find the correct insertion point based on cursor position (same logic as dragover)
+        const rows = Array.from(tbody.querySelectorAll('.data-row'));
         const subtotalRow = tbody.querySelector('tr:not(.data-row)');
-        if (targetElement) {
-          tbody.insertBefore(newRow, targetElement.nextSibling);
-        } else {
-          tbody.insertBefore(newRow, subtotalRow);
+        let insertBefore = subtotalRow;
+        
+        // Find the row under cursor using clientY position
+        for (const row of rows) {
+          const rect = row.getBoundingClientRect();
+          if (e.clientY < rect.bottom) {
+            insertBefore = row;
+            break;
+          }
         }
+        
+        // Insert the new row at the correct position
+        tbody.insertBefore(newRow, insertBefore);
         
         // Setup event handlers for new row
         setupDraggables();
