@@ -6,7 +6,8 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
     await page.goto('/iframe-dnd-demo/parent-windows.html');
     await page.waitForLoadState('networkidle');
     
-    // Open source table (frame-b-table-html5)
+    // Open source table (Available Items - window-frame-b-table-html5.html)
+    // Note: Button ID is 'open-frame-a-table-html5' but it opens window-frame-b-table-html5.html
     const [sourceTablePage] = await Promise.all([
       context.waitForEvent('page'),
       page.click('#open-frame-a-table-html5')
@@ -14,7 +15,8 @@ test.describe('HTML5 Table Cross-Window Drag and Drop', () => {
     await sourceTablePage.waitForLoadState('networkidle');
     expect(sourceTablePage.url()).toContain('window-frame-b-table-html5.html');
     
-    // Open target table (frame-a-table-html5)
+    // Open target table (Construction Calc - window-frame-a-table-html5.html)
+    // Note: Button ID is 'open-frame-b-table-html5' but it opens window-frame-a-table-html5.html
     const [targetTablePage] = await Promise.all([
       context.waitForEvent('page'),
       page.click('#open-frame-b-table-html5')
