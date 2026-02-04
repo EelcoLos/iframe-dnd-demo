@@ -1,6 +1,6 @@
 # 🎯 iframe-dnd-demo
 
-A demonstration of drag-and-drop functionality using custom Pointer Events (no HTML5 Drag & Drop API). Features both **iframe-based** and **cross-window** implementations.
+A demonstration of drag-and-drop functionality using custom Pointer Events (no HTML5 Drag & Drop API). Features **iframe-based**, **cross-window**, and **native WebView2 application** implementations.
 
 ## 🌐 Live Demo
 
@@ -12,8 +12,31 @@ This demo implements cross-iframe and cross-window drag-and-drop systems:
 
 **iFrame Mode** - Classic drag-and-drop between two same-origin iframes
 **Cross-Window Mode** - Drag and drop between separate browser windows/tabs
+**WebView2 Native App** - Native Windows application hosting all demos in WebView2 controls
 
 Both modes use custom Pointer Events for precise control and cross-context coordinate conversion.
+
+## 🖥️ WebView2 Native Application
+
+A full native Windows WPF application is included that demonstrates all the drag-and-drop capabilities using Microsoft's WebView2 control. This provides a real desktop application experience with all the web-based demos.
+
+**See [WebView2App/README.md](WebView2App/README.md) for building and running instructions.**
+
+### Quick Start (Windows only)
+
+```bash
+cd WebView2App
+dotnet build
+dotnet run
+```
+
+Features:
+- ✅ Native Windows WPF application
+- ✅ All three demo modes (Basic Items, Table Rows, HTML5 DnD)
+- ✅ Horizontal and vertical layout options
+- ✅ Built-in Edge DevTools for debugging
+- ✅ Navigation controls (back, forward, refresh)
+- ✅ Serves all HTML/JS demos from the public folder
 
 ## 🏗️ Architecture
 
@@ -261,6 +284,13 @@ iframe-dnd-demo/
 │   ├── window-frame-b-table.html        # Standalone available items table (NEW)
 │   ├── hybrid-communication.js          # Hybrid BroadcastChannel/postMessage manager (Firefox compatible)
 │   └── broadcast-communication.js       # BroadcastChannel manager (legacy, Chrome/Edge only)
+├── WebView2App/                         # Native Windows WPF application (NEW)
+│   ├── WebView2App.csproj               # .NET project file
+│   ├── MainWindow.xaml                  # Main window UI
+│   ├── MainWindow.xaml.cs               # Main window logic
+│   ├── App.xaml                         # Application entry
+│   ├── App.xaml.cs                      # Application code
+│   └── README.md                        # Build and run instructions
 ├── src/
 │   └── ...                              # React app (not used in this demo)
 ├── e2e/
