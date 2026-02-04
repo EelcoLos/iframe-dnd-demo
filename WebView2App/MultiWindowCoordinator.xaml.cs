@@ -58,6 +58,10 @@ public partial class MultiWindowCoordinator : Window
         // Get deferral to handle async operations
         var deferral = e.GetDeferral();
 
+        // Capture window position on UI thread before going async
+        double currentLeft = this.Left;
+        double currentTop = this.Top;
+
         // Run async initialization on a background task to avoid blocking
         System.Threading.Tasks.Task.Run(async () =>
         {
@@ -92,8 +96,8 @@ public partial class MultiWindowCoordinator : Window
                     }
                     else
                     {
-                        newWindow.Left = Left + 50;
-                        newWindow.Top = 50;
+                        newWindow.Left = currentLeft + 50;
+                        newWindow.Top = currentTop + 50;
                         newWindow.Title = "Multi-Window Table Demo";
                     }
 
