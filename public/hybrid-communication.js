@@ -115,6 +115,12 @@ export class HybridCommunicationManager {
       this.testBroadcastChannel();
     }
     
+    // Set up built-in clipboard handler
+    this.on('clipboard-copy', (data, sourceId) => {
+      console.log(`[HybridComm] ${this.windowId} received clipboard data from ${sourceId}:`, data);
+      this.clipboardData = data;
+    });
+    
     // Handle window close
     window.addEventListener('beforeunload', () => {
       this.broadcast('windowLeft', { windowId: this.windowId });
@@ -421,24 +427,38 @@ export class HybridCommunicationManager {
    * Copy row data to a shared clipboard storage
    */
   copyToClipboard(data) {
-    // Store in sessionStorage for cross-window clipboard
+    // Store locally for same-window paste
     try {
       sessionStorage.setItem('clipboard-data', JSON.stringify(data));
-      console.log('[HybridComm] Copied to clipboard:', data);
+      console.log('[HybridComm] Copied to local clipboard:', data);
     } catch (e) {
-      console.error('[HybridComm] Failed to copy to clipboard:', e);
+      console.error('[HybridComm] Failed to copy to local clipboard:', e);
     }
+    
+    // Broadcast to other windows for cross-window paste
+    this.broadcast('clipboard-copy', data);
+    
+    // Also store in instance variable for immediate access
+    this.clipboardData = data;
   }
   
   /**
    * Paste row data from shared clipboard storage
    */
   pasteFromClipboard(callback) {
+    // First check instance variable (from cross-window clipboard-copy message)
+    if (this.clipboardData) {
+      console.log('[HybridComm] Pasted from cross-window clipboard:', this.clipboardData);
+      callback(this.clipboardData);
+      return;
+    }
+    
+    // Fallback to sessionStorage (same-window clipboard)
     try {
       const data = sessionStorage.getItem('clipboard-data');
       if (data) {
         const rowData = JSON.parse(data);
-        console.log('[HybridComm] Pasted from clipboard:', rowData);
+        console.log('[HybridComm] Pasted from local clipboard:', rowData);
         callback(rowData);
       } else {
         console.log('[HybridComm] Clipboard is empty');
