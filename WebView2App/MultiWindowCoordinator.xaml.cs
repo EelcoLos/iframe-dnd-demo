@@ -53,68 +53,77 @@ public partial class MultiWindowCoordinator : Window
         }
     }
 
-    private async void CoreWebView2_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
+    private void CoreWebView2_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
     {
-        // Create a new window for the popup
+        // Handle new window requests (from window.open in JavaScript)
         var deferral = e.GetDeferral();
 
-        try
+        // Use Dispatcher to avoid blocking the UI thread
+        Dispatcher.BeginInvoke(async () =>
         {
-            // Create new window
-            var newWindow = new Window
+            try
             {
-                Width = 900,
-                Height = 700,
-                WindowStartupLocation = WindowStartupLocation.Manual
-            };
+                // Create new window
+                var newWindow = new Window
+                {
+                    Width = 900,
+                    Height = 700,
+                    WindowStartupLocation = WindowStartupLocation.Manual
+                };
 
-            // Determine position based on which window is being opened
-            if (e.Uri.Contains("source"))
-            {
-                newWindow.Left = 100;
-                newWindow.Top = 100;
-                newWindow.Title = "Available Items Table";
+                // Determine position and title based on which window is being opened
+                if (e.Uri.Contains("source"))
+                {
+                    newWindow.Left = 100;
+                    newWindow.Top = 100;
+                    newWindow.Title = "Available Items Table";
+                }
+                else if (e.Uri.Contains("target"))
+                {
+                    newWindow.Left = 1020;
+                    newWindow.Top = 100;
+                    newWindow.Title = "Construction Calculation Table";
+                }
+                else
+                {
+                    newWindow.Left = Left + 50;
+                    newWindow.Top = 50;
+                    newWindow.Title = "Web Component Table";
+                }
+
+                // Create WebView2 control
+                var webView = new Microsoft.Web.WebView2.Wpf.WebView2();
+                newWindow.Content = webView;
+
+                // Initialize the WebView2
+                await webView.EnsureCoreWebView2Async(null);
+
+                // Set up virtual host mapping
+                webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "app.local", _publicFolderPath,
+                    CoreWebView2HostResourceAccessKind.Allow);
+
+                // Use the requested WebView2 for the new window
+                e.NewWindow = webView.CoreWebView2;
+
+                // Show the window
+                newWindow.Show();
+
+                // Handle window closing
+                newWindow.Closed += (s, args) =>
+                {
+                    webView.Dispose();
+                };
             }
-            else if (e.Uri.Contains("target"))
+            catch (Exception ex)
             {
-                newWindow.Left = 1020;
-                newWindow.Top = 100;
-                newWindow.Title = "Construction Calculation Table";
+                MessageBox.Show($"Error creating new window: {ex.Message}",
+                    "Window Creation Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            else
+            finally
             {
-                newWindow.Left = Left + 50;
-                newWindow.Top = Top + 50;
-                newWindow.Title = "Web Component Table";
+                deferral.Complete();
             }
-
-            // Create WebView2 control
-            var webView = new Microsoft.Web.WebView2.Wpf.WebView2();
-            newWindow.Content = webView;
-
-            // Initialize the WebView2
-            await webView.EnsureCoreWebView2Async(null);
-
-            // Set up virtual host mapping
-            webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "app.local", _publicFolderPath,
-                CoreWebView2HostResourceAccessKind.Allow);
-
-            // Use the requested WebView2 for the new window
-            e.NewWindow = webView.CoreWebView2;
-
-            // Show the window
-            newWindow.Show();
-
-            // Handle window closing
-            newWindow.Closed += (s, args) =>
-            {
-                webView.Dispose();
-            };
-        }
-        finally
-        {
-            deferral.Complete();
-        }
+        });
     }
 }
