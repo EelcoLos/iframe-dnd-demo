@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WebView2App": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
