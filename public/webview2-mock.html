@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebView2 Mock App - Drag & Drop Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    /* Windows-style title bar */
+    .title-bar {
+      background: linear-gradient(to bottom, #fff 0%, #f0f0f0 100%);
+      border-bottom: 1px solid #adadad;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    
+    .app-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .title-bar-text {
+      flex: 1;
+      font-size: 12px;
+      color: #333;
+    }
+    
+    .title-bar-controls {
+      display: flex;
+      gap: 1px;
+      -webkit-app-region: no-drag;
+    }
+    
+    .title-bar-button {
+      width: 45px;
+      height: 29px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #000;
+      transition: background-color 0.1s;
+    }
+    
+    .title-bar-button:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    
+    .title-bar-button.close:hover {
+      background: #e81123;
+      color: white;
+    }
+    
+    /* Menu bar */
+    .menu-bar {
+      background: #f0f0f0;
+      border-bottom: 1px solid #d0d0d0;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      padding: 0 5px;
+      font-size: 12px;
+    }
+    
+    .menu-item {
+      padding: 4px 12px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background-color 0.1s;
+    }
+    
+    .menu-item:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Toolbar */
+    .toolbar {
+      background: #fafafa;
+      border-bottom: 1px solid #d0d0d0;
+      padding: 8px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .toolbar-section {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    
+    .toolbar-divider {
+      width: 1px;
+      height: 24px;
+      background: #d0d0d0;
+      margin: 0 5px;
+    }
+    
+    .toolbar-button {
+      background: white;
+      border: 1px solid #adadad;
+      border-radius: 3px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.1s;
+    }
+    
+    .toolbar-button:hover {
+      background: #e5f3ff;
+      border-color: #0078d4;
+    }
+    
+    .toolbar-button:active {
+      background: #cce8ff;
+    }
+    
+    .toolbar-button.active {
+      background: #0078d4;
+      color: white;
+      border-color: #0078d4;
+    }
+    
+    .url-bar {
+      flex: 1;
+      display: flex;
+      gap: 5px;
+    }
+    
+    .url-input {
+      flex: 1;
+      border: 1px solid #adadad;
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    
+    .url-input:focus {
+      outline: none;
+      border-color: #0078d4;
+      box-shadow: 0 0 0 1px #0078d4;
+    }
+    
+    .go-button {
+      background: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 4px 15px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .go-button:hover {
+      background: #005a9e;
+    }
+    
+    /* Main content area */
+    .content {
+      flex: 1;
+      display: flex;
+      gap: 5px;
+      padding: 5px;
+      min-height: 0;
+      background: #e0e0e0;
+    }
+    
+    /* WebView2 control container */
+    .webview-container {
+      flex: 1;
+      background: white;
+      border: 1px solid #adadad;
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .webview-header {
+      background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+      border-bottom: 1px solid #c0c0c0;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .webview-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .webview-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #0078d4;
+    }
+    
+    .webview-controls {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .webview-control-btn {
+      background: transparent;
+      border: 1px solid #adadad;
+      border-radius: 2px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.1s;
+    }
+    
+    .webview-control-btn:hover {
+      background: rgba(0, 120, 212, 0.1);
+      border-color: #0078d4;
+    }
+    
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+      display: block;
+      background: white;
+    }
+    
+    /* Status bar */
+    .status-bar {
+      background: #f0f0f0;
+      border-top: 1px solid #adadad;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 11px;
+      color: #666;
+      gap: 20px;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .status-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #28a745;
+    }
+    
+    /* Drag preview */
+    .drag-preview {
+      position: fixed;
+      pointer-events: none;
+      background: #4f46e5;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 10000;
+      opacity: 0.9;
+      transform: translate(-50%, -50%);
+    }
+    
+    /* Mode selector panel */
+    .mode-panel {
+      background: white;
+      border: 1px solid #d0d0d0;
+      border-radius: 3px;
+      padding: 12px;
+      margin-bottom: 5px;
+    }
+    
+    .mode-panel h3 {
+      font-size: 12px;
+      color: #333;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    
+    .mode-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .mode-button {
+      background: white;
+      border: 1px solid #adadad;
+      border-radius: 3px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.1s;
+      flex: 1;
+      min-width: 140px;
+    }
+    
+    .mode-button:hover {
+      background: #e5f3ff;
+      border-color: #0078d4;
+    }
+    
+    .mode-button.active {
+      background: #0078d4;
+      color: white;
+      border-color: #0078d4;
+      font-weight: 600;
+    }
+    
+    /* Layout controls */
+    .layout-controls {
+      background: white;
+      border: 1px solid #d0d0d0;
+      border-radius: 3px;
+      padding: 8px;
+      margin-bottom: 5px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+    }
+    
+    .layout-controls label {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .layout-toggle {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .toggle-btn {
+      background: white;
+      border: 1px solid #adadad;
+      border-radius: 3px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.1s;
+    }
+    
+    .toggle-btn:hover {
+      background: #e5f3ff;
+      border-color: #0078d4;
+    }
+    
+    .toggle-btn.active {
+      background: #0078d4;
+      color: white;
+      border-color: #0078d4;
+    }
+    
+    .content.vertical {
+      flex-direction: column;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .content {
+        flex-direction: column;
+      }
+      
+      .toolbar {
+        flex-wrap: wrap;
+      }
+      
+      .url-bar {
+        width: 100%;
+        order: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Windows-style title bar -->
+  <div class="title-bar">
+    <div class="app-icon">🎯</div>
+    <div class="title-bar-text">WebView2 Demo Application - Drag & Drop Showcase</div>
+    <div class="title-bar-controls">
+      <button class="title-bar-button" title="Minimize">
+        <span>−</span>
+      </button>
+      <button class="title-bar-button" title="Maximize">
+        <span>☐</span>
+      </button>
+      <button class="title-bar-button close" title="Close">
+        <span>✕</span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Menu bar -->
+  <div class="menu-bar">
+    <div class="menu-item">File</div>
+    <div class="menu-item">Edit</div>
+    <div class="menu-item">View</div>
+    <div class="menu-item">WebView</div>
+    <div class="menu-item">Help</div>
+  </div>
+  
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-section">
+      <button class="toolbar-button" id="back-btn" title="Back">◀</button>
+      <button class="toolbar-button" id="forward-btn" title="Forward">▶</button>
+      <button class="toolbar-button" id="refresh-btn" title="Refresh">↻</button>
+    </div>
+    <div class="toolbar-divider"></div>
+    <div class="url-bar">
+      <input type="text" class="url-input" id="url-input-a" value="frame-a.html" placeholder="WebView 1 URL">
+      <input type="text" class="url-input" id="url-input-b" value="frame-b.html" placeholder="WebView 2 URL">
+    </div>
+    <div class="toolbar-divider"></div>
+    <div class="toolbar-section">
+      <button class="toolbar-button" id="devtools-btn" title="Open DevTools">🔧 DevTools</button>
+    </div>
+  </div>
+  
+  <!-- Mode selector -->
+  <div style="padding: 5px 5px 0 5px;">
+    <div class="mode-panel">
+      <h3>🎮 Demo Mode Selection</h3>
+      <div class="mode-buttons">
+        <button class="mode-button active" data-mode="basic">
+          Basic Items
+        </button>
+        <button class="mode-button" data-mode="table">
+          Table Rows
+        </button>
+        <button class="mode-button" data-mode="html5">
+          HTML5 DnD
+        </button>
+      </div>
+    </div>
+    
+    <div class="layout-controls">
+      <label>Layout:</label>
+      <div class="layout-toggle">
+        <button class="toggle-btn active" data-layout="horizontal">Horizontal</button>
+        <button class="toggle-btn" data-layout="vertical">Vertical</button>
+      </div>
+      <div class="toolbar-divider"></div>
+      <label>Info:</label>
+      <span style="color: #666;">This simulates a native Windows app with WebView2 controls hosting web content</span>
+    </div>
+  </div>
+  
+  <!-- Main content area with WebView2 controls -->
+  <div class="content" id="content-area">
+    <div class="webview-container">
+      <div class="webview-header">
+        <div class="webview-title">
+          <div class="webview-indicator"></div>
+          <span id="webview1-title">WebView2 #1 - Draggable Items</span>
+        </div>
+        <div class="webview-controls">
+          <button class="webview-control-btn" title="Refresh WebView" onclick="refreshWebView('frame-a')">↻</button>
+          <button class="webview-control-btn" title="Open in Browser" onclick="openInBrowser('frame-a')">🔗</button>
+        </div>
+      </div>
+      <iframe id="frame-a" src="frame-a.html"></iframe>
+    </div>
+    
+    <div class="webview-container">
+      <div class="webview-header">
+        <div class="webview-title">
+          <div class="webview-indicator"></div>
+          <span id="webview2-title">WebView2 #2 - Drop Zones</span>
+        </div>
+        <div class="webview-controls">
+          <button class="webview-control-btn" title="Refresh WebView" onclick="refreshWebView('frame-b')">↻</button>
+          <button class="webview-control-btn" title="Open in Browser" onclick="openInBrowser('frame-b')">🔗</button>
+        </div>
+      </div>
+      <iframe id="frame-b" src="frame-b.html"></iframe>
+    </div>
+  </div>
+  
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-indicator"></div>
+      <span>WebView2 Runtime: 120.0.2210.144</span>
+    </div>
+    <div class="status-item">
+      <span>Ready</span>
+    </div>
+    <div class="status-item">
+      <span id="status-text">Drag items between WebView2 controls</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import { IframeCommunicationManager } from './iframe-communication.js';
+
+    let iframeCommunicationManager;
+    
+    // Global functions for inline event handlers
+    window.refreshWebView = function(frameId) {
+      const frame = document.getElementById(frameId);
+      if (frame) {
+        frame.src = frame.src;
+        updateStatus(`Refreshed ${frameId}`);
+      }
+    };
+    
+    window.openInBrowser = function(frameId) {
+      const frame = document.getElementById(frameId);
+      if (frame) {
+        window.open(frame.src, '_blank');
+        updateStatus(`Opened ${frameId} in new tab`);
+      }
+    };
+    
+    function updateStatus(text) {
+      const statusText = document.getElementById('status-text');
+      if (statusText) {
+        statusText.textContent = text;
+        setTimeout(() => {
+          statusText.textContent = 'Drag items between WebView2 controls';
+        }, 3000);
+      }
+    }
+
+    function setupModeSelector() {
+      const modeButtons = document.querySelectorAll('.mode-button');
+      const frameA = document.getElementById('frame-a');
+      const frameB = document.getElementById('frame-b');
+      const webview1Title = document.getElementById('webview1-title');
+      const webview2Title = document.getElementById('webview2-title');
+      const urlInputA = document.getElementById('url-input-a');
+      const urlInputB = document.getElementById('url-input-b');
+      
+      modeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const mode = button.dataset.mode;
+          
+          // Update active state
+          modeButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          
+          // Switch content based on mode
+          if (mode === 'table') {
+            frameA.src = 'frame-a-table.html';
+            frameB.src = 'frame-b-table.html';
+            webview1Title.textContent = 'WebView2 #1 - Construction Calculation';
+            webview2Title.textContent = 'WebView2 #2 - Candidate Rows';
+            urlInputA.value = 'frame-a-table.html';
+            urlInputB.value = 'frame-b-table.html';
+            updateStatus('Switched to Table Rows demo');
+          } else if (mode === 'html5') {
+            frameA.src = 'window-frame-a-html5.html';
+            frameB.src = 'window-frame-b-html5.html';
+            webview1Title.textContent = 'WebView2 #1 - HTML5 Draggable';
+            webview2Title.textContent = 'WebView2 #2 - HTML5 Drop Zones';
+            urlInputA.value = 'window-frame-a-html5.html';
+            urlInputB.value = 'window-frame-b-html5.html';
+            updateStatus('Switched to HTML5 Drag & Drop demo');
+          } else {
+            frameA.src = 'frame-a.html';
+            frameB.src = 'frame-b.html';
+            webview1Title.textContent = 'WebView2 #1 - Draggable Items';
+            webview2Title.textContent = 'WebView2 #2 - Drop Zones';
+            urlInputA.value = 'frame-a.html';
+            urlInputB.value = 'frame-b.html';
+            updateStatus('Switched to Basic Items demo');
+          }
+        });
+      });
+    }
+    
+    function setupLayoutControls() {
+      const toggleButtons = document.querySelectorAll('.toggle-btn');
+      const contentArea = document.getElementById('content-area');
+      
+      toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const layout = button.dataset.layout;
+          
+          // Update active state
+          toggleButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          
+          // Apply layout
+          if (layout === 'vertical') {
+            contentArea.classList.add('vertical');
+            updateStatus('Switched to vertical layout');
+          } else {
+            contentArea.classList.remove('vertical');
+            updateStatus('Switched to horizontal layout');
+          }
+        });
+      });
+    }
+    
+    function setupToolbarButtons() {
+      const backBtn = document.getElementById('back-btn');
+      const forwardBtn = document.getElementById('forward-btn');
+      const refreshBtn = document.getElementById('refresh-btn');
+      const devToolsBtn = document.getElementById('devtools-btn');
+      
+      backBtn.addEventListener('click', () => {
+        updateStatus('Back navigation (simulated)');
+      });
+      
+      forwardBtn.addEventListener('click', () => {
+        updateStatus('Forward navigation (simulated)');
+      });
+      
+      refreshBtn.addEventListener('click', () => {
+        const frameA = document.getElementById('frame-a');
+        const frameB = document.getElementById('frame-b');
+        frameA.src = frameA.src;
+        frameB.src = frameB.src;
+        updateStatus('Refreshed all WebView2 controls');
+      });
+      
+      devToolsBtn.addEventListener('click', () => {
+        updateStatus('DevTools would open here in a real WebView2 app');
+        alert('In a real WebView2 application, this would open the Edge DevTools for debugging the web content.');
+      });
+    }
+    
+    function setupUrlInputs() {
+      const urlInputA = document.getElementById('url-input-a');
+      const urlInputB = document.getElementById('url-input-b');
+      const frameA = document.getElementById('frame-a');
+      const frameB = document.getElementById('frame-b');
+      
+      urlInputA.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          frameA.src = urlInputA.value;
+          updateStatus(`Navigated WebView 1 to ${urlInputA.value}`);
+        }
+      });
+      
+      urlInputB.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          frameB.src = urlInputB.value;
+          updateStatus(`Navigated WebView 2 to ${urlInputB.value}`);
+        }
+      });
+    }
+    
+    // Initialize when page loads
+    window.addEventListener('load', () => {
+      const frameA = document.getElementById('frame-a');
+      const frameB = document.getElementById('frame-b');
+
+      // Initialize iframe communication manager
+      iframeCommunicationManager = new IframeCommunicationManager();
+      iframeCommunicationManager.initialize([
+        { id: 'frame-a', element: frameA },
+        { id: 'frame-b', element: frameB }
+      ]);
+
+      // Set up controls
+      setupModeSelector();
+      setupLayoutControls();
+      setupToolbarButtons();
+      setupUrlInputs();
+      
+      updateStatus('WebView2 Mock Application ready');
+    });
+  </script>
+</body>
+</html>
