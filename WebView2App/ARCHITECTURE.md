@@ -316,7 +316,7 @@ Virtual host mapping grants file system access:
 ### Requirements Distribution
 
 When distributing the app, users need:
-1. **.NET 8.0 Runtime** (or use self-contained deployment)
+1. **.NET 10.0 Runtime** (or use self-contained deployment)
 2. **WebView2 Runtime** (or use fixed version distribution)
 
 ### Self-Contained Deployment

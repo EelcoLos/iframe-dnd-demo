@@ -43,7 +43,7 @@ Quick command:
 dotnet publish -c Release --self-contained --runtime win-x64 -p:PublishSingleFile=true
 ```
 
-Creates a single `.exe` file in `bin/Release/net8.0-windows/win-x64/publish/`
+Creates a single `.exe` file in `bin/Release/net10.0-windows/win-x64/publish/`
 
 ---
 
@@ -87,10 +87,10 @@ winget install Microsoft.EdgeWebView2Runtime
 ```
 
 #### "dotnet: command not found"
-Install .NET 8.0 SDK from https://dotnet.microsoft.com/download
+Install .NET 10.0 SDK from https://dotnet.microsoft.com/download
 
 #### Blank WebView windows
-1. Check `bin/Debug/net8.0-windows/public/` exists
+1. Check `bin/Debug/net10.0-windows/public/` exists
 2. Open DevTools (🔧 button) to see errors
 3. Rebuild: `dotnet clean && dotnet build`
 

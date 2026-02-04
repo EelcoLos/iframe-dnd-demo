@@ -37,7 +37,7 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed getting started instructions.
 ## Prerequisites
 
 - **Windows 10/11** (version 1803 or later)
-- **.NET 8.0 SDK** or later
+- **.NET 10.0 SDK** or later
 - **WebView2 Runtime** (usually pre-installed on Windows 10/11)
   - Download from: https://developer.microsoft.com/microsoft-edge/webview2/
 
@@ -75,7 +75,7 @@ dotnet build --configuration Release
 # Publish as a self-contained application
 dotnet publish --configuration Release --self-contained --runtime win-x64 -p:PublishSingleFile=true
 
-# The executable will be in: bin/Release/net8.0-windows/win-x64/publish/
+# The executable will be in: bin/Release/net10.0-windows/win-x64/publish/
 ```
 
 ## Running the Application
@@ -84,10 +84,10 @@ After building, run the executable:
 
 ```bash
 # From the build output directory
-.\bin\Debug\net8.0-windows\DragDropWebView2Demo.exe
+.\bin\Debug\net10.0-windows\DragDropWebView2Demo.exe
 
 # Or for release build
-.\bin\Release\net8.0-windows\DragDropWebView2Demo.exe
+.\bin\Release\net10.0-windows\DragDropWebView2Demo.exe
 ```
 
 ## Using the Application
@@ -161,7 +161,7 @@ This error occurs when the `public` folder cannot be found. **Solution:**
    ```
 
 2. **Verify the public folder exists**:
-   - Check `bin/Debug/net8.0-windows/public/` contains HTML/JS files
+   - Check `bin/Debug/net10.0-windows/public/` contains HTML/JS files
    - Files should be copied automatically during build
 
 3. **Run from the WebView2App directory**:
@@ -199,7 +199,7 @@ If you get an error about WebView2 runtime:
 If the WebViews show blank or error pages:
 
 1. Check that the `public` folder exists in the build output directory
-2. Verify files are being copied by checking `bin/Debug/net8.0-windows/public/`
+2. Verify files are being copied by checking `bin/Debug/net10.0-windows/public/`
 3. Open DevTools (🔧 button) to see console errors
 
 ### Build Errors

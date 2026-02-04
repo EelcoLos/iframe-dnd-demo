@@ -9,7 +9,7 @@ A complete **native Windows desktop application** built with WPF and WebView2 th
 ```
 WebView2App/
 ├── WebView2App.sln              # Visual Studio solution file
-├── WebView2App.csproj           # .NET 8 project configuration
+├── WebView2App.csproj           # .NET 10 project configuration
 ├── App.xaml                     # WPF application definition
 ├── App.xaml.cs                  # Application entry point
 ├── MainWindow.xaml              # Main window UI (XAML)
@@ -29,7 +29,7 @@ WebView2App/
 
 ### Technology Stack
 
-- **Framework**: .NET 8.0 Windows (WPF)
+- **Framework**: .NET 10.0 Windows (WPF)
 - **UI**: XAML (Extensible Application Markup Language)
 - **Browser Control**: Microsoft.Web.WebView2 (v1.0.2792.45)
 - **Language**: C# 12 with nullable reference types
@@ -262,7 +262,7 @@ This application demonstrates:
 4. **Cross-Context Communication**: WebView to WebView messaging
 5. **Virtual Hosting**: Serving local files securely
 6. **MVVM Pattern**: Separation of UI and logic
-7. **.NET 8 Features**: Modern C# capabilities
+7. **.NET 10 Features**: Modern C# capabilities
 
 ## 🔐 Security
 
@@ -292,7 +292,7 @@ The WebView2 runtime is based on Microsoft Edge (Chromium):
 
 1. **Framework-Dependent**
    - Size: ~10-20 MB
-   - Requires: .NET 8.0 Runtime
+   - Requires: .NET 10.0 Runtime
    - Fast updates
 
 2. **Self-Contained**

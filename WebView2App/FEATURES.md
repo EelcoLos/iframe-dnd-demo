@@ -104,7 +104,7 @@ This WebView2 application brings together **all** the drag-and-drop demonstratio
 
 ### Deployment Options
 
-1. **Framework-Dependent**: Small size, requires .NET 8.0 installed
+1. **Framework-Dependent**: Small size, requires .NET 10.0 installed
 2. **Self-Contained**: Larger size, works without .NET installed
 3. **Single File**: Everything in one executable
 
@@ -215,7 +215,7 @@ This application demonstrates:
 4. **Virtual Hosting**: Serving local files securely
 5. **Cross-Context Communication**: WebView to WebView messaging
 6. **Event Coordination**: Managing complex user interactions
-7. **.NET 8 Features**: Modern C# and .NET capabilities
+7. **.NET 10 Features**: Modern C# and .NET capabilities
 
 ## 🔮 Future Possibilities
 
@@ -250,7 +250,7 @@ Potential enhancements:
 
 ### Software Requirements
 
-- **.NET 8.0 Runtime** (or included with self-contained build)
+- **.NET 10.0 Runtime** (or included with self-contained build)
 - **WebView2 Runtime** (usually pre-installed on Windows 10/11)
 
 ## 🆘 Getting Help

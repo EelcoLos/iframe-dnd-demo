@@ -22,7 +22,7 @@ A fully functional Windows desktop application in the `WebView2App/` directory t
 ### Prerequisites
 
 - Windows 10/11
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 - WebView2 Runtime (usually pre-installed)
 
 ### Run the App
@@ -142,7 +142,7 @@ dotnet publish -c Release --self-contained --runtime win-x64
 
 ### Framework-Dependent (Smaller)
 
-Requires .NET 8.0 installed on target machine:
+Requires .NET 10.0 installed on target machine:
 
 ```bash
 dotnet publish -c Release
@@ -207,7 +207,7 @@ Or download from: https://go.microsoft.com/fwlink/p/?LinkId=2124703
 
 - **WebView2 Documentation**: https://learn.microsoft.com/microsoft-edge/webview2/
 - **WPF Guide**: https://learn.microsoft.com/dotnet/desktop/wpf/
-- **.NET 8 Documentation**: https://learn.microsoft.com/dotnet/
+- **.NET 10 Documentation**: https://learn.microsoft.com/dotnet/
 
 ## Example Use Cases
 
