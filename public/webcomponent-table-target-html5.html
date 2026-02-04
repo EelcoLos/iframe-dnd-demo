@@ -287,7 +287,51 @@
         const data = e.dataTransfer.getData('text/plain');
         if (data) {
           const rowData = JSON.parse(data);
-          addRow(rowData);
+          
+          // Create the new row
+          const row = document.createElement('tr');
+          row.className = 'data-row';
+          row.draggable = true;
+          row.dataset.id = nextRowId++;
+          row.dataset.desc = rowData.description;
+          row.dataset.qty = rowData.quantity;
+          row.dataset.price = rowData.unitPrice;
+
+          const total = (parseFloat(rowData.quantity) * parseFloat(rowData.unitPrice)).toFixed(2);
+
+          row.innerHTML = `
+            <td class="drag-handle">⋮⋮</td>
+            <td>${escapeHtml(rowData.description)}</td>
+            <td>${escapeHtml(rowData.quantity)}</td>
+            <td>$${parseFloat(rowData.unitPrice).toFixed(2)}</td>
+            <td>$${total}</td>
+          `;
+
+          // Find the correct insertion point based on cursor position
+          const rows = Array.from(tbody.querySelectorAll('.data-row'));
+          let insertBefore = totalRow;
+          
+          // Find the row under cursor using clientY position
+          for (const existingRow of rows) {
+            const rect = existingRow.getBoundingClientRect();
+            if (e.clientY < rect.bottom) {
+              insertBefore = existingRow;
+              break;
+            }
+          }
+          
+          // Insert the new row at the correct position
+          tbody.insertBefore(row, insertBefore);
+          
+          // Show empty state as hidden
+          if (emptyState.style.display !== 'none') {
+            emptyState.style.display = 'none';
+          }
+          
+          updateTotal();
+          
+          // Notify other windows
+          commManager.broadcast('row-added', rowData);
         }
       } catch (err) {
         console.error('Error parsing drop data:', err);
@@ -331,13 +375,69 @@
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
+      // Ctrl+C to copy selected row
+      if (e.ctrlKey && e.key === 'c' && selectedRow) {
+        const rowData = {
+          description: selectedRow.dataset.desc,
+          quantity: selectedRow.dataset.qty,
+          unitPrice: selectedRow.dataset.price
+        };
+
+        commManager.copyToClipboard(rowData);
+        
+        selectedRow.classList.add('copied');
+        setTimeout(() => selectedRow.classList.remove('copied'), 500);
+        
+        e.preventDefault();
+      }
+      
       // Ctrl+V to paste from clipboard
       if (e.ctrlKey && e.key === 'v') {
         commManager.pasteFromClipboard((rowData) => {
           if (rowData) {
-            const newRow = addRow(rowData);
-            newRow.classList.add('copied');
-            setTimeout(() => newRow.classList.remove('copied'), 500);
+            // Create the new row
+            const row = document.createElement('tr');
+            row.className = 'data-row copied';
+            row.draggable = true;
+            row.dataset.id = nextRowId++;
+            row.dataset.desc = rowData.description;
+            row.dataset.qty = rowData.quantity;
+            row.dataset.price = rowData.unitPrice;
+
+            const total = (parseFloat(rowData.quantity) * parseFloat(rowData.unitPrice)).toFixed(2);
+
+            row.innerHTML = `
+              <td class="drag-handle">⋮⋮</td>
+              <td>${escapeHtml(rowData.description)}</td>
+              <td>${escapeHtml(rowData.quantity)}</td>
+              <td>$${parseFloat(rowData.unitPrice).toFixed(2)}</td>
+              <td>$${total}</td>
+            `;
+
+            // Insert after selected row if there is one, otherwise at the end
+            if (selectedRow && selectedRow.parentNode === tbody) {
+              const nextSibling = selectedRow.nextElementSibling;
+              if (nextSibling && nextSibling.classList.contains('data-row')) {
+                tbody.insertBefore(row, nextSibling);
+              } else {
+                tbody.insertBefore(row, totalRow);
+              }
+            } else {
+              tbody.insertBefore(row, totalRow);
+            }
+            
+            // Show empty state as hidden
+            if (emptyState.style.display !== 'none') {
+              emptyState.style.display = 'none';
+            }
+            
+            updateTotal();
+            
+            // Remove copied animation after a delay
+            setTimeout(() => row.classList.remove('copied'), 500);
+            
+            // Notify other windows
+            commManager.broadcast('row-added', rowData);
           }
         });
         e.preventDefault();
