@@ -53,101 +53,74 @@ public partial class MultiWindowCoordinator : Window
         }
     }
 
-    private void CoreWebView2_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
+    private async void CoreWebView2_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
     {
         // Get deferral to handle async operations
         var deferral = e.GetDeferral();
 
-        // Capture window position on UI thread before going async
-        double currentLeft = this.Left;
-        double currentTop = this.Top;
-
-        // Run async initialization on a background task to avoid blocking
-        System.Threading.Tasks.Task.Run(async () =>
+        try
         {
-            try
+            // Create new window (we're already on the UI thread)
+            var newWindow = new Window
             {
-                // Create window on UI thread
-                Window? newWindow = null;
-                Microsoft.Web.WebView2.Wpf.WebView2? webView = null;
+                Width = 900,
+                Height = 700,
+                WindowStartupLocation = WindowStartupLocation.Manual
+            };
 
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    // Create new window
-                    newWindow = new Window
-                    {
-                        Width = 900,
-                        Height = 700,
-                        WindowStartupLocation = WindowStartupLocation.Manual
-                    };
-
-                    // Determine position and title based on which window is being opened
-                    if (e.Uri.Contains("source"))
-                    {
-                        newWindow.Left = 100;
-                        newWindow.Top = 100;
-                        newWindow.Title = "Available Items Table";
-                    }
-                    else if (e.Uri.Contains("target"))
-                    {
-                        newWindow.Left = 1020;
-                        newWindow.Top = 100;
-                        newWindow.Title = "Construction Calculation Table";
-                    }
-                    else
-                    {
-                        newWindow.Left = currentLeft + 50;
-                        newWindow.Top = currentTop + 50;
-                        newWindow.Title = "Multi-Window Table Demo";
-                    }
-
-                    // Create WebView2 control
-                    webView = new Microsoft.Web.WebView2.Wpf.WebView2();
-                    newWindow.Content = webView;
-
-                    // Show the window immediately
-                    newWindow.Show();
-                });
-
-                if (webView != null && newWindow != null)
-                {
-                    // Initialize WebView2 asynchronously
-                    await webView.EnsureCoreWebView2Async(null);
-
-                    // Set up virtual host mapping on UI thread
-                    await Dispatcher.InvokeAsync(() =>
-                    {
-                        webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                            "app.local", _publicFolderPath,
-                            CoreWebView2HostResourceAccessKind.Allow);
-
-                        // Use the requested WebView2 for the new window
-                        e.NewWindow = webView.CoreWebView2;
-                    });
-
-                    // Handle window closing on UI thread
-                    await Dispatcher.InvokeAsync(() =>
-                    {
-                        newWindow.Closed += (s, args) =>
-                        {
-                            webView.Dispose();
-                        };
-                    });
-                }
-            }
-            catch (Exception ex)
+            // Determine position and title based on which window is being opened
+            if (e.Uri.Contains("source"))
             {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    MessageBox.Show($"Error creating new window: {ex.Message}",
-                        "Window Creation Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                });
+                newWindow.Left = 100;
+                newWindow.Top = 100;
+                newWindow.Title = "Available Items Table";
             }
-            finally
+            else if (e.Uri.Contains("target"))
             {
-                // Always complete the deferral
-                deferral.Complete();
+                newWindow.Left = 1020;
+                newWindow.Top = 100;
+                newWindow.Title = "Construction Calculation Table";
             }
-        });
+            else
+            {
+                newWindow.Left = this.Left + 50;
+                newWindow.Top = this.Top + 50;
+                newWindow.Title = "Multi-Window Table Demo";
+            }
+
+            // Create WebView2 control
+            var webView = new Microsoft.Web.WebView2.Wpf.WebView2();
+            newWindow.Content = webView;
+
+            // Show the window immediately
+            newWindow.Show();
+
+            // Initialize WebView2 asynchronously (stays on UI thread)
+            await webView.EnsureCoreWebView2Async(null);
+
+            // Set up virtual host mapping
+            webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "app.local", _publicFolderPath,
+                CoreWebView2HostResourceAccessKind.Allow);
+
+            // Use the requested WebView2 for the new window
+            e.NewWindow = webView.CoreWebView2;
+
+            // Handle window closing
+            newWindow.Closed += (s, args) =>
+            {
+                webView.Dispose();
+            };
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error creating new window: {ex.Message}",
+                "Window Creation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            // Always complete the deferral
+            deferral.Complete();
+        }
     }
 }
