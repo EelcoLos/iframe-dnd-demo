@@ -28,6 +28,38 @@ public partial class MainWindow : Window
             var appPath = AppDomain.CurrentDomain.BaseDirectory;
             _publicFolderPath = Path.Combine(appPath, "public");
 
+            // Check if public folder exists, try alternative paths
+            if (!Directory.Exists(_publicFolderPath))
+            {
+                // Try relative path from project directory (for development)
+                var projectPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "public");
+                projectPath = Path.GetFullPath(projectPath);
+                
+                if (Directory.Exists(projectPath))
+                {
+                    _publicFolderPath = projectPath;
+                }
+                else
+                {
+                    // Try current directory
+                    var currentPath = Path.Combine(Directory.GetCurrentDirectory(), "public");
+                    if (Directory.Exists(currentPath))
+                    {
+                        _publicFolderPath = currentPath;
+                    }
+                    else
+                    {
+                        throw new DirectoryNotFoundException(
+                            $"Public folder not found. Searched:\n" +
+                            $"1. {Path.Combine(appPath, "public")}\n" +
+                            $"2. {projectPath}\n" +
+                            $"3. {currentPath}\n\n" +
+                            $"Please ensure you have built the project (dotnet build) " +
+                            $"or that the 'public' folder exists in one of these locations.");
+                    }
+                }
+            }
+
             // Ensure WebView2 runtime is available
             await WebView1.EnsureCoreWebView2Async(null);
             await WebView2.EnsureCoreWebView2Async(null);
@@ -48,7 +80,7 @@ public partial class MainWindow : Window
             LoadDemoMode("basic");
 
             _isInitialized = true;
-            UpdateStatus("WebView2 application ready");
+            UpdateStatus($"WebView2 application ready - Public folder: {_publicFolderPath}");
         }
         catch (Exception ex)
         {

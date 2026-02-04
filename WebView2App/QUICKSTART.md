@@ -61,6 +61,37 @@ Click the **🔧 DevTools** button to open Edge DevTools and inspect the web con
 
 ## 🐛 Troubleshooting
 
+### "The system cannot find the path specified" or DirectoryNotFoundException
+
+This error means the `public` folder with HTML/JS files wasn't found. Fix it by:
+
+1. **Build the project first** (this copies the files):
+   ```bash
+   dotnet build
+   ```
+
+2. **Verify the public folder exists**:
+   - Check `bin/Debug/net8.0-windows/public/` has HTML/JS files
+   - Or check that `../public/` exists relative to the WebView2App directory
+
+3. **Run from the correct directory**:
+   ```bash
+   cd WebView2App
+   dotnet run
+   ```
+
+4. **If still failing**, try a clean rebuild:
+   ```bash
+   dotnet clean
+   dotnet build
+   dotnet run
+   ```
+
+The app will search for the `public` folder in these locations:
+- `{AppBaseDirectory}/public/` (build output)
+- `../public/` (project structure)
+- `{CurrentDirectory}/public/`
+
 ### "WebView2 Runtime not found"
 
 Install the WebView2 Runtime:

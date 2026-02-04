@@ -150,6 +150,40 @@ The app automatically copies all files from ../public/ to the build output direc
 
 ## Troubleshooting
 
+### "The system cannot find the path specified" (0x8C07CC03)
+
+This error occurs when the `public` folder cannot be found. **Solution:**
+
+1. **Build the project first** to copy the HTML/JS files:
+   ```bash
+   cd WebView2App
+   dotnet build
+   ```
+
+2. **Verify the public folder exists**:
+   - Check `bin/Debug/net8.0-windows/public/` contains HTML/JS files
+   - Files should be copied automatically during build
+
+3. **Run from the WebView2App directory**:
+   ```bash
+   cd WebView2App
+   dotnet run
+   ```
+
+4. **If still failing**, do a clean rebuild:
+   ```bash
+   dotnet clean
+   dotnet build
+   dotnet run
+   ```
+
+The application searches for the `public` folder in:
+- Build output: `{AppDirectory}/public/`
+- Project structure: `../public/` (relative to WebView2App)
+- Current directory: `{CurrentDirectory}/public/`
+
+If none of these paths exist, you'll see a detailed error message with all paths searched.
+
 ### WebView2 Runtime Not Found
 
 If you get an error about WebView2 runtime:

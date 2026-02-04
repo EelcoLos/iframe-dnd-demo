@@ -23,6 +23,15 @@ public partial class MultiWindowCoordinator : Window
     {
         try
         {
+            // Validate that the public folder path exists
+            if (!Directory.Exists(_publicFolderPath))
+            {
+                throw new DirectoryNotFoundException(
+                    $"Public folder not found at: {_publicFolderPath}\n\n" +
+                    $"This window requires a valid public folder path. " +
+                    $"Please ensure the main application initialized correctly.");
+            }
+
             // Ensure WebView2 runtime is available
             await CoordinatorWebView.EnsureCoreWebView2Async(null);
 
