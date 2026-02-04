@@ -303,16 +303,9 @@
         row.classList.add('drag-over');
       }
       
-      // Show preview of total with dragged item
-      try {
-        const dragData = e.dataTransfer.getData('application/json');
-        if (dragData) {
-          const rowData = JSON.parse(dragData);
-          updateTotal(rowData);
-        }
-      } catch (err) {
-        // DataTransfer data might not be accessible during dragover in some browsers
-        // This is expected, preview will work in browsers that support it
+      // Show preview of total with dragged item using data from drag-start message
+      if (currentDragData) {
+        updateTotal(currentDragData);
       }
     });
 
@@ -513,12 +506,18 @@
     });
 
     // Listen for drag events from other windows
+    // Store dragged row data for hover preview
+    let currentDragData = null;
+    
     commManager.on('drag-start', (data, sourceWindowId) => {
       document.body.classList.add('drag-active');
+      currentDragData = data; // Store for hover preview
     });
     
     commManager.on('drag-end', (data, sourceWindowId) => {
       document.body.classList.remove('drag-active');
+      currentDragData = null; // Clear drag data
+      updateTotal(); // Reset to actual total (no preview)
     });
   </script>
 </body>
