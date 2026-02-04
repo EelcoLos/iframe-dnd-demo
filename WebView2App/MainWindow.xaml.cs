@@ -24,40 +24,51 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Get the path to the public folder
+            // Try to find the public folder in multiple locations
+            var searchPaths = new List<string>();
+            
+            // 1. Build output directory (bin/Debug/net8.0-windows/public)
             var appPath = AppDomain.CurrentDomain.BaseDirectory;
-            _publicFolderPath = Path.Combine(appPath, "public");
+            var buildOutputPath = Path.Combine(appPath, "public");
+            searchPaths.Add(buildOutputPath);
+            
+            // 2. Repository root (go up from WebView2App to repo root)
+            // The app could be running from WebView2App/bin/Debug/net8.0-windows or from WebView2App
+            var repoRootPath1 = Path.GetFullPath(Path.Combine(appPath, "..", "..", "..", "..", "public"));
+            searchPaths.Add(repoRootPath1);
+            
+            // 3. One level up from current directory (for when running from WebView2App folder)
+            var currentDir = Directory.GetCurrentDirectory();
+            var repoRootPath2 = Path.GetFullPath(Path.Combine(currentDir, "..", "public"));
+            searchPaths.Add(repoRootPath2);
+            
+            // 4. Current directory (in case running from repo root)
+            var currentDirPublic = Path.Combine(currentDir, "public");
+            searchPaths.Add(currentDirPublic);
 
-            // Check if public folder exists, try alternative paths
-            if (!Directory.Exists(_publicFolderPath))
+            // Find the first path that exists
+            _publicFolderPath = string.Empty;
+            foreach (var path in searchPaths)
             {
-                // Try relative path from project directory (for development)
-                var projectPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "public");
-                projectPath = Path.GetFullPath(projectPath);
+                if (Directory.Exists(path))
+                {
+                    _publicFolderPath = path;
+                    break;
+                }
+            }
+
+            // If no path found, show detailed error
+            if (string.IsNullOrEmpty(_publicFolderPath))
+            {
+                var errorMsg = "Public folder not found. Searched:\n";
+                for (int i = 0; i < searchPaths.Count; i++)
+                {
+                    errorMsg += $"{i + 1}. {searchPaths[i]}\n";
+                }
+                errorMsg += "\nPlease ensure you have built the project (dotnet build) " +
+                           "or that the 'public' folder exists in one of these locations.";
                 
-                if (Directory.Exists(projectPath))
-                {
-                    _publicFolderPath = projectPath;
-                }
-                else
-                {
-                    // Try current directory
-                    var currentPath = Path.Combine(Directory.GetCurrentDirectory(), "public");
-                    if (Directory.Exists(currentPath))
-                    {
-                        _publicFolderPath = currentPath;
-                    }
-                    else
-                    {
-                        throw new DirectoryNotFoundException(
-                            $"Public folder not found. Searched:\n" +
-                            $"1. {Path.Combine(appPath, "public")}\n" +
-                            $"2. {projectPath}\n" +
-                            $"3. {currentPath}\n\n" +
-                            $"Please ensure you have built the project (dotnet build) " +
-                            $"or that the 'public' folder exists in one of these locations.");
-                    }
-                }
+                throw new DirectoryNotFoundException(errorMsg);
             }
 
             // Ensure WebView2 runtime is available
