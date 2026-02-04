@@ -115,10 +115,16 @@
       font-weight: 600;
       background: #fef3c7 !important;
       border-top: 2px solid #f59e0b;
+      transition: all 0.3s ease;
     }
 
     .total-row td {
       color: #92400e;
+    }
+
+    .total-row.flash {
+      background: #86efac !important;
+      transform: scale(1.02);
     }
 
     .empty-state {
@@ -276,6 +282,13 @@
         const finalTotal = `$${total.toFixed(2)}`;
         console.log('Setting total element to:', finalTotal);
         document.getElementById('totalAmount').textContent = finalTotal;
+        
+        // Flash the total row to make the update visible
+        const totalRow = tbody.querySelector('.total-row');
+        if (totalRow) {
+          totalRow.classList.add('flash');
+          setTimeout(() => totalRow.classList.remove('flash'), 500);
+        }
       }
     }
 
