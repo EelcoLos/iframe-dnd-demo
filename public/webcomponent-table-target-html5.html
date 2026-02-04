@@ -196,7 +196,10 @@
     import { HybridCommunicationManager } from './hybrid-communication.js';
 
     // Initialize communication manager
-    const commManager = new HybridCommunicationManager('target-table');
+    const commManager = new HybridCommunicationManager({
+      windowId: 'target-table-webcomponent'
+    });
+    commManager.initializeAsChild();
     let selectedRow = null;
     let nextRowId = 1;
 
@@ -232,7 +235,7 @@
       updateTotal();
       
       // Notify other windows
-      commManager.sendMessage('row-added', rowData);
+      commManager.broadcast('row-added', rowData);
 
       return row;
     }
@@ -354,12 +357,12 @@
     });
 
     // Listen for drag events from other windows
-    commManager.onMessage((type, data) => {
-      if (type === 'drag-start') {
-        document.body.classList.add('drag-active');
-      } else if (type === 'drag-end') {
-        document.body.classList.remove('drag-active');
-      }
+    commManager.on('drag-start', (data, sourceWindowId) => {
+      document.body.classList.add('drag-active');
+    });
+    
+    commManager.on('drag-end', (data, sourceWindowId) => {
+      document.body.classList.remove('drag-active');
     });
   </script>
 </body>

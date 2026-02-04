@@ -417,6 +417,39 @@ export class HybridCommunicationManager {
     return Array.from(this.knownWindows);
   }
   
+  /**
+   * Copy row data to a shared clipboard storage
+   */
+  copyToClipboard(data) {
+    // Store in sessionStorage for cross-window clipboard
+    try {
+      sessionStorage.setItem('clipboard-data', JSON.stringify(data));
+      console.log('[HybridComm] Copied to clipboard:', data);
+    } catch (e) {
+      console.error('[HybridComm] Failed to copy to clipboard:', e);
+    }
+  }
+  
+  /**
+   * Paste row data from shared clipboard storage
+   */
+  pasteFromClipboard(callback) {
+    try {
+      const data = sessionStorage.getItem('clipboard-data');
+      if (data) {
+        const rowData = JSON.parse(data);
+        console.log('[HybridComm] Pasted from clipboard:', rowData);
+        callback(rowData);
+      } else {
+        console.log('[HybridComm] Clipboard is empty');
+        callback(null);
+      }
+    } catch (e) {
+      console.error('[HybridComm] Failed to paste from clipboard:', e);
+      callback(null);
+    }
+  }
+  
   close() {
     if (this.channel) {
       this.channel.close();

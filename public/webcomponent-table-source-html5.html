@@ -217,7 +217,10 @@
     import { HybridCommunicationManager } from './hybrid-communication.js';
 
     // Initialize communication manager
-    const commManager = new HybridCommunicationManager('source-table');
+    const commManager = new HybridCommunicationManager({
+      windowId: 'source-table-webcomponent'
+    });
+    commManager.initializeAsChild();
     let selectedRow = null;
 
     const tbody = document.getElementById('itemsTable');
@@ -239,7 +242,7 @@
       e.dataTransfer.setData('text/plain', JSON.stringify(rowData));
       
       // Send to other windows via communication manager
-      commManager.sendMessage('drag-start', rowData);
+      commManager.broadcast('drag-start', rowData);
     });
 
     tbody.addEventListener('dragend', (e) => {
@@ -247,7 +250,7 @@
       if (row) {
         row.classList.remove('dragging');
       }
-      commManager.sendMessage('drag-end', {});
+      commManager.broadcast('drag-end', {});
     });
 
     // Click selection for keyboard copy
@@ -285,10 +288,8 @@
     });
 
     // Listen for messages from other windows
-    commManager.onMessage((type, data) => {
-      if (type === 'row-added') {
-        console.log('Row added to target:', data);
-      }
+    commManager.on('row-added', (data, sourceWindowId) => {
+      console.log('Row added to target:', data);
     });
   </script>
 </body>
