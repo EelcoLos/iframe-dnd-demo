@@ -102,7 +102,11 @@
                     <Button Name="TableModeButton" Content="Table Rows" Tag="table" Style="{StaticResource ModernButton}" Click="ModeButton_Click" Width="90"/>
                     <Button Name="Html5ModeButton" Content="HTML5 DnD" Tag="html5" Style="{StaticResource ModernButton}" Click="ModeButton_Click" Width="90"/>
                     
-                    <Separator Width="30" Background="Transparent"/>
+                    <Separator Width="20" Background="Transparent"/>
+                    
+                    <Button Name="MultiWindowButton" Content="🚀 Multi-Window" Style="{StaticResource ModernButton}" Click="MultiWindowButton_Click" Width="110"/>
+                    
+                    <Separator Width="20" Background="Transparent"/>
                     
                     <TextBlock Text="Layout:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" FontSize="11"/>
                     <Button Name="HorizontalLayoutButton" Content="Horizontal" Tag="horizontal" Style="{StaticResource ActiveButton}" Click="LayoutButton_Click" Width="80"/>

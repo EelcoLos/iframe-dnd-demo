@@ -2,20 +2,22 @@
 
 ## 🎨 What's Included
 
-This WebView2 application brings together **all** the drag-and-drop demonstrations from the iframe-dnd-demo repository into a single native Windows application.
+This WebView2 application brings together **all** the drag-and-drop demonstrations from the iframe-dnd-demo repository into a single native Windows application, including **multi-window drag-and-drop with Web Components**!
 
 ## 📊 Demo Modes Comparison
 
-| Feature | Basic Items | Table Rows | HTML5 DnD |
-|---------|-------------|------------|-----------|
-| **Drag & Drop** | ✅ Custom Pointer Events | ✅ Custom Pointer Events | ✅ HTML5 API |
-| **Visual Feedback** | ✅ Hover highlights | ✅ Drop indicators | ✅ Native drag image |
-| **Animations** | ✅ Success animations | ✅ Row animations | ✅ CSS transitions |
-| **Data Transfer** | Item objects | Row data + calculations | DataTransfer API |
-| **Keyboard Support** | ❌ | ✅ Copy/Paste (Ctrl+C/V) | ❌ |
-| **Multiple Items** | ✅ One at a time | ✅ One row at a time | ✅ One at a time |
-| **Auto Calculations** | ❌ | ✅ Real-time totals | ❌ |
-| **Use Case** | Task management | Budget planning | Generic DnD |
+| Feature | Basic Items | Table Rows | HTML5 DnD | Multi-Window (NEW) |
+|---------|-------------|------------|-----------|-------------------|
+| **Drag & Drop** | ✅ Custom Pointer Events | ✅ Custom Pointer Events | ✅ HTML5 API | ✅ Web Components |
+| **Visual Feedback** | ✅ Hover highlights | ✅ Drop indicators | ✅ Native drag image | ✅ Component-based |
+| **Animations** | ✅ Success animations | ✅ Row animations | ✅ CSS transitions | ✅ Shadow DOM |
+| **Data Transfer** | Item objects | Row data + calculations | DataTransfer API | Custom Events |
+| **Keyboard Support** | ❌ | ✅ Copy/Paste (Ctrl+C/V) | ❌ | ✅ Copy/Paste (Ctrl+C/V) |
+| **Multiple Items** | ✅ One at a time | ✅ One row at a time | ✅ One at a time | ✅ One row at a time |
+| **Auto Calculations** | ❌ | ✅ Real-time totals | ❌ | ✅ Real-time totals |
+| **Window Mode** | Single window | Single window | Single window | **Multiple windows** |
+| **Technology** | Pointer Events | Pointer Events | HTML5 API | **Web Components** |
+| **Use Case** | Task management | Budget planning | Generic DnD | **Modern architecture** |
 
 ## 🎮 Application Features
 
@@ -24,6 +26,7 @@ This WebView2 application brings together **all** the drag-and-drop demonstratio
 - **Native Windows UI**: Standard title bar, menu bar, and status bar
 - **Responsive Layout**: Resizable window with GridSplitter
 - **Modern Design**: Windows 11-style interface with rounded corners and shadows
+- **Multi-Window Support**: NEW! Open separate windows for advanced drag-and-drop
 
 ### Layout Options
 
@@ -43,6 +46,16 @@ This WebView2 application brings together **all** the drag-and-drop demonstratio
 │─────────────────────────────────────│
 │          [WebView #2]               │
 └─────────────────────────────────────┘
+```
+
+#### Multi-Window Mode (NEW)
+```
+┌──────────────┐        ┌──────────────┐
+│ Available    │        │ Construction │
+│ Items Table  │  --->  │ Calc Table   │
+│              │        │              │
+└──────────────┘        └──────────────┘
+  Window 1                 Window 2
 ```
 
 ### Navigation Controls
@@ -146,6 +159,37 @@ This WebView2 application brings together **all** the drag-and-drop demonstratio
 - DataTransfer object for data exchange
 - Native drop effects (copy, move, link)
 
+### Multi-Window Table Demo (NEW! 🚀)
+
+**Visual Elements**:
+- Available Items Table (separate window)
+- Construction Calculation Table (separate window)
+- Coordinator window with status indicators
+- Web Components with Shadow DOM encapsulation
+
+**Interactions**:
+- Drag rows between separate windows
+- Click row to select (blue outline)
+- Ctrl+C to copy selected row
+- Ctrl+V to paste in other window
+- Automatic total recalculation
+- Visual feedback during drag
+
+**Technology Highlights**:
+- ✨ **Web Components**: Custom `<table-row>` and `<drag-drop-table>` elements
+- ✨ **Shadow DOM**: Encapsulated styling and behavior
+- ✨ **Custom Events**: Component communication via CustomEvent API
+- ✨ **Modern Architecture**: Reusable, composable components
+- ✨ **Cross-Window**: BroadcastChannel/postMessage for window communication
+- ✨ **Reactive Updates**: Automatic re-rendering on data changes
+
+**What Makes It Special**:
+- First demo using Web Components standard
+- Demonstrates modern web development patterns
+- Shows how to build reusable UI components
+- Multi-window architecture with WebView2
+- Perfect example of hybrid native/web app
+
 ## 🚀 Advantages Over Web Version
 
 | Aspect | Web Version | WebView2 App |
@@ -158,6 +202,7 @@ This WebView2 application brings together **all** the drag-and-drop demonstratio
 | **Distribution** | URL sharing | Executable file |
 | **Updates** | Automatic | Manual or auto-update |
 | **Security** | Browser sandboxed | App permissions |
+| **Multi-Window** | Limited | **Full support with WebView2** |
 
 ## 🎓 Learning Opportunities
 
@@ -165,6 +210,7 @@ This application demonstrates:
 
 1. **WebView2 Integration**: How to embed web content in native apps
 2. **WPF Modern UI**: Creating modern Windows applications
+3. **Web Components**: Building custom, reusable HTML elements
 3. **Hybrid Development**: Combining web and native technologies
 4. **Virtual Hosting**: Serving local files securely
 5. **Cross-Context Communication**: WebView to WebView messaging

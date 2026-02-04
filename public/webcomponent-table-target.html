@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Construction Calculation Table (Web Components)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe4e4 100%);
+      min-height: 100vh;
+    }
+
+    .info {
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+
+    .info p {
+      color: #991b1b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <p><strong>🏗️ Construction Calculation Table</strong></p>
+    <p>• Drop rows from the Available Items table here</p>
+    <p>• Use <strong>Ctrl+V</strong> to paste copied rows</p>
+    <p>• Total automatically updates when items are added</p>
+    <p>• Built with Web Components!</p>
+  </div>
+
+  <drag-drop-table id="construction-calc" title="Construction Calculation" can-drop></drag-drop-table>
+
+  <script type="module">
+    import './drag-drop-table-component.js';
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    const table = document.getElementById('construction-calc');
+    table.rows = [];
+
+    // Set up communication
+    const broadcast = new HybridCommunicationManager({
+      windowId: 'target-table-webcomponent'
+    });
+
+    broadcast.initializeAsChild();
+
+    // Listen for drag start from other windows
+    broadcast.on('dragStartTable', (data, sourceWindowId) => {
+      console.log('[Target] Drag started in', sourceWindowId, data);
+      
+      // Set up drop listeners
+      const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      };
+
+      const handleDrop = (e) => {
+        e.preventDefault();
+        console.log('[Target] Drop received, adding row');
+        
+        // Add the row
+        table.addRow(data.data);
+
+        // Notify other windows
+        broadcast.broadcast('dropTable', {
+          data: data.data,
+          targetWindow: 'target-table-webcomponent'
+        });
+
+        // Clean up
+        document.removeEventListener('dragover', handleDragOver);
+        document.removeEventListener('drop', handleDrop);
+      };
+
+      document.addEventListener('dragover', handleDragOver);
+      document.addEventListener('drop', handleDrop);
+    });
+
+    // Listen for copied rows
+    broadcast.on('rowCopied', (data, sourceWindowId) => {
+      console.log('[Target] Row copied in', sourceWindowId);
+    });
+
+    // Handle paste
+    table.addEventListener('row-pasted', (e) => {
+      console.log('[Target] Row pasted:', e.detail.data);
+      
+      broadcast.broadcast('rowPasted', {
+        data: e.detail.data,
+        targetWindow: 'target-table-webcomponent'
+      });
+    });
+
+    console.log('[Target Table] Web Component initialized');
+  </script>
+</body>
+</html>

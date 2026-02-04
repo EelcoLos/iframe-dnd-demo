@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebView2 Multi-Window Coordinator (Web Components)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+    
+    h1 {
+      color: #4f46e5;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+    
+    .badge {
+      display: inline-block;
+      background: #8b5cf6;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    
+    .instructions {
+      background: #f8fafc;
+      border-left: 4px solid #4f46e5;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+    
+    .instructions h3 {
+      color: #4f46e5;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+    }
+    
+    .instructions ol {
+      margin-left: 20px;
+      line-height: 1.8;
+      color: #475569;
+    }
+    
+    .instructions li {
+      margin-bottom: 8px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .btn {
+      flex: 1;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    
+    .btn:hover {
+      background: #4338ca;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn-emerald {
+      background: #10b981;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-emerald:hover {
+      background: #059669;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+    
+    .status {
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .status h3 {
+      color: #475569;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+    }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    
+    .status-indicator.inactive {
+      background: #94a3b8;
+    }
+    
+    .status-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Multi-Window Table Demo<span class="badge">Web Components</span></h1>
+    <p class="subtitle">WebView2 Edition - Drag & Drop Between Windows</p>
+    
+    <div class="instructions">
+      <h3>📋 Instructions</h3>
+      <ol>
+        <li>Click the buttons below to open the table windows</li>
+        <li>Arrange windows side-by-side on your screen</li>
+        <li><strong>Drag rows</strong> from Available Items to Construction Calc</li>
+        <li><strong>Keyboard:</strong> Select a row (click) → Ctrl+C → Focus other window → Ctrl+V</li>
+        <li>Watch the total update automatically!</li>
+      </ol>
+    </div>
+    
+    <h3 style="color: #64748b; font-size: 14px; margin-bottom: 10px; text-transform: uppercase;">Open Windows:</h3>
+    
+    <div class="button-group">
+      <button class="btn btn-emerald" id="open-source-table">
+        📋 Available Items
+      </button>
+      <button class="btn btn-emerald" id="open-target-table">
+        🏗️ Construction Calc
+      </button>
+    </div>
+    
+    <div class="status">
+      <h3>Window Status</h3>
+      <div class="status-grid">
+        <div class="status-item">
+          <div class="status-indicator" id="status-source"></div>
+          <span class="status-label">Available Items</span>
+        </div>
+        <div class="status-item">
+          <div class="status-indicator" id="status-target"></div>
+          <span class="status-label">Construction Calc</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Track opened windows
+    const windows = {
+      'source-table-webcomponent': null,
+      'target-table-webcomponent': null
+    };
+
+    // Set up coordinator communication
+    const broadcast = new HybridCommunicationManager({
+      windowId: 'coordinator-webcomponent'
+    });
+
+    broadcast.initializeAsCoordinator();
+
+    // Update status indicators
+    function updateStatus() {
+      const statusSource = document.getElementById('status-source');
+      const statusTarget = document.getElementById('status-target');
+
+      if (windows['source-table-webcomponent'] && !windows['source-table-webcomponent'].closed) {
+        statusSource.classList.remove('inactive');
+      } else {
+        statusSource.classList.add('inactive');
+      }
+
+      if (windows['target-table-webcomponent'] && !windows['target-table-webcomponent'].closed) {
+        statusTarget.classList.remove('inactive');
+      } else {
+        statusTarget.classList.add('inactive');
+      }
+    }
+
+    setInterval(updateStatus, 1000);
+
+    // Open source table window
+    document.getElementById('open-source-table').addEventListener('click', () => {
+      if (windows['source-table-webcomponent'] && !windows['source-table-webcomponent'].closed) {
+        windows['source-table-webcomponent'].focus();
+        return;
+      }
+
+      windows['source-table-webcomponent'] = window.open(
+        'webcomponent-table-source.html',
+        'SourceTableWebComponent',
+        'width=800,height=600,left=100,top=100'
+      );
+
+      if (windows['source-table-webcomponent']) {
+        broadcast.registerWindow('source-table-webcomponent', windows['source-table-webcomponent']);
+        console.log('[Coordinator] Opened source table window');
+      }
+    });
+
+    // Open target table window
+    document.getElementById('open-target-table').addEventListener('click', () => {
+      if (windows['target-table-webcomponent'] && !windows['target-table-webcomponent'].closed) {
+        windows['target-table-webcomponent'].focus();
+        return;
+      }
+
+      windows['target-table-webcomponent'] = window.open(
+        'webcomponent-table-target.html',
+        'TargetTableWebComponent',
+        'width=800,height=600,left=920,top=100'
+      );
+
+      if (windows['target-table-webcomponent']) {
+        broadcast.registerWindow('target-table-webcomponent', windows['target-table-webcomponent']);
+        console.log('[Coordinator] Opened target table window');
+      }
+    });
+
+    // Listen for communication between windows (for debugging)
+    broadcast.on('dragStartTable', (data, sourceWindowId) => {
+      console.log('[Coordinator] Relaying drag start from', sourceWindowId);
+    });
+
+    broadcast.on('dropTable', (data, sourceWindowId) => {
+      console.log('[Coordinator] Relaying drop from', sourceWindowId);
+    });
+
+    console.log('[Coordinator] Web Component multi-window coordinator initialized');
+  </script>
+</body>
+</html>

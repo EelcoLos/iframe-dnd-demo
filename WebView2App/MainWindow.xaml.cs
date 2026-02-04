@@ -228,4 +228,12 @@ public partial class MainWindow : Window
         WebView1.CoreWebView2.OpenDevToolsWindow();
         UpdateStatus("Opened DevTools for WebView #1");
     }
+
+    private void MultiWindowButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open the multi-window coordinator in a new window
+        var multiWindowCoordinator = new MultiWindowCoordinator(_publicFolderPath);
+        multiWindowCoordinator.Show();
+        UpdateStatus("Opened Multi-Window Table Demo (Web Components)");
+    }
 }

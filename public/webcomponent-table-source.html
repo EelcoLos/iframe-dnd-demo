@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Available Items Table (Web Components)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+    }
+
+    .info {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+
+    .info p {
+      color: #1e40af;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <p><strong>📋 Available Items Table</strong></p>
+    <p>• Click a row to select it (blue outline)</p>
+    <p>• Drag rows to the Construction Table window</p>
+    <p>• Use <strong>Ctrl+C</strong> to copy selected row</p>
+    <p>• This table uses Web Components!</p>
+  </div>
+
+  <drag-drop-table id="available-items" title="Available Construction Items"></drag-drop-table>
+
+  <script type="module">
+    import './drag-drop-table-component.js';
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Sample data
+    const sampleRows = [
+      { description: 'Concrete Foundation', quantity: 50, unitPrice: 120.00, amount: 6000.00 },
+      { description: 'Steel Beams', quantity: 25, unitPrice: 450.00, amount: 11250.00 },
+      { description: 'Wooden Frames', quantity: 100, unitPrice: 85.00, amount: 8500.00 },
+      { description: 'Roof Tiles', quantity: 200, unitPrice: 35.00, amount: 7000.00 },
+      { description: 'Glass Windows', quantity: 30, unitPrice: 250.00, amount: 7500.00 },
+      { description: 'Interior Doors', quantity: 15, unitPrice: 180.00, amount: 2700.00 },
+      { description: 'Electrical Wiring', quantity: 500, unitPrice: 8.50, amount: 4250.00 },
+      { description: 'Plumbing Pipes', quantity: 150, unitPrice: 22.00, amount: 3300.00 }
+    ];
+
+    const table = document.getElementById('available-items');
+    table.rows = sampleRows;
+
+    // Set up communication
+    const broadcast = new HybridCommunicationManager({
+      windowId: 'source-table-webcomponent'
+    });
+
+    broadcast.initializeAsChild();
+
+    // Handle drag start
+    table.addEventListener('table-drag-start', (e) => {
+      console.log('[Source] Drag started:', e.detail.data);
+      
+      // Broadcast to other windows
+      broadcast.broadcast('dragStartTable', {
+        data: e.detail.data,
+        sourceWindow: 'source-table-webcomponent'
+      });
+    });
+
+    // Handle row copy
+    table.addEventListener('row-copied', (e) => {
+      console.log('[Source] Row copied:', e.detail.data);
+      
+      broadcast.broadcast('rowCopied', {
+        data: e.detail.data,
+        sourceWindow: 'source-table-webcomponent'
+      });
+    });
+
+    // Listen for drop events from other windows
+    broadcast.on('dropTable', (data, sourceWindowId) => {
+      console.log('[Source] Drop received from', sourceWindowId, data);
+    });
+
+    console.log('[Source Table] Web Component initialized');
+  </script>
+</body>
+</html>
