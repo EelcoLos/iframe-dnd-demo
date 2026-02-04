@@ -248,11 +248,18 @@
 
     function updateTotal(previewRowData = null) {
       let total = 0;
-      tbody.querySelectorAll('.data-row').forEach(row => {
+      const rows = tbody.querySelectorAll('.data-row');
+      console.log('updateTotal called, found', rows.length, 'data rows, preview:', previewRowData !== null);
+      
+      rows.forEach(row => {
         const qty = parseFloat(row.dataset.qty) || 0;
         const price = parseFloat(row.dataset.price) || 0;
-        total += qty * price;
+        const rowTotal = qty * price;
+        console.log('  Row:', row.dataset.desc, 'qty:', qty, 'price:', price, 'total:', rowTotal);
+        total += rowTotal;
       });
+
+      console.log('Total calculated:', total);
 
       // If we have preview data, add it to the total
       if (previewRowData) {
@@ -260,11 +267,15 @@
         const previewPrice = parseFloat(previewRowData.unitPrice) || 0;
         const previewTotal = total + (previewQty * previewPrice);
         
+        console.log('Preview total:', previewTotal);
+        
         // Display with preview indication
         const totalElement = document.getElementById('totalAmount');
         totalElement.innerHTML = `$${total.toFixed(2)} <span style="color: #f59e0b; font-weight: 600;">→ $${previewTotal.toFixed(2)}</span>`;
       } else {
-        document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+        const finalTotal = `$${total.toFixed(2)}`;
+        console.log('Setting total element to:', finalTotal);
+        document.getElementById('totalAmount').textContent = finalTotal;
       }
     }
 
@@ -356,7 +367,10 @@
             emptyState.style.display = 'none';
           }
           
+          console.log('Row inserted, updating total...');
+          console.log('Row dataset:', row.dataset.qty, row.dataset.price);
           updateTotal();
+          console.log('Total updated');
           
           // Notify other windows
           commManager.broadcast('row-added', rowData);
