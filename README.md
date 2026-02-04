@@ -20,7 +20,9 @@ Both modes use custom Pointer Events for precise control and cross-context coord
 
 A full native Windows WPF application is included that demonstrates all the drag-and-drop capabilities using Microsoft's WebView2 control. This provides a real desktop application experience with all the web-based demos.
 
-**See [WebView2App/README.md](WebView2App/README.md) for building and running instructions.**
+**📖 See [WEBVIEW2.md](WEBVIEW2.md) for complete overview**  
+**⚡ See [WebView2App/QUICKSTART.md](WebView2App/QUICKSTART.md) to get started**  
+**📚 See [WebView2App/README.md](WebView2App/README.md) for building and running instructions**
 
 ### Quick Start (Windows only)
 
