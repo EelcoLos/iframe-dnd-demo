@@ -82,19 +82,19 @@ public partial class MultiWindowCoordinator : Window
                     {
                         newWindow.Left = 100;
                         newWindow.Top = 100;
-                        newWindow.Title = "Available Items Table (HTML5)";
+                        newWindow.Title = "Available Items Table";
                     }
                     else if (e.Uri.Contains("target"))
                     {
                         newWindow.Left = 1020;
                         newWindow.Top = 100;
-                        newWindow.Title = "Construction Calculation Table (HTML5)";
+                        newWindow.Title = "Construction Calculation Table";
                     }
                     else
                     {
                         newWindow.Left = Left + 50;
                         newWindow.Top = 50;
-                        newWindow.Title = "Multi-Window Table (HTML5)";
+                        newWindow.Title = "Multi-Window Table Demo";
                     }
 
                     // Create WebView2 control

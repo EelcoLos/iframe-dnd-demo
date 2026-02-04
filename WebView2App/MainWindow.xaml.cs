@@ -126,8 +126,8 @@ public partial class MainWindow : Window
                 // Use HTML5 table version for WebView2 compatibility
                 page1 = "window-frame-a-table-html5.html";
                 page2 = "window-frame-b-table-html5.html";
-                title1 = "WebView2 #1 - Construction Calculation (HTML5)";
-                title2 = "WebView2 #2 - Candidate Rows (HTML5)";
+                title1 = "WebView2 #1 - Construction Calculation";
+                title2 = "WebView2 #2 - Candidate Rows";
                 break;
             case "html5":
                 page1 = "window-frame-a-html5.html";
@@ -139,8 +139,8 @@ public partial class MainWindow : Window
                 // Use HTML5 version for WebView2 compatibility
                 page1 = "window-frame-a-html5.html";
                 page2 = "window-frame-b-html5.html";
-                title1 = "WebView2 #1 - Draggable Items (HTML5)";
-                title2 = "WebView2 #2 - Drop Zones (HTML5)";
+                title1 = "WebView2 #1 - Draggable Items";
+                title2 = "WebView2 #2 - Drop Zones";
                 break;
         }
 
