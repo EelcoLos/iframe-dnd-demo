@@ -110,7 +110,7 @@ class DragDropTable extends HTMLElement {
         }
       </style>
       <div class="container">
-        <h2>${title}</h2>
+        <h2></h2>
         <table>
           <thead>
             <tr>
@@ -131,6 +131,12 @@ class DragDropTable extends HTMLElement {
         </table>
       </div>
     `;
+
+    // Safely set title to prevent XSS
+    const h2Element = this.shadowRoot.querySelector('h2');
+    if (h2Element) {
+      h2Element.textContent = title;
+    }
 
     this.renderRows();
   }

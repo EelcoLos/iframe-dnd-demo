@@ -107,11 +107,20 @@ class TableRow extends HTMLElement {
           color: #0f172a;
         }
       </style>
-      <td>${description}</td>
-      <td>${quantity}</td>
-      <td>$${parseFloat(unitPrice).toFixed(2)}</td>
-      <td class="amount">$${parseFloat(amount).toFixed(2)}</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td class="amount"></td>
     `;
+    
+    // Safely set text content to prevent XSS
+    const cells = this.shadowRoot.querySelectorAll('td');
+    if (cells.length >= 4) {
+      cells[0].textContent = description;
+      cells[1].textContent = quantity;
+      cells[2].textContent = `$${parseFloat(unitPrice).toFixed(2)}`;
+      cells[3].textContent = `$${parseFloat(amount).toFixed(2)}`;
+    }
   }
 
   setupEventListeners() {
