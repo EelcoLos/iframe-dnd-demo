@@ -123,11 +123,11 @@ public partial class MainWindow : Window
         switch (mode)
         {
             case "table":
-                // Use window-frame-*-table.html for standalone windows
-                page1 = "window-frame-a-table.html";
-                page2 = "window-frame-b-table.html";
-                title1 = "WebView2 #1 - Construction Calculation";
-                title2 = "WebView2 #2 - Candidate Rows";
+                // Use HTML5 table version for WebView2 compatibility
+                page1 = "window-frame-a-table-html5.html";
+                page2 = "window-frame-b-table-html5.html";
+                title1 = "WebView2 #1 - Construction Calculation (HTML5)";
+                title2 = "WebView2 #2 - Candidate Rows (HTML5)";
                 break;
             case "html5":
                 page1 = "window-frame-a-html5.html";
@@ -136,11 +136,11 @@ public partial class MainWindow : Window
                 title2 = "WebView2 #2 - HTML5 Drop Zones";
                 break;
             default: // basic
-                // Use window-frame-*.html for standalone windows
-                page1 = "window-frame-a.html";
-                page2 = "window-frame-b.html";
-                title1 = "WebView2 #1 - Draggable Items";
-                title2 = "WebView2 #2 - Drop Zones";
+                // Use HTML5 version for WebView2 compatibility
+                page1 = "window-frame-a-html5.html";
+                page2 = "window-frame-b-html5.html";
+                title1 = "WebView2 #1 - Draggable Items (HTML5)";
+                title2 = "WebView2 #2 - Drop Zones (HTML5)";
                 break;
         }
 

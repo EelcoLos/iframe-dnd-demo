@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Construction Calc (HTML5 DnD)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 30px;
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      min-height: 100vh;
+      transition: background 0.3s ease;
+    }
+
+    body.drag-active {
+      background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    }
+
+    h2 {
+      color: #ea580c;
+      margin-bottom: 20px;
+      font-size: 1.8em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 400px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 14px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    tbody tr.data-row {
+      cursor: move;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    tbody tr.data-row:hover {
+      background: #fff7ed;
+    }
+
+    tbody tr.drag-over {
+      background: #fef3c7;
+      border-top: 3px solid #f59e0b;
+    }
+
+    tbody tr.dragging {
+      opacity: 0.5;
+    }
+
+    tbody tr.selected {
+      background: #fed7aa;
+      outline: 2px solid #ea580c;
+      outline-offset: -2px;
+    }
+
+    tbody tr.copied {
+      animation: copiedFlash 0.5s ease;
+    }
+
+    @keyframes copiedFlash {
+      0%, 100% { background: transparent; }
+      50% { background: #86efac; }
+    }
+
+    td {
+      padding: 12px;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: #94a3b8;
+      font-size: 18px;
+      user-select: none;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .total-row {
+      font-weight: 600;
+      background: #fef3c7 !important;
+      border-top: 2px solid #f59e0b;
+    }
+
+    .total-row td {
+      color: #92400e;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94a3b8;
+    }
+
+    .empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .info-banner {
+      background: #fff7ed;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: #92400e;
+      font-size: 14px;
+    }
+
+    .shortcuts {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #78350f;
+    }
+
+    .shortcuts strong {
+      color: #ea580c;
+    }
+  </style>
+</head>
+<body>
+  <h2>🧮 Construction Calculation</h2>
+
+  <div class="info-banner">
+    <strong>🎯 HTML5 Drop Zone Active!</strong>
+    <div class="shortcuts">
+      <strong>Mouse:</strong> Drop rows here from Available Items | 
+      <strong>Keyboard:</strong> Ctrl+V to paste copied row
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Description</th>
+          <th style="width: 100px;">Quantity</th>
+          <th style="width: 120px;">Unit Price</th>
+          <th style="width: 120px;">Total</th>
+        </tr>
+      </thead>
+      <tbody id="calcTable">
+        <tr id="emptyState" class="empty-state">
+          <td colspan="5">
+            <div class="icon">📦</div>
+            <div>Drop items here to calculate construction costs</div>
+          </td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4" style="text-align: right;">TOTAL:</td>
+          <td id="totalAmount">$0.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module" src="hybrid-communication.js"></script>
+  <script type="module">
+    import { HybridCommunicationManager } from './hybrid-communication.js';
+
+    // Initialize communication manager
+    const commManager = new HybridCommunicationManager('target-table');
+    let selectedRow = null;
+    let nextRowId = 1;
+
+    const tbody = document.getElementById('calcTable');
+    const emptyState = document.getElementById('emptyState');
+    const totalRow = tbody.querySelector('.total-row');
+
+    function addRow(rowData) {
+      // Remove empty state if this is the first row
+      if (emptyState.style.display !== 'none') {
+        emptyState.style.display = 'none';
+      }
+
+      const row = document.createElement('tr');
+      row.className = 'data-row';
+      row.draggable = true;
+      row.dataset.id = nextRowId++;
+      row.dataset.desc = rowData.description;
+      row.dataset.qty = rowData.quantity;
+      row.dataset.price = rowData.unitPrice;
+
+      const total = (parseFloat(rowData.quantity) * parseFloat(rowData.unitPrice)).toFixed(2);
+
+      row.innerHTML = `
+        <td class="drag-handle">⋮⋮</td>
+        <td>${escapeHtml(rowData.description)}</td>
+        <td>${escapeHtml(rowData.quantity)}</td>
+        <td>$${parseFloat(rowData.unitPrice).toFixed(2)}</td>
+        <td>$${total}</td>
+      `;
+
+      tbody.insertBefore(row, totalRow);
+      updateTotal();
+      
+      // Notify other windows
+      commManager.sendMessage('row-added', rowData);
+
+      return row;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function updateTotal() {
+      let total = 0;
+      tbody.querySelectorAll('.data-row').forEach(row => {
+        const qty = parseFloat(row.dataset.qty) || 0;
+        const price = parseFloat(row.dataset.price) || 0;
+        total += qty * price;
+      });
+
+      document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+    }
+
+    // HTML5 Drop handlers
+    tbody.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      document.body.classList.add('drag-active');
+
+      const row = e.target.closest('tr');
+      if (row && row !== totalRow && row !== emptyState) {
+        row.classList.add('drag-over');
+      }
+    });
+
+    tbody.addEventListener('dragleave', (e) => {
+      const row = e.target.closest('tr');
+      if (row) {
+        row.classList.remove('drag-over');
+      }
+    });
+
+    tbody.addEventListener('drop', (e) => {
+      e.preventDefault();
+      document.body.classList.remove('drag-active');
+
+      // Remove drag-over class
+      tbody.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
+
+      try {
+        const data = e.dataTransfer.getData('text/plain');
+        if (data) {
+          const rowData = JSON.parse(data);
+          addRow(rowData);
+        }
+      } catch (err) {
+        console.error('Error parsing drop data:', err);
+      }
+    });
+
+    document.addEventListener('dragend', () => {
+      document.body.classList.remove('drag-active');
+      tbody.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
+    });
+
+    // Internal drag for reordering
+    tbody.addEventListener('dragstart', (e) => {
+      const row = e.target.closest('tr.data-row');
+      if (row) {
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', row.dataset.id);
+      }
+    });
+
+    tbody.addEventListener('dragend', (e) => {
+      const row = e.target.closest('tr');
+      if (row) {
+        row.classList.remove('dragging');
+      }
+    });
+
+    // Click selection
+    tbody.addEventListener('click', (e) => {
+      const row = e.target.closest('tr.data-row');
+      if (!row) return;
+
+      if (selectedRow) {
+        selectedRow.classList.remove('selected');
+      }
+
+      selectedRow = row;
+      row.classList.add('selected');
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+V to paste from clipboard
+      if (e.ctrlKey && e.key === 'v') {
+        commManager.pasteFromClipboard((rowData) => {
+          if (rowData) {
+            const newRow = addRow(rowData);
+            newRow.classList.add('copied');
+            setTimeout(() => newRow.classList.remove('copied'), 500);
+          }
+        });
+        e.preventDefault();
+      }
+
+      // Delete key to remove selected row
+      if (e.key === 'Delete' && selectedRow) {
+        selectedRow.remove();
+        selectedRow = null;
+        updateTotal();
+        
+        // Show empty state if no rows left
+        if (tbody.querySelectorAll('.data-row').length === 0) {
+          emptyState.style.display = '';
+        }
+      }
+    });
+
+    // Listen for drag events from other windows
+    commManager.onMessage((type, data) => {
+      if (type === 'drag-start') {
+        document.body.classList.add('drag-active');
+      } else if (type === 'drag-end') {
+        document.body.classList.remove('drag-active');
+      }
+    });
+  </script>
+</body>
+</html>
