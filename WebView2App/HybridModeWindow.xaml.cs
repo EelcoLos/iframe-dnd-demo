@@ -243,7 +243,7 @@ namespace WebView2App
             _dataGridView.Rows[totalRowIndex].Cells["Total"].Value = grandTotal;
         }
 
-        private void DataGridView_DragEnter(object? sender, DragEventArgs e)
+        private void DataGridView_DragEnter(object? sender, System.Windows.Forms.DragEventArgs e)
         {
             if (e.Data != null && e.Data.GetDataPresent(DataFormats.Text))
             {
@@ -251,7 +251,7 @@ namespace WebView2App
             }
         }
 
-        private void DataGridView_DragDrop(object? sender, DragEventArgs e)
+        private void DataGridView_DragDrop(object? sender, System.Windows.Forms.DragEventArgs e)
         {
             if (e.Data == null) return;
 
