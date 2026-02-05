@@ -257,7 +257,9 @@
         if (win && !win.closed && win !== event.source) {
           try {
             win.postMessage(data, window.location.origin);
-            console.log(`[Coordinator] Relayed ${data.type} from ${event.source === windows['source-table-webcomponent'] ? 'webview source' : 'desktop target'} to ${id}`);
+            // Determine source window ID for logging
+            const sourceId = Object.entries(windows).find(([, w]) => w === event.source)?.[0] || 'unknown';
+            console.log(`[Coordinator] Relayed ${data.type} from ${sourceId} to ${id}`);
           } catch (error) {
             console.error(`[Coordinator] Failed to relay message to ${id}:`, error);
           }
