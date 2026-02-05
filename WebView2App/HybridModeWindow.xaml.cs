@@ -240,9 +240,7 @@ namespace WebView2App
                 }
             }
 
-            _dataGridView.Rows[totalRow
-
-Index].Cells["Total"].Value = grandTotal;
+            _dataGridView.Rows[totalRowIndex].Cells["Total"].Value = grandTotal;
         }
 
         private void DataGridView_DragEnter(object? sender, DragEventArgs e)
