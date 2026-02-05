@@ -10,7 +10,7 @@ namespace WebView2App;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private readonly string _publicFolderPath = string.Empty;
+    private string _publicFolderPath = string.Empty;
     private string _currentMode = "basic";
     private bool _isInitialized = false;
 
