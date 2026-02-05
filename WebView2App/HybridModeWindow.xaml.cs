@@ -205,16 +205,8 @@ namespace WebView2App
 
             // Insert before the total row
             var totalRowIndex = _dataGridView.Rows.Count - 1;
-            var newRowIndex = _dataGridView.Rows.Add(description, quantity, unitPrice, total);
-            
-            // Move the new row before the total row
-            if (newRowIndex == totalRowIndex + 1)
-            {
-                var row = _dataGridView.Rows[newRowIndex];
-                _dataGridView.Rows.Remove(row);
-                _dataGridView.Rows.Insert(totalRowIndex, row);
-                newRowIndex = totalRowIndex;
-            }
+            _dataGridView.Rows.Insert(totalRowIndex, description, quantity, unitPrice, total);
+            var newRowIndex = totalRowIndex;
 
             // Update grand total
             UpdateGrandTotal();
@@ -378,15 +370,11 @@ namespace WebView2App
         {
             if (_dataGridView == null) return;
 
-            // Remove all rows except the total row using LINQ
+            // Remove all rows except the total row
             var totalRowIndex = _dataGridView.Rows.Count - 1;
-            var rowsToRemove = _dataGridView.Rows.Cast<DataGridViewRow>()
-                .Where((row, index) => index != totalRowIndex)
-                .ToList();
-            
-            foreach (var row in rowsToRemove)
+            for (int i = totalRowIndex - 1; i >= 0; i--)
             {
-                _dataGridView.Rows.Remove(row);
+                _dataGridView.Rows.RemoveAt(i);
             }
 
             UpdateGrandTotal();

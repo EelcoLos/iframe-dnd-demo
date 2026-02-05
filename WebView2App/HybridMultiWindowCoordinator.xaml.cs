@@ -259,16 +259,8 @@ namespace WebView2App
 
             // Insert before the total row
             var totalRowIndex = dataGridView.Rows.Count - 1;
-            var newRowIndex = dataGridView.Rows.Add(description, quantity, unitPrice, total);
-            
-            // Move the new row before the total row
-            if (newRowIndex == totalRowIndex + 1)
-            {
-                var row = dataGridView.Rows[newRowIndex];
-                dataGridView.Rows.Remove(row);
-                dataGridView.Rows.Insert(totalRowIndex, row);
-                newRowIndex = totalRowIndex;
-            }
+            dataGridView.Rows.Insert(totalRowIndex, description, quantity, unitPrice, total);
+            var newRowIndex = totalRowIndex;
 
             UpdateGrandTotal(dataGridView);
 
