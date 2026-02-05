@@ -346,13 +346,13 @@ namespace WebView2App
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            if (WebViewSource.CoreWebView2?.CanGoBack ?? false)
+            if (WebViewSource.CoreWebView2?.CanGoBack == true)
                 WebViewSource.CoreWebView2.GoBack();
         }
 
         private void ForwardButton_Click(object sender, RoutedEventArgs e)
         {
-            if (WebViewSource.CoreWebView2?.CanGoForward ?? false)
+            if (WebViewSource.CoreWebView2?.CanGoForward == true)
                 WebViewSource.CoreWebView2.GoForward();
         }
 
