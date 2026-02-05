@@ -1,0 +1,145 @@
+<Window x:Class="WebView2App.HybridModeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        Title="Hybrid Mode - WebView Source → WinForms DataGridView Target" 
+        Height="800" 
+        Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Background="#F0F0F0">
+    
+    <Window.Resources>
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#ADADAD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E5F3FF"/>
+                                <Setter Property="BorderBrush" Value="#0078D4"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#CCE8FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    
+    <DockPanel>
+        <!-- Title Bar -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="0,0,0,1" Height="50">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0">
+                    <Ellipse Width="32" Height="32" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Ellipse.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#C026D3" Offset="0"/>
+                                <GradientStop Color="#A21CAF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Hybrid Mode Demo" FontSize="16" FontWeight="SemiBold" Foreground="#333"/>
+                        <TextBlock Text="WebView source (Web Components) → WinForms DataGridView target" FontSize="10" Foreground="#666"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="0,0,0,1" Padding="10">
+            <StackPanel Orientation="Horizontal">
+                <Button Name="BackButton" Content="◀ Back" Style="{StaticResource ModernButton}" Click="BackButton_Click" Width="70"/>
+                <Button Name="ForwardButton" Content="Forward ▶" Style="{StaticResource ModernButton}" Click="ForwardButton_Click" Width="80"/>
+                <Button Name="RefreshButton" Content="↻ Refresh" Style="{StaticResource ModernButton}" Click="RefreshButton_Click" Width="75"/>
+                <Separator Width="20" Background="Transparent"/>
+                <Button Name="DevToolsButton" Content="🔧 DevTools (Source)" Style="{StaticResource ModernButton}" Click="DevToolsButton_Click" Width="130"/>
+                <Button Name="ClearDataGridButton" Content="🗑️ Clear Target" Style="{StaticResource ModernButton}" Click="ClearDataGridButton_Click" Width="100"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Status Bar -->
+        <Border DockPanel.Dock="Bottom" Background="#F0F0F0" BorderBrush="#ADADAD" BorderThickness="0,1,0,0" Height="24">
+            <Grid Margin="10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,20,0">
+                    <Ellipse Width="8" Height="8" Fill="#C026D3" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBlock Text="Hybrid Mode Active" FontSize="10" Foreground="#666" VerticalAlignment="Center"/>
+                </StackPanel>
+                
+                <TextBlock Grid.Column="1" Name="StatusText" Text="Drag rows from WebView source to Desktop target" FontSize="10" Foreground="#666" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+        
+        <!-- Main Content Area with WebView2 Controls -->
+        <Grid Name="MainGrid" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- WebView Source (Left) - Web Components -->
+            <Border Grid.Column="0" Background="White" BorderBrush="#ADADAD" BorderThickness="1" CornerRadius="3">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" Background="#FDF4FF" BorderBrush="#C026D3" BorderThickness="0,0,0,1" Padding="8,6">
+                        <TextBlock Text="📦 WebView Source (Web Components)" FontSize="12" FontWeight="SemiBold" Foreground="#A21CAF"/>
+                    </Border>
+                    
+                    <wv2:WebView2 Grid.Row="1" Name="WebViewSource" />
+                </Grid>
+            </Border>
+            
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#ADADAD" ShowsPreview="False"/>
+            
+            <!-- WinForms DataGridView Target (Right) -->
+            <Border Grid.Column="2" Background="White" BorderBrush="#ADADAD" BorderThickness="1" CornerRadius="3">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" Background="#FFF7ED" BorderBrush="#EA580C" BorderThickness="0,0,0,1" Padding="8,6">
+                        <TextBlock Text="🎯 WinForms DataGridView Target" FontSize="12" FontWeight="SemiBold" Foreground="#C2410C"/>
+                    </Border>
+                    
+                    <WindowsFormsHost Grid.Row="1" Name="DataGridViewHost" />
+                </Grid>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

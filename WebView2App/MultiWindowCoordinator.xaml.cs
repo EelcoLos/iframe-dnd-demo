@@ -1,0 +1,126 @@
+using System.IO;
+using System.Windows;
+using Microsoft.Web.WebView2.Core;
+
+namespace WebView2App;
+
+/// <summary>
+/// Multi-Window Coordinator Window
+/// Opens separate WebView2 windows for drag and drop between windows
+/// </summary>
+public partial class MultiWindowCoordinator : Window
+{
+    private string _publicFolderPath = string.Empty;
+
+    public MultiWindowCoordinator(string publicFolderPath)
+    {
+        InitializeComponent();
+        _publicFolderPath = publicFolderPath;
+        InitializeAsync();
+    }
+
+    private async void InitializeAsync()
+    {
+        try
+        {
+            // Validate that the public folder path exists
+            if (!Directory.Exists(_publicFolderPath))
+            {
+                throw new DirectoryNotFoundException(
+                    $"Public folder not found at: {_publicFolderPath}\n\n" +
+                    $"This window requires a valid public folder path. " +
+                    $"Please ensure the main application initialized correctly.");
+            }
+
+            // Ensure WebView2 runtime is available
+            await CoordinatorWebView.EnsureCoreWebView2Async(null);
+
+            // Set up virtual host mapping
+            CoordinatorWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "app.local", _publicFolderPath,
+                CoreWebView2HostResourceAccessKind.Allow);
+
+            // Allow opening new windows
+            CoordinatorWebView.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
+
+            // Load the coordinator page
+            CoordinatorWebView.CoreWebView2.Navigate("https://app.local/webview2-multiwindow-coordinator.html");
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error initializing Multi-Window Coordinator: {ex.Message}",
+                "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void CoreWebView2_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        // Get deferral to handle async operations
+        var deferral = e.GetDeferral();
+
+        try
+        {
+            // Create new window (we're already on the UI thread)
+            var newWindow = new Window
+            {
+                Width = 900,
+                Height = 700,
+                WindowStartupLocation = WindowStartupLocation.Manual
+            };
+
+            // Determine position and title based on which window is being opened
+            if (e.Uri.EndsWith("source.html", StringComparison.OrdinalIgnoreCase))
+            {
+                newWindow.Left = 100;
+                newWindow.Top = 100;
+                newWindow.Title = "Available Items Table";
+            }
+            else if (e.Uri.EndsWith("target.html", StringComparison.OrdinalIgnoreCase))
+            {
+                newWindow.Left = 1020;
+                newWindow.Top = 100;
+                newWindow.Title = "Construction Calculation Table";
+            }
+            else
+            {
+                newWindow.Left = this.Left + 50;
+                newWindow.Top = this.Top + 50;
+                newWindow.Title = "Multi-Window Table Demo";
+            }
+
+            // Create WebView2 control
+            var webView = new Microsoft.Web.WebView2.Wpf.WebView2();
+            newWindow.Content = webView;
+
+            // Show the window immediately
+            newWindow.Show();
+
+            // Initialize WebView2 asynchronously (stays on UI thread)
+            await webView.EnsureCoreWebView2Async(null);
+
+            // Set up virtual host mapping
+            webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "app.local", _publicFolderPath,
+                CoreWebView2HostResourceAccessKind.Allow);
+
+            // Use the requested WebView2 for the new window
+            e.NewWindow = webView.CoreWebView2;
+
+            // Handle window closing
+            newWindow.Closed += (s, args) =>
+            {
+                webView.Dispose();
+            };
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error creating new window: {ex.Message}",
+                "Window Creation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            // Always complete the deferral
+            deferral.Complete();
+        }
+    }
+}

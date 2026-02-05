@@ -115,6 +115,7 @@
     <button class="demo-button active" data-demo="basic">Basic Items Demo</button>
     <button class="demo-button" data-demo="table">Table Rows Demo</button>
     <button class="demo-button" data-demo="cross-window">Cross-Window Mode</button>
+    <button class="demo-button" data-demo="webview2">WebView2 Mock App</button>
   </div>
   <div class="container" id="iframe-container">
     <div class="iframe-wrapper">
@@ -154,6 +155,18 @@
       if (demo === 'cross-window') {
         // Open cross-window coordinator in a new window
         window.open('parent-windows.html', 'CrossWindowCoordinator', 'width=700,height=800,left=200,top=100');
+        
+        // Switch back to basic demo after opening the window
+        setTimeout(() => {
+          const basicButton = document.querySelector('[data-demo="basic"]');
+          if (basicButton) {
+            document.querySelectorAll('.demo-button').forEach(btn => btn.classList.remove('active'));
+            basicButton.classList.add('active');
+          }
+        }, 100);
+      } else if (demo === 'webview2') {
+        // Open WebView2 mock app in a new window
+        window.open('webview2-mock.html', 'WebView2MockApp', 'width=1200,height=800,left=100,top=100');
         
         // Switch back to basic demo after opening the window
         setTimeout(() => {
