@@ -74,6 +74,8 @@ Uses BroadcastChannel/postMessage for cross-window communication. Provides both 
 
 Windows can be positioned anywhere on your screen and across multiple monitors.
 
+**Hybrid Variant:** A special variant combines WebView-style source (Frame A) with Desktop-style target (Frame B) tables, demonstrating interoperability between different UI implementations. Access via the "🔀 Open WebView → Desktop Coordinator" button in the Cross-Window Mode.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
