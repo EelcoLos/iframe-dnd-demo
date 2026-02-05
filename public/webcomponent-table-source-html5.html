@@ -311,6 +311,13 @@
     commManager.on('row-added', (data, sourceWindowId) => {
       console.log('Row added to target:', data);
     });
+    
+    // Listen for clipboard-copy events from other windows
+    commManager.on('clipboard-copy', (data, sourceWindowId) => {
+      console.log('[Source] Received clipboard-copy from', sourceWindowId, ':', data);
+      // Store the clipboard data so paste will work
+      commManager.clipboardData = data;
+    });
   </script>
 </body>
 </html>
