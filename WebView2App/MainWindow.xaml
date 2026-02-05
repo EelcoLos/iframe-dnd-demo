@@ -105,6 +105,7 @@
                     <Separator Width="20" Background="Transparent"/>
                     
                     <Button Name="MultiWindowButton" Content="🚀 Multi-Window" Style="{StaticResource ModernButton}" Click="MultiWindowButton_Click" Width="110"/>
+                    <Button Name="HybridModeButton" Content="🔀 Hybrid Mode" Style="{StaticResource ModernButton}" Click="HybridModeButton_Click" Width="100"/>
                     
                     <Separator Width="20" Background="Transparent"/>
                     
