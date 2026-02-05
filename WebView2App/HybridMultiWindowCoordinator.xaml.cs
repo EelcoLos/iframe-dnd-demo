@@ -16,7 +16,7 @@ namespace WebView2App
         private string? _publicFolderPath;
         private Window? _sourceWindow;
         private Window? _targetWindow;
-        private string? _clipboardData; // Store clipboard data for copy-paste between windows
+        private string? _copiedRowDataJson; // Stores JSON string of copied row data for paste
         private DataGridView? _targetDataGridView; // Store reference to DataGridView
 
         public HybridMultiWindowCoordinator()
@@ -305,12 +305,12 @@ namespace WebView2App
             // Ctrl+V to paste from clipboard
             if (e.Control && e.KeyCode == Keys.V)
             {
-                if (!string.IsNullOrEmpty(_clipboardData))
+                if (!string.IsNullOrEmpty(_copiedRowDataJson))
                 {
                     try
                     {
                         // Parse clipboard data
-                        using var json = System.Text.Json.JsonDocument.Parse(_clipboardData);
+                        using var json = System.Text.Json.JsonDocument.Parse(_copiedRowDataJson);
                         var root = json.RootElement;
 
                         var description = root.GetProperty("description").GetString() ?? "";
@@ -324,7 +324,10 @@ namespace WebView2App
                         }
                         else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
                         {
-                            int.TryParse(quantityProp.GetString(), out quantity);
+                            if (!int.TryParse(quantityProp.GetString(), out quantity))
+                            {
+                                throw new FormatException($"Invalid quantity value: {quantityProp.GetString()}");
+                            }
                         }
 
                         // Handle unitPrice - can be number or string in JSON
@@ -336,7 +339,10 @@ namespace WebView2App
                         }
                         else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
                         {
-                            decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
+                            if (!decimal.TryParse(unitPriceProp.GetString(), out unitPrice))
+                            {
+                                throw new FormatException($"Invalid unit price value: {unitPriceProp.GetString()}");
+                            }
                         }
 
                         AddRowToDataGrid(dataGridView, description, quantity, unitPrice);
@@ -384,14 +390,14 @@ namespace WebView2App
                     if (root.TryGetProperty("action", out var actionProp) && actionProp.GetString() == "copy")
                     {
                         // Store the clipboard data so the WinForms target can paste it
-                        _clipboardData = message;
+                        _copiedRowDataJson = message;
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Log error but don't show message box
-                System.Diagnostics.Debug.WriteLine($"Error processing copy message: {ex.Message}");
+                // Log error with full details for debugging
+                System.Diagnostics.Debug.WriteLine($"Error processing copy message: {ex}");
             }
         }
 
