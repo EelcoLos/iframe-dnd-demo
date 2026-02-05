@@ -519,13 +519,6 @@
       currentDragData = null; // Clear drag data
       updateTotal(); // Reset to actual total (no preview)
     });
-    
-    // Listen for clipboard-copy events from other windows
-    commManager.on('clipboard-copy', (data, sourceWindowId) => {
-      console.log('[Target] Received clipboard-copy from', sourceWindowId, ':', data);
-      // Store the clipboard data so paste will work
-      commManager.clipboardData = data;
-    });
   </script>
 </body>
 </html>
