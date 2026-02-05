@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        Title="Hybrid Mode - WebView Source → Desktop Target" 
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        Title="Hybrid Mode - WebView Source → WinForms DataGridView Target" 
         Height="800" 
         Width="1400"
         WindowStartupLocation="CenterScreen"
@@ -62,7 +63,7 @@
                     </Ellipse>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Hybrid Mode Demo" FontSize="16" FontWeight="SemiBold" Foreground="#333"/>
-                        <TextBlock Text="WebView source (Web Components) → Desktop target (HTML5 table)" FontSize="10" Foreground="#666"/>
+                        <TextBlock Text="WebView source (Web Components) → WinForms DataGridView target" FontSize="10" Foreground="#666"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
@@ -75,8 +76,8 @@
                 <Button Name="ForwardButton" Content="Forward ▶" Style="{StaticResource ModernButton}" Click="ForwardButton_Click" Width="80"/>
                 <Button Name="RefreshButton" Content="↻ Refresh" Style="{StaticResource ModernButton}" Click="RefreshButton_Click" Width="75"/>
                 <Separator Width="20" Background="Transparent"/>
-                <Button Name="DevToolsLeftButton" Content="🔧 DevTools (Left)" Style="{StaticResource ModernButton}" Click="DevToolsLeftButton_Click" Width="120"/>
-                <Button Name="DevToolsRightButton" Content="🔧 DevTools (Right)" Style="{StaticResource ModernButton}" Click="DevToolsRightButton_Click" Width="120"/>
+                <Button Name="DevToolsButton" Content="🔧 DevTools (Source)" Style="{StaticResource ModernButton}" Click="DevToolsButton_Click" Width="130"/>
+                <Button Name="ClearDataGridButton" Content="🗑️ Clear Target" Style="{StaticResource ModernButton}" Click="ClearDataGridButton_Click" Width="100"/>
             </StackPanel>
         </Border>
         
@@ -124,7 +125,7 @@
             <!-- Splitter -->
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#ADADAD" ShowsPreview="False"/>
             
-            <!-- Desktop Target (Right) - HTML5 Table -->
+            <!-- WinForms DataGridView Target (Right) -->
             <Border Grid.Column="2" Background="White" BorderBrush="#ADADAD" BorderThickness="1" CornerRadius="3">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -133,10 +134,10 @@
                     </Grid.RowDefinitions>
                     
                     <Border Grid.Row="0" Background="#FFF7ED" BorderBrush="#EA580C" BorderThickness="0,0,0,1" Padding="8,6">
-                        <TextBlock Text="🎯 Desktop Target (HTML5 Table)" FontSize="12" FontWeight="SemiBold" Foreground="#C2410C"/>
+                        <TextBlock Text="🎯 WinForms DataGridView Target" FontSize="12" FontWeight="SemiBold" Foreground="#C2410C"/>
                     </Border>
                     
-                    <wv2:WebView2 Grid.Row="1" Name="WebViewTarget" />
+                    <WindowsFormsHost Grid.Row="1" Name="DataGridViewHost" />
                 </Grid>
             </Border>
         </Grid>

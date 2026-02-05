@@ -243,6 +243,16 @@
       
       // Send to other windows via communication manager
       commManager.broadcast('drag-start', rowData);
+      
+      // If running in WebView2 (C# host), also send to native code
+      if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage({
+          action: 'dragstart',
+          description: row.dataset.desc,
+          quantity: parseInt(row.dataset.qty),
+          unitPrice: parseFloat(row.dataset.price)
+        });
+      }
     });
 
     tbody.addEventListener('dragend', (e) => {
@@ -266,6 +276,16 @@
       // Select new row
       selectedRow = row;
       row.classList.add('selected');
+      
+      // If double-click in WebView2, send directly to DataGridView
+      if (e.detail === 2 && window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage({
+          action: 'drop',
+          description: row.dataset.desc,
+          quantity: parseInt(row.dataset.qty),
+          unitPrice: parseFloat(row.dataset.price)
+        });
+      }
     });
 
     // Keyboard shortcuts
