@@ -16,6 +16,8 @@ namespace WebView2App
         private string? _publicFolderPath;
         private Window? _sourceWindow;
         private Window? _targetWindow;
+        private string? _clipboardData; // Store clipboard data for copy-paste between windows
+        private DataGridView? _targetDataGridView; // Store reference to DataGridView
 
         public HybridMultiWindowCoordinator()
         {
@@ -95,6 +97,9 @@ namespace WebView2App
             // Navigate to source
             webView.CoreWebView2.Navigate("https://app.local/webcomponent-table-source-html5.html");
 
+            // Subscribe to web messages from JavaScript (for copy events)
+            webView.CoreWebView2.WebMessageReceived += SourceWebView_WebMessageReceived;
+
             // Handle window closing
             _sourceWindow.Closed += (s, args) =>
             {
@@ -115,7 +120,7 @@ namespace WebView2App
             };
 
             // Create DataGridView
-            var dataGridView = new DataGridView
+            _targetDataGridView = new DataGridView
             {
                 Dock = DockStyle.Fill,
                 AllowUserToAddRows = false,
@@ -133,7 +138,7 @@ namespace WebView2App
             };
 
             // Add columns
-            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            _targetDataGridView.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Description",
                 HeaderText = "Description",
@@ -141,7 +146,7 @@ namespace WebView2App
                 ReadOnly = true
             });
 
-            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            _targetDataGridView.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Quantity",
                 HeaderText = "Qty",
@@ -149,7 +154,7 @@ namespace WebView2App
                 ReadOnly = true
             });
 
-            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            _targetDataGridView.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "UnitPrice",
                 HeaderText = "Unit Price",
@@ -157,7 +162,7 @@ namespace WebView2App
                 ReadOnly = true
             });
 
-            dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            _targetDataGridView.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Total",
                 HeaderText = "Total",
@@ -166,20 +171,20 @@ namespace WebView2App
             });
 
             // Add total row
-            dataGridView.Rows.Add("TOTAL", "", "", "0.00");
-            var lastRow = dataGridView.Rows[dataGridView.Rows.Count - 1];
+            _targetDataGridView.Rows.Add("TOTAL", "", "", "0.00");
+            var lastRow = _targetDataGridView.Rows[_targetDataGridView.Rows.Count - 1];
             lastRow.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             lastRow.DefaultCellStyle.BackColor = Color.FromArgb(241, 245, 249);
 
             // Set up drag and drop
-            dataGridView.DragEnter += DataGridView_DragEnter;
-            dataGridView.DragDrop += DataGridView_DragDrop;
-            dataGridView.KeyDown += DataGridView_KeyDown;
+            _targetDataGridView.DragEnter += DataGridView_DragEnter;
+            _targetDataGridView.DragDrop += DataGridView_DragDrop;
+            _targetDataGridView.KeyDown += DataGridView_KeyDown;
 
             // Create a WinForms host for the DataGridView
             var winFormsHost = new System.Windows.Forms.Integration.WindowsFormsHost
             {
-                Child = dataGridView
+                Child = _targetDataGridView
             };
 
             _targetWindow.Content = winFormsHost;
@@ -188,7 +193,7 @@ namespace WebView2App
             // Handle window closing
             _targetWindow.Closed += (s, args) =>
             {
-                dataGridView.Dispose();
+                _targetDataGridView.Dispose();
             };
         }
 
@@ -297,6 +302,58 @@ namespace WebView2App
         {
             if (sender is not DataGridView dataGridView) return;
 
+            // Ctrl+V to paste from clipboard
+            if (e.Control && e.KeyCode == Keys.V)
+            {
+                if (!string.IsNullOrEmpty(_clipboardData))
+                {
+                    try
+                    {
+                        // Parse clipboard data
+                        using var json = System.Text.Json.JsonDocument.Parse(_clipboardData);
+                        var root = json.RootElement;
+
+                        var description = root.GetProperty("description").GetString() ?? "";
+
+                        // Handle quantity - can be number or string in JSON
+                        int quantity = 0;
+                        var quantityProp = root.GetProperty("quantity");
+                        if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                        {
+                            quantity = quantityProp.GetInt32();
+                        }
+                        else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                        {
+                            int.TryParse(quantityProp.GetString(), out quantity);
+                        }
+
+                        // Handle unitPrice - can be number or string in JSON
+                        decimal unitPrice = 0;
+                        var unitPriceProp = root.GetProperty("unitPrice");
+                        if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                        {
+                            unitPrice = unitPriceProp.GetDecimal();
+                        }
+                        else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                        {
+                            decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
+                        }
+
+                        AddRowToDataGrid(dataGridView, description, quantity, unitPrice);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Windows.MessageBox.Show(
+                            $"Error pasting data: {ex.Message}",
+                            "Paste Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
+                }
+                e.Handled = true;
+                return;
+            }
+
             if (e.KeyCode == Keys.Delete && dataGridView.SelectedRows.Count > 0)
             {
                 var selectedRow = dataGridView.SelectedRows[0];
@@ -308,6 +365,33 @@ namespace WebView2App
                     dataGridView.Rows.RemoveAt(selectedRow.Index);
                     UpdateGrandTotal(dataGridView);
                 }
+            }
+        }
+
+        private void SourceWebView_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                var message = e.TryGetWebMessageAsString();
+
+                // Parse the message (expecting JSON format)
+                // Message format: {"action":"copy","description":"...","quantity":"12","unitPrice":"450"}
+                if (!string.IsNullOrEmpty(message))
+                {
+                    using var json = System.Text.Json.JsonDocument.Parse(message);
+                    var root = json.RootElement;
+
+                    if (root.TryGetProperty("action", out var actionProp) && actionProp.GetString() == "copy")
+                    {
+                        // Store the clipboard data so the WinForms target can paste it
+                        _clipboardData = message;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't show message box
+                System.Diagnostics.Debug.WriteLine($"Error processing copy message: {ex.Message}");
             }
         }
 

@@ -303,6 +303,16 @@
         selectedRow.classList.add('copied');
         setTimeout(() => selectedRow.classList.remove('copied'), 500);
         
+        // If running in WebView2 (C# host), also send copy to native code
+        if (window.chrome && window.chrome.webview) {
+          window.chrome.webview.postMessage({
+            action: 'copy',
+            description: selectedRow.dataset.desc,
+            quantity: selectedRow.dataset.qty,
+            unitPrice: selectedRow.dataset.price
+          });
+        }
+        
         e.preventDefault();
       }
     });
