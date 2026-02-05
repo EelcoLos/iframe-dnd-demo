@@ -5,211 +5,401 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
-        Title="WebView2 Drag &amp; Drop Demo Application" 
-        Height="800" 
+        Title="WebView2 Drag &amp; Drop Demo Application"
+        Height="800"
         Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="#F0F0F0">
-    
+
     <Window.Resources>
-        <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#ADADAD"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="4,0"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Cursor" Value="Hand"/>
+        <Style x:Key="ModernButton"
+                TargetType="Button">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#ADADAD"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="12,6"/>
+            <Setter Property="Margin"
+                    Value="4,0"/>
+            <Setter Property="FontSize"
+                    Value="11"/>
+            <Setter Property="Cursor"
+                    Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="3"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#E5F3FF"/>
-                                <Setter Property="BorderBrush" Value="#0078D4"/>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#E5F3FF"/>
+                                <Setter Property="BorderBrush"
+                                        Value="#0078D4"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#CCE8FF"/>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#CCE8FF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        
-        <Style x:Key="ActiveButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="#0078D4"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#0078D4"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+
+        <Style x:Key="ActiveButton"
+                TargetType="Button"
+                BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background"
+                    Value="#0078D4"/>
+            <Setter Property="Foreground"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#0078D4"/>
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
         </Style>
     </Window.Resources>
-    
+
     <DockPanel>
         <!-- Title Bar -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="0,0,0,1" Height="50">
+        <Border DockPanel.Dock="Top"
+                Background="#FAFAFA"
+                BorderBrush="#D0D0D0"
+                BorderThickness="0,0,0,1"
+                Height="50">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0">
-                    <Ellipse Width="32" Height="32" VerticalAlignment="Center" Margin="0,0,10,0">
+
+                <StackPanel Grid.Column="0"
+                        Orientation="Horizontal"
+                        Margin="15,0">
+                    <Ellipse Width="32"
+                            Height="32"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,0">
                         <Ellipse.Fill>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                <GradientStop Color="#667EEA" Offset="0"/>
-                                <GradientStop Color="#764BA2" Offset="1"/>
+                            <LinearGradientBrush StartPoint="0,0"
+                                    EndPoint="1,1">
+                                <GradientStop Color="#667EEA"
+                                        Offset="0"/>
+                                <GradientStop Color="#764BA2"
+                                        Offset="1"/>
                             </LinearGradientBrush>
                         </Ellipse.Fill>
                     </Ellipse>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="WebView2 Drag &amp; Drop Demo" FontSize="16" FontWeight="SemiBold" Foreground="#333"/>
-                        <TextBlock Text="All demo possibilities in a native app" FontSize="10" Foreground="#666"/>
+                        <TextBlock Text="WebView2 Drag &amp; Drop Demo"
+                                FontSize="16"
+                                FontWeight="SemiBold"
+                                Foreground="#333"/>
+                        <TextBlock Text="All demo possibilities in a native app"
+                                FontSize="10"
+                                Foreground="#666"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
-        
+
         <!-- Toolbar -->
-        <Border DockPanel.Dock="Top" Background="#FAFAFA" BorderBrush="#D0D0D0" BorderThickness="0,0,0,1" Padding="10">
+        <Border DockPanel.Dock="Top"
+                Background="#FAFAFA"
+                BorderBrush="#D0D0D0"
+                BorderThickness="0,0,0,1"
+                Padding="10">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
+
                 <!-- Navigation Controls -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                    <Button Name="BackButton" Content="◀ Back" Style="{StaticResource ModernButton}" Click="BackButton_Click" Width="70"/>
-                    <Button Name="ForwardButton" Content="Forward ▶" Style="{StaticResource ModernButton}" Click="ForwardButton_Click" Width="80"/>
-                    <Button Name="RefreshButton" Content="↻ Refresh" Style="{StaticResource ModernButton}" Click="RefreshButton_Click" Width="75"/>
-                    <Separator Width="20" Background="Transparent"/>
-                    <Button Name="DevToolsButton" Content="🔧 DevTools" Style="{StaticResource ModernButton}" Click="DevToolsButton_Click" Width="90"/>
+                <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Margin="0,0,0,8">
+                    <Button Name="BackButton"
+                            Content="◀ Back"
+                            Style="{StaticResource ModernButton}"
+                            Click="BackButton_Click"
+                            Width="70"/>
+                    <Button Name="ForwardButton"
+                            Content="Forward ▶"
+                            Style="{StaticResource ModernButton}"
+                            Click="ForwardButton_Click"
+                            Width="80"/>
+                    <Button Name="RefreshButton"
+                            Content="↻ Refresh"
+                            Style="{StaticResource ModernButton}"
+                            Click="RefreshButton_Click"
+                            Width="75"/>
+                    <Separator Width="20"
+                            Background="Transparent"/>
+                    <Button Name="DevToolsButton"
+                            Content="🔧 DevTools"
+                            Style="{StaticResource ModernButton}"
+                            Click="DevToolsButton_Click"
+                            Width="90"/>
                 </StackPanel>
-                
+
                 <!-- Demo Mode Selection -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal">
-                    <TextBlock Text="Demo Mode:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" FontSize="11"/>
-                    <Button Name="BasicModeButton" Content="Basic Items" Tag="basic" Style="{StaticResource ActiveButton}" Click="ModeButton_Click" Width="90"/>
-                    <Button Name="TableModeButton" Content="Table Rows" Tag="table" Style="{StaticResource ModernButton}" Click="ModeButton_Click" Width="90"/>
-                    <Button Name="Html5ModeButton" Content="HTML5 DnD" Tag="html5" Style="{StaticResource ModernButton}" Click="ModeButton_Click" Width="90"/>
-                    
-                    <Separator Width="20" Background="Transparent"/>
-                    
-                    <Button Name="MultiWindowButton" Content="🚀 Multi-Window" Style="{StaticResource ModernButton}" Click="MultiWindowButton_Click" Width="110"/>
-                    <Button Name="HybridModeButton" Content="🔀 Hybrid Mode" Style="{StaticResource ModernButton}" Click="HybridModeButton_Click" Width="100"/>
-                    
-                    <Separator Width="20" Background="Transparent"/>
-                    
-                    <TextBlock Text="Layout:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" FontSize="11"/>
-                    <Button Name="HorizontalLayoutButton" Content="Horizontal" Tag="horizontal" Style="{StaticResource ActiveButton}" Click="LayoutButton_Click" Width="80"/>
-                    <Button Name="VerticalLayoutButton" Content="Vertical" Tag="vertical" Style="{StaticResource ModernButton}" Click="LayoutButton_Click" Width="70"/>
+                <StackPanel Grid.Row="1"
+                        Orientation="Horizontal">
+                    <TextBlock Text="Demo Mode:"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,0"
+                            FontWeight="SemiBold"
+                            FontSize="11"/>
+                    <Button Name="BasicModeButton"
+                            Content="Basic Items"
+                            Tag="basic"
+                            Style="{StaticResource ActiveButton}"
+                            Click="ModeButton_Click"
+                            Width="90"/>
+                    <Button Name="TableModeButton"
+                            Content="Table Rows"
+                            Tag="table"
+                            Style="{StaticResource ModernButton}"
+                            Click="ModeButton_Click"
+                            Width="90"/>
+                    <Button Name="Html5ModeButton"
+                            Content="HTML5 DnD"
+                            Tag="html5"
+                            Style="{StaticResource ModernButton}"
+                            Click="ModeButton_Click"
+                            Width="90"/>
+
+                    <Separator Width="20"
+                            Background="Transparent"/>
+
+                    <Button Name="MultiWindowButton"
+                            Content="🚀 Multi-Window"
+                            Style="{StaticResource ModernButton}"
+                            Click="MultiWindowButton_Click"
+                            Width="110"/>
+                    <Button Name="HybridModeButton"
+                            Content="🔀 Hybrid Mode"
+                            Style="{StaticResource ModernButton}"
+                            Click="HybridModeButton_Click"
+                            Width="100"/>
+                    <Button Name="HybridMultiWindowButton"
+                            Content="🔀🚀 Hybrid Multi"
+                            Style="{StaticResource ModernButton}"
+                            Click="HybridMultiWindowButton_Click"
+                            Width="110"/>
+
+                    <Separator Width="20"
+                            Background="Transparent"/>
+
+                    <TextBlock Text="Layout:"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,0"
+                            FontWeight="SemiBold"
+                            FontSize="11"/>
+                    <Button Name="HorizontalLayoutButton"
+                            Content="Horizontal"
+                            Tag="horizontal"
+                            Style="{StaticResource ActiveButton}"
+                            Click="LayoutButton_Click"
+                            Width="80"/>
+                    <Button Name="VerticalLayoutButton"
+                            Content="Vertical"
+                            Tag="vertical"
+                            Style="{StaticResource ModernButton}"
+                            Click="LayoutButton_Click"
+                            Width="70"/>
                 </StackPanel>
             </Grid>
         </Border>
-        
+
         <!-- Status Bar -->
-        <Border DockPanel.Dock="Bottom" Background="#F0F0F0" BorderBrush="#ADADAD" BorderThickness="0,1,0,0" Height="24">
+        <Border DockPanel.Dock="Bottom"
+                Background="#F0F0F0"
+                BorderBrush="#ADADAD"
+                BorderThickness="0,1,0,0"
+                Height="24">
             <Grid Margin="10,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,20,0">
-                    <Ellipse Width="8" Height="8" Fill="#28A745" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <TextBlock Text="WebView2 Runtime: 120.0.2210.144" FontSize="10" Foreground="#666" VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="0"
+                        Orientation="Horizontal"
+                        Margin="0,0,20,0">
+                    <Ellipse Width="8"
+                            Height="8"
+                            Fill="#28A745"
+                            VerticalAlignment="Center"
+                            Margin="0,0,5,0"/>
+                    <TextBlock Text="WebView2 Runtime: 120.0.2210.144"
+                            FontSize="10"
+                            Foreground="#666"
+                            VerticalAlignment="Center"/>
                 </StackPanel>
-                
-                <TextBlock Grid.Column="1" Text="Ready" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="0,0,20,0"/>
-                
-                <TextBlock Grid.Column="2" Name="StatusText" Text="Drag items between WebView2 controls" FontSize="10" Foreground="#666" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1"
+                        Text="Ready"
+                        FontSize="10"
+                        Foreground="#666"
+                        VerticalAlignment="Center"
+                        Margin="0,0,20,0"/>
+
+                <TextBlock Grid.Column="2"
+                        Name="StatusText"
+                        Text="Drag items between WebView2 controls"
+                        FontSize="10"
+                        Foreground="#666"
+                        VerticalAlignment="Center"/>
             </Grid>
         </Border>
-        
+
         <!-- Main Content Area with WebView2 Controls -->
-        <Grid Name="MainGrid" Margin="5">
+        <Grid Name="MainGrid"
+                Margin="5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            
+
             <!-- WebView 1 Container -->
-            <Border Grid.Column="0" Background="White" BorderBrush="#ADADAD" BorderThickness="1" CornerRadius="3">
+            <Border Grid.Column="0"
+                    Background="White"
+                    BorderBrush="#ADADAD"
+                    BorderThickness="1"
+                    CornerRadius="3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    
+
                     <!-- WebView 1 Header -->
-                    <Border Grid.Row="0" Background="#F8F8F8" BorderBrush="#C0C0C0" BorderThickness="0,0,0,1" Padding="10,6">
+                    <Border Grid.Row="0"
+                            Background="#F8F8F8"
+                            BorderBrush="#C0C0C0"
+                            BorderThickness="0,0,0,1"
+                            Padding="10,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Name="WebView1Title" Text="WebView2 #1 - Draggable Items" FontSize="11" FontWeight="SemiBold" Foreground="#333" VerticalAlignment="Center"/>
+
+                            <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal">
+                                <Ellipse Width="8"
+                                        Height="8"
+                                        Fill="#0078D4"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,6,0"/>
+                                <TextBlock Name="WebView1Title"
+                                        Text="WebView2 #1 - Draggable Items"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Foreground="#333"
+                                        VerticalAlignment="Center"/>
                             </StackPanel>
-                            
-                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                <Button Content="↻" Width="20" Height="20" FontSize="10" Style="{StaticResource ModernButton}" Margin="2,0" Click="RefreshWebView1_Click" ToolTip="Refresh WebView"/>
+
+                            <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal">
+                                <Button Content="↻"
+                                        Width="20"
+                                        Height="20"
+                                        FontSize="10"
+                                        Style="{StaticResource ModernButton}"
+                                        Margin="2,0"
+                                        Click="RefreshWebView1_Click"
+                                        ToolTip="Refresh WebView"/>
                             </StackPanel>
                         </Grid>
                     </Border>
-                    
+
                     <!-- WebView 1 -->
-                    <wv2:WebView2 Grid.Row="1" Name="WebView1" />
+                    <wv2:WebView2 Grid.Row="1"
+                            Name="WebView1"/>
                 </Grid>
             </Border>
-            
+
             <!-- Splitter -->
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
-            
+            <GridSplitter Grid.Column="1"
+                    Width="5"
+                    HorizontalAlignment="Stretch"
+                    Background="Transparent"/>
+
             <!-- WebView 2 Container -->
-            <Border Grid.Column="2" Background="White" BorderBrush="#ADADAD" BorderThickness="1" CornerRadius="3">
+            <Border Grid.Column="2"
+                    Background="White"
+                    BorderBrush="#ADADAD"
+                    BorderThickness="1"
+                    CornerRadius="3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    
+
                     <!-- WebView 2 Header -->
-                    <Border Grid.Row="0" Background="#F8F8F8" BorderBrush="#C0C0C0" BorderThickness="0,0,0,1" Padding="10,6">
+                    <Border Grid.Row="0"
+                            Background="#F8F8F8"
+                            BorderBrush="#C0C0C0"
+                            BorderThickness="0,0,0,1"
+                            Padding="10,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="#0078D4" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Name="WebView2Title" Text="WebView2 #2 - Drop Zones" FontSize="11" FontWeight="SemiBold" Foreground="#333" VerticalAlignment="Center"/>
+
+                            <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal">
+                                <Ellipse Width="8"
+                                        Height="8"
+                                        Fill="#0078D4"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,6,0"/>
+                                <TextBlock Name="WebView2Title"
+                                        Text="WebView2 #2 - Drop Zones"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Foreground="#333"
+                                        VerticalAlignment="Center"/>
                             </StackPanel>
-                            
-                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                <Button Content="↻" Width="20" Height="20" FontSize="10" Style="{StaticResource ModernButton}" Margin="2,0" Click="RefreshWebView2_Click" ToolTip="Refresh WebView"/>
+
+                            <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal">
+                                <Button Content="↻"
+                                        Width="20"
+                                        Height="20"
+                                        FontSize="10"
+                                        Style="{StaticResource ModernButton}"
+                                        Margin="2,0"
+                                        Click="RefreshWebView2_Click"
+                                        ToolTip="Refresh WebView"/>
                             </StackPanel>
                         </Grid>
                     </Border>
-                    
+
                     <!-- WebView 2 -->
-                    <wv2:WebView2 Grid.Row="1" Name="WebView2" />
+                    <wv2:WebView2 Grid.Row="1"
+                            Name="WebView2"/>
                 </Grid>
             </Border>
         </Grid>

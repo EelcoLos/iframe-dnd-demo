@@ -289,4 +289,12 @@ public partial class MainWindow : Window
         hybridModeWindow.Show();
         UpdateStatus("Opened Hybrid Mode (WebView → Desktop Table)");
     }
+
+    private void HybridMultiWindowButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Open the hybrid multi-window coordinator
+        var hybridMultiWindowCoordinator = new HybridMultiWindowCoordinator();
+        hybridMultiWindowCoordinator.Show();
+        UpdateStatus("Opened Hybrid Multi-Window (WebView ↔ Desktop across windows)");
+    }
 }
