@@ -26,22 +26,22 @@ public partial class MainWindow : Window
         {
             // Try to find the public folder in multiple locations
             var searchPaths = new List<string>();
-            
+
             // 1. Build output directory (bin/Debug/net8.0-windows/public)
             var appPath = AppDomain.CurrentDomain.BaseDirectory;
             var buildOutputPath = Path.Combine(appPath, "public");
             searchPaths.Add(buildOutputPath);
-            
+
             // 2. Repository root (go up from WebView2App to repo root)
             // The app could be running from WebView2App/bin/Debug/net8.0-windows or from WebView2App
             var repoRootPath1 = Path.GetFullPath(Path.Combine(appPath, "..", "..", "..", "..", "public"));
             searchPaths.Add(repoRootPath1);
-            
+
             // 3. One level up from current directory (for when running from WebView2App folder)
             var currentDir = Directory.GetCurrentDirectory();
             var repoRootPath2 = Path.GetFullPath(Path.Combine(currentDir, "..", "public"));
             searchPaths.Add(repoRootPath2);
-            
+
             // 4. Current directory (in case running from repo root)
             var currentDirPublic = Path.Combine(currentDir, "public");
             searchPaths.Add(currentDirPublic);
@@ -67,7 +67,7 @@ public partial class MainWindow : Window
                 }
                 errorMsg += "\nPlease ensure you have built the project (dotnet build) " +
                            "or that the 'public' folder exists in one of these locations.";
-                
+
                 throw new DirectoryNotFoundException(errorMsg);
             }
 
@@ -77,11 +77,11 @@ public partial class MainWindow : Window
 
             // Set up virtual host mapping to serve local files
             WebView1.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "app.local", _publicFolderPath, 
+                "app.local", _publicFolderPath,
                 CoreWebView2HostResourceAccessKind.Allow);
-            
+
             WebView2.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "app.local", _publicFolderPath, 
+                "app.local", _publicFolderPath,
                 CoreWebView2HostResourceAccessKind.Allow);
 
             // Enable communication between WebViews (inject script for iframe communication)
@@ -95,7 +95,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error initializing WebView2: {ex.Message}", "Initialization Error", 
+            System.Windows.MessageBox.Show($"Error initializing WebView2: {ex.Message}", "Initialization Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -162,7 +162,7 @@ public partial class MainWindow : Window
     {
         if (!_isInitialized) return;
 
-        var button = sender as Button;
+        var button = sender as System.Windows.Controls.Button;
         if (button == null) return;
 
         var mode = button.Tag as string;
@@ -180,7 +180,7 @@ public partial class MainWindow : Window
 
     private void LayoutButton_Click(object sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
+        var button = sender as System.Windows.Controls.Button;
         if (button == null) return;
 
         var layout = button.Tag as string;
@@ -202,7 +202,7 @@ public partial class MainWindow : Window
 
             Grid.SetColumn(WebView1.Parent as UIElement, 0);
             Grid.SetRow(WebView1.Parent as UIElement, 0);
-            
+
             Grid.SetColumn(WebView2.Parent as UIElement, 0);
             Grid.SetRow(WebView2.Parent as UIElement, 2);
 
@@ -220,7 +220,7 @@ public partial class MainWindow : Window
 
             Grid.SetRow(WebView1.Parent as UIElement, 0);
             Grid.SetColumn(WebView1.Parent as UIElement, 0);
-            
+
             Grid.SetRow(WebView2.Parent as UIElement, 0);
             Grid.SetColumn(WebView2.Parent as UIElement, 2);
 
@@ -234,7 +234,7 @@ public partial class MainWindow : Window
             WebView1.CoreWebView2.GoBack();
         if (WebView2.CoreWebView2.CanGoBack)
             WebView2.CoreWebView2.GoBack();
-        
+
         UpdateStatus("Navigated back");
     }
 
@@ -244,7 +244,7 @@ public partial class MainWindow : Window
             WebView1.CoreWebView2.GoForward();
         if (WebView2.CoreWebView2.CanGoForward)
             WebView2.CoreWebView2.GoForward();
-        
+
         UpdateStatus("Navigated forward");
     }
 

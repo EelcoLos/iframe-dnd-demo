@@ -24,7 +24,7 @@ namespace WebView2App
             {
                 // Find the public folder
                 _publicFolderPath = FindPublicFolder();
-                
+
                 if (_publicFolderPath == null)
                 {
                     System.Windows.MessageBox.Show(
@@ -89,41 +89,41 @@ namespace WebView2App
             };
 
             // Add columns
-            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn 
-            { 
-                Name = "Description", 
+            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Description",
                 HeaderText = "Description",
                 FillWeight = 40,
                 ReadOnly = true
             });
 
-            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn 
-            { 
-                Name = "Quantity", 
+            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Quantity",
                 HeaderText = "Quantity",
                 FillWeight = 15,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
 
-            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn 
-            { 
-                Name = "UnitPrice", 
+            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "UnitPrice",
                 HeaderText = "Unit Price",
                 FillWeight = 15,
-                DefaultCellStyle = { 
+                DefaultCellStyle = {
                     Alignment = DataGridViewContentAlignment.MiddleRight,
                     Format = "C2"
                 },
                 ReadOnly = true
             });
 
-            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn 
-            { 
-                Name = "Total", 
+            _dataGridView.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Total",
                 HeaderText = "Total",
                 FillWeight = 15,
-                DefaultCellStyle = { 
+                DefaultCellStyle = {
                     Alignment = DataGridViewContentAlignment.MiddleRight,
                     Format = "C2"
                 },
@@ -172,7 +172,7 @@ namespace WebView2App
             try
             {
                 var message = e.TryGetWebMessageAsString();
-                
+
                 // Parse the message (expecting JSON format)
                 // Message format: {"action":"drop","description":"...","quantity":12,"unitPrice":450}
                 if (!string.IsNullOrEmpty(message))
@@ -203,19 +203,29 @@ namespace WebView2App
             // Calculate total for this row
             var total = quantity * unitPrice;
 
+            // Create a new row with the data
+            var newRow = new DataGridViewRow();
+            newRow.Cells.AddRange(
+                new DataGridViewTextBoxCell { Value = description },
+                new DataGridViewTextBoxCell { Value = quantity },
+                new DataGridViewTextBoxCell { Value = unitPrice },
+                new DataGridViewTextBoxCell { Value = total }
+            );
+
             // Insert before the total row
             var totalRowIndex = _dataGridView.Rows.Count - 1;
-            var newRowIndex = _dataGridView.Rows.Insert(totalRowIndex, description, quantity, unitPrice, total);
+            _dataGridView.Rows.Insert(totalRowIndex, newRow);
+            var newRowIndex = totalRowIndex;
 
             // Update grand total
             UpdateGrandTotal();
 
             // Flash the new row
             _dataGridView.Rows[newRowIndex].DefaultCellStyle.BackColor = Color.LightGreen;
-            var timer = new Timer { Interval = 500 };
+            var timer = new System.Windows.Forms.Timer { Interval = 500 };
             timer.Tick += (s, e) =>
             {
-                _dataGridView.Rows[newRowIndex].DefaultCellStyle.BackColor = 
+                _dataGridView.Rows[newRowIndex].DefaultCellStyle.BackColor =
                     newRowIndex % 2 == 0 ? Color.White : Color.FromArgb(250, 250, 250);
                 timer.Stop();
                 timer.Dispose();
@@ -245,9 +255,9 @@ namespace WebView2App
 
         private void DataGridView_DragEnter(object? sender, System.Windows.Forms.DragEventArgs e)
         {
-            if (e.Data != null && e.Data.GetDataPresent(DataFormats.Text))
+            if (e.Data != null && e.Data.GetDataPresent(System.Windows.Forms.DataFormats.Text))
             {
-                e.Effect = DragDropEffects.Copy;
+                e.Effect = System.Windows.Forms.DragDropEffects.Copy;
             }
         }
 
@@ -257,7 +267,7 @@ namespace WebView2App
 
             try
             {
-                var data = e.Data.GetData(DataFormats.Text) as string;
+                var data = e.Data.GetData(System.Windows.Forms.DataFormats.Text) as string;
                 if (!string.IsNullOrEmpty(data))
                 {
                     // Parse drag data
@@ -299,7 +309,7 @@ namespace WebView2App
         private string? FindPublicFolder()
         {
             var appDir = AppDomain.CurrentDomain.BaseDirectory;
-            
+
             // Try multiple locations
             var searchPaths = new[]
             {

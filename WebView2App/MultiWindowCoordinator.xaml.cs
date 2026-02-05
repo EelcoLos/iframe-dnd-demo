@@ -48,7 +48,7 @@ public partial class MultiWindowCoordinator : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error initializing Multi-Window Coordinator: {ex.Message}",
+            System.Windows.MessageBox.Show($"Error initializing Multi-Window Coordinator: {ex.Message}",
                 "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -114,7 +114,7 @@ public partial class MultiWindowCoordinator : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error creating new window: {ex.Message}",
+            System.Windows.MessageBox.Show($"Error creating new window: {ex.Message}",
                 "Window Creation Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
