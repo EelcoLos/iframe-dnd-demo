@@ -69,13 +69,13 @@ public partial class MultiWindowCoordinator : Window
             };
 
             // Determine position and title based on which window is being opened
-            if (e.Uri.Contains("source"))
+            if (e.Uri.EndsWith("source.html", StringComparison.OrdinalIgnoreCase))
             {
                 newWindow.Left = 100;
                 newWindow.Top = 100;
                 newWindow.Title = "Available Items Table";
             }
-            else if (e.Uri.Contains("target"))
+            else if (e.Uri.EndsWith("target.html", StringComparison.OrdinalIgnoreCase))
             {
                 newWindow.Left = 1020;
                 newWindow.Top = 100;

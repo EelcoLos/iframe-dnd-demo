@@ -52,16 +52,6 @@ namespace WebView2App
                 CreateTargetWindow();
 
                 StatusText.Text = "Both windows opened - Drag from WebView2 to WinForms!";
-
-                // Close coordinator after a delay
-                System.Windows.Threading.DispatcherTimer timer = new System.Windows.Threading.DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(3);
-                timer.Tick += (s, args) =>
-                {
-                    timer.Stop();
-                    Close();
-                };
-                timer.Start();
             }
             catch (Exception ex)
             {
@@ -220,7 +210,7 @@ namespace WebView2App
                 if (!string.IsNullOrEmpty(data))
                 {
                     // Parse drag data
-                    var json = System.Text.Json.JsonDocument.Parse(data);
+                    using var json = System.Text.Json.JsonDocument.Parse(data);
                     var root = json.RootElement;
 
                     var description = root.GetProperty("description").GetString() ?? "";
@@ -267,19 +257,18 @@ namespace WebView2App
             // Calculate total for this row
             var total = quantity * unitPrice;
 
-            // Create a new row with the data
-            var newRow = new DataGridViewRow();
-            newRow.Cells.AddRange(
-                new DataGridViewTextBoxCell { Value = description },
-                new DataGridViewTextBoxCell { Value = quantity },
-                new DataGridViewTextBoxCell { Value = unitPrice },
-                new DataGridViewTextBoxCell { Value = total }
-            );
-
             // Insert before the total row
             var totalRowIndex = dataGridView.Rows.Count - 1;
-            dataGridView.Rows.Insert(totalRowIndex, newRow);
-            var newRowIndex = totalRowIndex;
+            var newRowIndex = dataGridView.Rows.Add(description, quantity, unitPrice, total);
+            
+            // Move the new row before the total row
+            if (newRowIndex == totalRowIndex + 1)
+            {
+                var row = dataGridView.Rows[newRowIndex];
+                dataGridView.Rows.Remove(row);
+                dataGridView.Rows.Insert(totalRowIndex, row);
+                newRowIndex = totalRowIndex;
+            }
 
             UpdateGrandTotal(dataGridView);
 

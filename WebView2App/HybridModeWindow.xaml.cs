@@ -177,7 +177,7 @@ namespace WebView2App
                 // Message format: {"action":"drop","description":"...","quantity":12,"unitPrice":450}
                 if (!string.IsNullOrEmpty(message))
                 {
-                    var json = System.Text.Json.JsonDocument.Parse(message);
+                    using var json = System.Text.Json.JsonDocument.Parse(message);
                     var root = json.RootElement;
 
                     if (root.TryGetProperty("action", out var actionProp) && actionProp.GetString() == "drop")
@@ -203,19 +203,18 @@ namespace WebView2App
             // Calculate total for this row
             var total = quantity * unitPrice;
 
-            // Create a new row with the data
-            var newRow = new DataGridViewRow();
-            newRow.Cells.AddRange(
-                new DataGridViewTextBoxCell { Value = description },
-                new DataGridViewTextBoxCell { Value = quantity },
-                new DataGridViewTextBoxCell { Value = unitPrice },
-                new DataGridViewTextBoxCell { Value = total }
-            );
-
             // Insert before the total row
             var totalRowIndex = _dataGridView.Rows.Count - 1;
-            _dataGridView.Rows.Insert(totalRowIndex, newRow);
-            var newRowIndex = totalRowIndex;
+            var newRowIndex = _dataGridView.Rows.Add(description, quantity, unitPrice, total);
+            
+            // Move the new row before the total row
+            if (newRowIndex == totalRowIndex + 1)
+            {
+                var row = _dataGridView.Rows[newRowIndex];
+                _dataGridView.Rows.Remove(row);
+                _dataGridView.Rows.Insert(totalRowIndex, row);
+                newRowIndex = totalRowIndex;
+            }
 
             // Update grand total
             UpdateGrandTotal();
@@ -271,7 +270,7 @@ namespace WebView2App
                 if (!string.IsNullOrEmpty(data))
                 {
                     // Parse drag data
-                    var json = System.Text.Json.JsonDocument.Parse(data);
+                    using var json = System.Text.Json.JsonDocument.Parse(data);
                     var root = json.RootElement;
 
                     var description = root.GetProperty("description").GetString() ?? "";
@@ -355,13 +354,13 @@ namespace WebView2App
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            if (WebViewSource.CoreWebView2?.CanGoBack == true)
+            if (WebViewSource.CoreWebView2?.CanGoBack ?? false)
                 WebViewSource.CoreWebView2.GoBack();
         }
 
         private void ForwardButton_Click(object sender, RoutedEventArgs e)
         {
-            if (WebViewSource.CoreWebView2?.CanGoForward == true)
+            if (WebViewSource.CoreWebView2?.CanGoForward ?? false)
                 WebViewSource.CoreWebView2.GoForward();
         }
 
@@ -379,11 +378,15 @@ namespace WebView2App
         {
             if (_dataGridView == null) return;
 
-            // Remove all rows except the total row
+            // Remove all rows except the total row using LINQ
             var totalRowIndex = _dataGridView.Rows.Count - 1;
-            for (int i = totalRowIndex - 1; i >= 0; i--)
+            var rowsToRemove = _dataGridView.Rows.Cast<DataGridViewRow>()
+                .Where((row, index) => index != totalRowIndex)
+                .ToList();
+            
+            foreach (var row in rowsToRemove)
             {
-                _dataGridView.Rows.RemoveAt(i);
+                _dataGridView.Rows.Remove(row);
             }
 
             UpdateGrandTotal();

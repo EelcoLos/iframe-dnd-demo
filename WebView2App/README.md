@@ -2,14 +2,11 @@
 
 This is a native Windows WPF application that demonstrates all the drag-and-drop capabilities from the iframe-dnd-demo repository using Microsoft's WebView2 control.
 
-> **🚀 New here?** Start with **[START-HERE.md](START-HERE.md)** for a guided tour!
+> **🚀 New here?** Start with **[CONSOLIDATED-README.md](CONSOLIDATED-README.md)** for a complete guide!
 
 ## 📚 Documentation
 
-- **[START-HERE.md](START-HERE.md)** - ⭐ Navigation guide for all documentation
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 3 easy steps
-- **[FEATURES.md](FEATURES.md)** - Complete feature overview and comparisons
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture and implementation details
+- **[CONSOLIDATED-README.md](CONSOLIDATED-README.md)** - ⭐ Complete guide with quick start, features, and architecture
 - **[SUMMARY.md](SUMMARY.md)** - Implementation overview and statistics
 - **[README.md](README.md)** - This file - comprehensive guide
 
@@ -21,7 +18,7 @@ dotnet build
 dotnet run
 ```
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed getting started instructions.
+See [CONSOLIDATED-README.md](CONSOLIDATED-README.md) for detailed getting started instructions.
 
 ## Features
 

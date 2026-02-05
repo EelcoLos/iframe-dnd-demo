@@ -85,10 +85,7 @@ Perfect for:
 
 Comprehensive documentation is available in the `WebView2App/` directory:
 
-- **[QUICKSTART.md](WebView2App/QUICKSTART.md)** - Get started in 3 steps
-- **[README.md](WebView2App/README.md)** - Complete guide
-- **[FEATURES.md](WebView2App/FEATURES.md)** - Feature overview
-- **[ARCHITECTURE.md](WebView2App/ARCHITECTURE.md)** - Technical details
+- **[CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md)** - Complete guide with quick start, features, and technical details
 
 ## How It Works
 
@@ -250,4 +247,4 @@ Same as parent project (MIT)
 
 **Ready to explore drag-and-drop in a native Windows application?**
 
-Start here: [WebView2App/QUICKSTART.md](WebView2App/QUICKSTART.md)
+Start here: [WebView2App/CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md)

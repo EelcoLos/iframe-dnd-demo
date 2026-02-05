@@ -10,7 +10,7 @@ namespace WebView2App;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private string _publicFolderPath = string.Empty;
+    private readonly string _publicFolderPath = string.Empty;
     private string _currentMode = "basic";
     private bool _isInitialized = false;
 
@@ -60,13 +60,10 @@ public partial class MainWindow : Window
             // If no path found, show detailed error
             if (string.IsNullOrEmpty(_publicFolderPath))
             {
-                var errorMsg = "Public folder not found. Searched:\n";
-                for (int i = 0; i < searchPaths.Count; i++)
-                {
-                    errorMsg += $"{i + 1}. {searchPaths[i]}\n";
-                }
-                errorMsg += "\nPlease ensure you have built the project (dotnet build) " +
-                           "or that the 'public' folder exists in one of these locations.";
+                var errorMsg = "Public folder not found. Searched:\n" +
+                    string.Join("\n", searchPaths.Select((path, index) => $"{index + 1}. {path}")) +
+                    "\n\nPlease ensure you have built the project (dotnet build) " +
+                    "or that the 'public' folder exists in one of these locations.";
 
                 throw new DirectoryNotFoundException(errorMsg);
             }
