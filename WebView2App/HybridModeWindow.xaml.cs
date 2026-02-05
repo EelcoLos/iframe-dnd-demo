@@ -275,8 +275,30 @@ namespace WebView2App
                     var root = json.RootElement;
 
                     var description = root.GetProperty("description").GetString() ?? "";
-                    var quantity = root.GetProperty("quantity").GetInt32();
-                    var unitPrice = root.GetProperty("unitPrice").GetDecimal();
+
+                    // Handle quantity - can be number or string in JSON
+                    int quantity = 0;
+                    var quantityProp = root.GetProperty("quantity");
+                    if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        quantity = quantityProp.GetInt32();
+                    }
+                    else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        int.TryParse(quantityProp.GetString(), out quantity);
+                    }
+
+                    // Handle unitPrice - can be number or string in JSON
+                    decimal unitPrice = 0;
+                    var unitPriceProp = root.GetProperty("unitPrice");
+                    if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        unitPrice = unitPriceProp.GetDecimal();
+                    }
+                    else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
+                    }
 
                     AddRowToDataGrid(description, quantity, unitPrice);
                 }

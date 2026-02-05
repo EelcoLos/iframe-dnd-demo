@@ -234,8 +234,8 @@
       
       const rowData = {
         description: row.dataset.desc,
-        quantity: row.dataset.qty,
-        unitPrice: row.dataset.price
+        quantity: parseInt(row.dataset.qty, 10),
+        unitPrice: parseFloat(row.dataset.price)
       };
 
       e.dataTransfer.effectAllowed = 'copy';
