@@ -283,6 +283,16 @@
       </button>
     </div>
     
+    <div class="note" style="background: #fae8ff; border-color: #c026d3;">
+      <strong>Hybrid Variant:</strong> WebView source (Frame A) to Desktop table target (Frame B):
+    </div>
+    
+    <div class="button-group">
+      <button class="btn" id="open-hybrid-coordinator" style="background: #c026d3; box-shadow: 0 4px 12px rgba(192, 38, 211, 0.3);">
+        🔀 Open WebView → Desktop Coordinator
+      </button>
+    </div>
+    
     <div class="button-group">
       <button class="btn btn-secondary" id="close-all">
         ✖️ Close All Windows
@@ -563,6 +573,18 @@
         alert('Popup blocked! Please allow popups for this site.');
       } else {
         windows['frame-b-table-html5'] = win;  // Storing as frame-b-table-html5 for clarity
+      }
+    });
+
+    // Hybrid variant button - WebView to Desktop
+    document.getElementById('open-hybrid-coordinator').addEventListener('click', () => {
+      const win = window.open(
+        'webview-to-desktop-coordinator.html',
+        `HybridCoordinator_${Date.now()}`,
+        'width=650,height=700,left=300,top=100'
+      );
+      if (!win) {
+        alert('Popup blocked! Please allow popups for this site.');
       }
     });
 
