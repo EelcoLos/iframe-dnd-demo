@@ -210,8 +210,30 @@ namespace WebView2App
                         if (action == "drop")
                         {
                             var description = root.GetProperty("description").GetString() ?? "";
-                            var quantity = root.GetProperty("quantity").GetInt32();
-                            var unitPrice = root.GetProperty("unitPrice").GetDecimal();
+
+                            // Handle quantity - can be number or string in JSON
+                            int quantity = 0;
+                            var quantityProp = root.GetProperty("quantity");
+                            if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                            {
+                                quantity = quantityProp.GetInt32();
+                            }
+                            else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                int.TryParse(quantityProp.GetString(), out quantity);
+                            }
+
+                            // Handle unitPrice - can be number or string in JSON
+                            decimal unitPrice = 0;
+                            var unitPriceProp = root.GetProperty("unitPrice");
+                            if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                            {
+                                unitPrice = unitPriceProp.GetDecimal();
+                            }
+                            else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
+                            }
 
                             AddRowToDataGrid(description, quantity, unitPrice);
                         }
@@ -416,14 +438,12 @@ namespace WebView2App
         {
             // Handle Ctrl+V at window level to ensure it works even if DataGridView doesn't have focus
             if (e.Key == System.Windows.Input.Key.V &&
-                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control &&
+                _hasCopiedData && _copiedDescription != null)
             {
-                if (_hasCopiedData && _copiedDescription != null)
-                {
-                    AddRowToDataGrid(_copiedDescription, _copiedQuantity, _copiedUnitPrice);
-                    StatusText.Text = $"Pasted: {_copiedDescription}";
-                    e.Handled = true;
-                }
+                AddRowToDataGrid(_copiedDescription, _copiedQuantity, _copiedUnitPrice);
+                StatusText.Text = $"Pasted: {_copiedDescription}";
+                e.Handled = true;
             }
         }
 

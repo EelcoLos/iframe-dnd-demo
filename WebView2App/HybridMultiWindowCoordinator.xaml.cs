@@ -9,6 +9,16 @@ using Microsoft.Web.WebView2.Core;
 namespace WebView2App
 {
     /// <summary>
+    /// Represents parsed row data from JSON
+    /// </summary>
+    internal readonly struct RowData
+    {
+        public string Description { get; init; }
+        public int Quantity { get; init; }
+        public decimal UnitPrice { get; init; }
+    }
+
+    /// <summary>
     /// Hybrid Multi-Window Coordinator
     /// Opens separate WebView2 (source) and WinForms (target) windows for drag-and-drop
     /// </summary>
@@ -20,7 +30,7 @@ namespace WebView2App
         private string? _copiedRowDataJson; // Stores JSON string of copied row data for paste
         private string? _currentDragDataJson; // Stores JSON string of currently dragging row for hover preview
         private bool _isDragging = false; // Tracks if a drag operation is active
-        private DispatcherTimer? _dragHoverTimer; // Timer to poll mouse position during drag
+        private readonly DispatcherTimer? _dragHoverTimer; // Timer to poll mouse position during drag
         private DataGridView? _targetDataGridView; // Store reference to DataGridView
         private System.Windows.Controls.TextBlock? _targetStatusText; // Status bar in target window
         private int _dragHoverRowIndex = -1; // Track which row is being hovered during drag
@@ -31,6 +41,7 @@ namespace WebView2App
         {
             InitializeComponent();
             Loaded += HybridMultiWindowCoordinator_Loaded;
+            Closed += HybridMultiWindowCoordinator_Closed;
 
             // Initialize drag hover timer (polls every 100ms)
             _dragHoverTimer = new DispatcherTimer
@@ -38,6 +49,12 @@ namespace WebView2App
                 Interval = TimeSpan.FromMilliseconds(100)
             };
             _dragHoverTimer.Tick += DragHoverTimer_Tick;
+        }
+
+        private void HybridMultiWindowCoordinator_Closed(object? sender, EventArgs e)
+        {
+            // Clean up timer resources
+            _dragHoverTimer?.Stop();
         }
 
         private async void HybridMultiWindowCoordinator_Loaded(object sender, RoutedEventArgs e)
@@ -502,69 +519,26 @@ namespace WebView2App
 
         private void DataGridView_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
         {
-            Console.WriteLine($"[DataGridView_KeyDown] Key: {e.KeyCode}, Control: {e.Control}");
             if (sender is not DataGridView dataGridView) return;
 
             // Ctrl+V to paste from clipboard
             if (e.Control && e.KeyCode == Keys.V)
             {
-                Console.WriteLine($"[DataGridView_KeyDown] Ctrl+V detected, copiedData: {_copiedRowDataJson?.Substring(0, Math.Min(50, _copiedRowDataJson?.Length ?? 0))}");
                 if (!string.IsNullOrEmpty(_copiedRowDataJson))
                 {
                     try
                     {
-                        // Parse clipboard data
-                        using var json = System.Text.Json.JsonDocument.Parse(_copiedRowDataJson);
-                        var root = json.RootElement;
-
-                        var description = root.GetProperty("description").GetString() ?? "";
-
-                        // Handle quantity - can be number or string in JSON
-                        int quantity = 0;
-                        var quantityProp = root.GetProperty("quantity");
-                        if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                        {
-                            quantity = quantityProp.GetInt32();
-                        }
-                        else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                        {
-                            if (!int.TryParse(quantityProp.GetString(), out quantity))
-                            {
-                                throw new FormatException($"Invalid quantity value: {quantityProp.GetString()}");
-                            }
-                        }
-
-                        // Handle unitPrice - can be number or string in JSON
-                        decimal unitPrice = 0;
-                        var unitPriceProp = root.GetProperty("unitPrice");
-                        if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                        {
-                            unitPrice = unitPriceProp.GetDecimal();
-                        }
-                        else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                        {
-                            if (!decimal.TryParse(unitPriceProp.GetString(), out unitPrice))
-                            {
-                                throw new FormatException($"Invalid unit price value: {unitPriceProp.GetString()}");
-                            }
-                        }
-
-                        AddRowToDataGrid(dataGridView, description, quantity, unitPrice);
-                        Console.WriteLine($"[DataGridView_KeyDown] Successfully pasted: {description}");
+                        var rowData = ParseRowDataFromJson(_copiedRowDataJson);
+                        AddRowToDataGrid(dataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[DataGridView_KeyDown] Error: {ex}");
                         System.Windows.MessageBox.Show(
                             $"Error pasting data: {ex.Message}",
                             "Paste Error",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
                     }
-                }
-                else
-                {
-                    Console.WriteLine($"[DataGridView_KeyDown] No copied data available");
                 }
                 e.Handled = true;
                 return;
@@ -649,35 +623,8 @@ namespace WebView2App
 
             try
             {
-                // Parse current drag data
-                using var json = System.Text.Json.JsonDocument.Parse(_currentDragDataJson);
-                var root = json.RootElement;
-
-                var description = root.GetProperty("description").GetString() ?? "";
-
-                int quantity = 0;
-                var quantityProp = root.GetProperty("quantity");
-                if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                {
-                    quantity = quantityProp.GetInt32();
-                }
-                else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                {
-                    int.TryParse(quantityProp.GetString(), out quantity);
-                }
-
-                decimal unitPrice = 0;
-                var unitPriceProp = root.GetProperty("unitPrice");
-                if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                {
-                    unitPrice = unitPriceProp.GetDecimal();
-                }
-                else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                {
-                    decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
-                }
-
-                var newItemTotal = quantity * unitPrice;
+                var rowData = ParseRowDataFromJson(_currentDragDataJson);
+                var newItemTotal = rowData.Quantity * rowData.UnitPrice;
 
                 // Store original total only once when preview starts
                 if (!_isShowingHoverPreview)
@@ -687,8 +634,7 @@ namespace WebView2App
                 }
 
                 var futureGrandTotal = _originalGrandTotal + newItemTotal;
-
-                var previewText = $"Preview: {description} ({quantity} × {unitPrice:C2} = {newItemTotal:C2}) | Grand Total: {_originalGrandTotal:C2} → {futureGrandTotal:C2}";
+                var previewText = $"Preview: {rowData.Description} ({rowData.Quantity} × {rowData.UnitPrice:C2} = {newItemTotal:C2}) | Grand Total: {_originalGrandTotal:C2} → {futureGrandTotal:C2}";
 
                 Dispatcher.Invoke(() =>
                 {
@@ -702,248 +648,220 @@ namespace WebView2App
                         _targetStatusText.Text = previewText;
                     }
                     StatusText.Text = $"Dragging over target...";
-                    Console.WriteLine($"[DragHover] {previewText}");
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DragHover] Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[DragHover] Error: {ex.Message}");
             }
         }
 
         private void TargetWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            Console.WriteLine($"[TargetWindow_PreviewKeyDown] Key: {e.Key}, Modifiers: {System.Windows.Input.Keyboard.Modifiers}");
             // Handle Ctrl+V at window level to ensure it works
             if (e.Key == System.Windows.Input.Key.V &&
-                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control &&
+                !string.IsNullOrEmpty(_copiedRowDataJson) && _targetDataGridView != null)
             {
-                Console.WriteLine($"[TargetWindow_PreviewKeyDown] Ctrl+V detected, copiedData: {_copiedRowDataJson?.Substring(0, Math.Min(50, _copiedRowDataJson?.Length ?? 0))}");
-                if (!string.IsNullOrEmpty(_copiedRowDataJson) && _targetDataGridView != null)
+                try
                 {
-                    try
-                    {
-                        // Parse clipboard data
-                        using var json = System.Text.Json.JsonDocument.Parse(_copiedRowDataJson);
-                        var root = json.RootElement;
-
-                        var description = root.GetProperty("description").GetString() ?? "";
-
-                        // Handle quantity - can be number or string in JSON
-                        int quantity = 0;
-                        var quantityProp = root.GetProperty("quantity");
-                        if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                        {
-                            quantity = quantityProp.GetInt32();
-                        }
-                        else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                        {
-                            int.TryParse(quantityProp.GetString(), out quantity);
-                        }
-
-                        // Handle unitPrice - can be number or string in JSON
-                        decimal unitPrice = 0;
-                        var unitPriceProp = root.GetProperty("unitPrice");
-                        if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                        {
-                            unitPrice = unitPriceProp.GetDecimal();
-                        }
-                        else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                        {
-                            decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
-                        }
-
-                        AddRowToDataGrid(_targetDataGridView, description, quantity, unitPrice);
-                        StatusText.Text = $"Pasted: {description}";
-                        Console.WriteLine($"[TargetWindow_PreviewKeyDown] Successfully pasted: {description}");
-                        e.Handled = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[TargetWindow_PreviewKeyDown] Error: {ex}");
-                        StatusText.Text = $"Error pasting: {ex.Message}";
-                    }
+                    var rowData = ParseRowDataFromJson(_copiedRowDataJson);
+                    AddRowToDataGrid(_targetDataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice);
+                    StatusText.Text = $"Pasted: {rowData.Description}";
+                    e.Handled = true;
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"[TargetWindow_PreviewKeyDown] No copied data or no grid");
-                    StatusText.Text = "No data to paste - Copy a row first (Ctrl+C)";
+                    StatusText.Text = $"Error pasting: {ex.Message}";
                 }
             }
         }
 
         private void SourceWebView_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
-            Console.WriteLine($"\n[WebMessage] ========== MESSAGE RECEIVED EVENT ==========");
-            Console.WriteLine($"[WebMessage] Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-
             try
             {
                 string? message = null;
                 try
                 {
                     message = e.TryGetWebMessageAsString();
-                    Console.WriteLine($"[WebMessage] TryGetWebMessageAsString() succeeded");
                 }
-                catch (ArgumentException argEx)
+                catch (ArgumentException)
                 {
                     // Message is not a string, try getting it as JSON
-                    Console.WriteLine($"[WebMessage] ✗ TryGetWebMessageAsString failed: {argEx.Message}");
-                    Console.WriteLine($"[WebMessage] Attempting fallback to WebMessageAsJson...");
                     message = e.WebMessageAsJson;
-                    Console.WriteLine($"[WebMessage] WebMessageAsJson result: {message}");
                 }
 
                 if (string.IsNullOrEmpty(message))
                 {
-                    Console.WriteLine($"[WebMessage] ✗ Message is NULL or EMPTY!");
                     return;
                 }
-
-                Console.WriteLine($"[WebMessage] ✓ Raw message: {message}");
 
                 // Parse the message (expecting JSON format)
                 // Message format: {"action":"copy","description":"...","quantity":"12","unitPrice":"450"}
                 // or {"action":"drop","description":"...","quantity":12,"unitPrice":450} for double-click
-                try
-                {
-                    using var json = System.Text.Json.JsonDocument.Parse(message);
-                    var root = json.RootElement;
+                using var json = System.Text.Json.JsonDocument.Parse(message);
+                var root = json.RootElement;
 
-                    if (root.TryGetProperty("action", out var actionProp))
+                if (root.TryGetProperty("action", out var actionProp))
+                {
+                    var action = actionProp.GetString();
+
+                    if (action == "copy")
                     {
-                        var action = actionProp.GetString();
-                        Console.WriteLine($"[WebMessage] ✓ Parsed action: '{action}'");
+                        // Store the clipboard data so the WinForms target can paste it
+                        _copiedRowDataJson = message;
 
-                        if (action == "copy")
+                        Dispatcher.Invoke(() =>
                         {
-                            Console.WriteLine($"[WebMessage] >>> COPY ACTION RECEIVED <<<");
-                            // Store the clipboard data so the WinForms target can paste it
-                            _copiedRowDataJson = message;
-                            Console.WriteLine($"[WebMessage] ✓ Stored to _copiedRowDataJson");
-                            Console.WriteLine($"[WebMessage] Data: {message.Substring(0, Math.Min(100, message.Length))}...");
-
-                            Dispatcher.Invoke(() =>
-                            {
-                                StatusText.Text = "Row copied - Switch to target window and press Ctrl+V to paste";
-                                Console.WriteLine($"[WebMessage] ✓ Updated UI: '{StatusText.Text}'");
-                            });
-                        }
-                        else if (action == "dragstart")
-                        {
-                            Console.WriteLine($"[WebMessage] >>> DRAGSTART ACTION RECEIVED <<<");
-                            // Store the drag data so hover tracking can show the preview
-                            _currentDragDataJson = message;
-                            _isDragging = true;
-                            Console.WriteLine($"[WebMessage] ✓ Stored to _currentDragDataJson for hover preview");
-                            Console.WriteLine($"[WebMessage] ✓ _isDragging = true");
-                            Console.WriteLine($"[WebMessage] ✓ Starting drag hover timer");
-                            Console.WriteLine($"[WebMessage] Data: {message.Substring(0, Math.Min(100, message.Length))}...");
-
-                            // Start the drag hover timer
-                            _dragHoverTimer?.Start();
-
-                            Dispatcher.Invoke(() =>
-                            {
-                                if (_targetStatusText != null)
-                                {
-                                    _targetStatusText.Text = "Drag item over this window to see preview";
-                                }
-                                StatusText.Text = "Drag started - move over target window";
-                            });
-                        }
-                        else if (action == "dragend")
-                        {
-                            Console.WriteLine($"[WebMessage] >>> DRAGEND ACTION RECEIVED <<<");
-                            _isDragging = false;
-                            Console.WriteLine($"[WebMessage] ✓ _isDragging = false");
-                            Console.WriteLine($"[WebMessage] ✓ Stopping drag hover timer");
-
-                            // Stop the timer
-                            _dragHoverTimer?.Stop();
-
-                            // Restore original total if showing preview
-                            if (_isShowingHoverPreview && _targetDataGridView != null)
-                            {
-                                var totalRowIndex = _targetDataGridView.Rows.Count - 1;
-                                _targetDataGridView.Rows[totalRowIndex].Cells["Total"].Value = _originalGrandTotal;
-                                _targetDataGridView.Rows[totalRowIndex].Cells["Total"].Style.ForeColor = Color.Black;
-                                _isShowingHoverPreview = false;
-                            }
-
-                            Dispatcher.Invoke(() =>
-                            {
-                                if (_targetStatusText != null)
-                                {
-                                    _targetStatusText.Text = "Ready";
-                                }
-                                StatusText.Text = "Ready";
-                            });
-                        }
-                        else if (action == "drop" && _targetDataGridView != null)
-                        {
-                            Console.WriteLine($"[WebMessage] >>> DROP ACTION RECEIVED <<<");
-                            // Handle double-click in source - add directly to target
-                            var description = root.GetProperty("description").GetString() ?? "";
-
-                            // Handle quantity - can be number or string in JSON
-                            int quantity = 0;
-                            var quantityProp = root.GetProperty("quantity");
-                            if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                            {
-                                quantity = quantityProp.GetInt32();
-                            }
-                            else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                            {
-                                int.TryParse(quantityProp.GetString(), out quantity);
-                            }
-
-                            // Handle unitPrice - can be number or string in JSON
-                            decimal unitPrice = 0;
-                            var unitPriceProp = root.GetProperty("unitPrice");
-                            if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
-                            {
-                                unitPrice = unitPriceProp.GetDecimal();
-                            }
-                            else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                            {
-                                decimal.TryParse(unitPriceProp.GetString(), out unitPrice);
-                            }
-
-                            Console.WriteLine($"[WebMessage] Adding to grid: {description}, qty={quantity}, price={unitPrice}");
-                            // Invoke on UI thread
-                            Dispatcher.Invoke(() =>
-                            {
-                                try
-                                {
-                                    AddRowToDataGrid(_targetDataGridView, description, quantity, unitPrice);
-                                    StatusText.Text = $"Added: {description}";
-                                    Console.WriteLine($"[WebMessage] Successfully added to grid");
-                                }
-                                catch (Exception addEx)
-                                {
-                                    Console.WriteLine($"[WebMessage] Error adding to grid: {addEx}");
-                                    StatusText.Text = $"Error adding: {addEx.Message}";
-                                }
-                            });
-                        }
+                            StatusText.Text = "Row copied - Switch to target window and press Ctrl+V to paste";
+                        });
                     }
-                }
-                catch (System.Text.Json.JsonException jsonEx)
-                {
-                    Console.WriteLine($"[WebMessage] ✗ JSON parsing error: {jsonEx.Message}");
-                    Console.WriteLine($"[WebMessage] Message was: {message}");
+                    else if (action == "dragstart")
+                    {
+                        // Store the drag data so hover tracking can show the preview
+                        _currentDragDataJson = message;
+                        _isDragging = true;
+
+                        // Start the drag hover timer
+                        _dragHoverTimer?.Start();
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            if (_targetStatusText != null)
+                            {
+                                _targetStatusText.Text = "Drag item over this window to see preview";
+                            }
+                            StatusText.Text = "Drag started - move over target window";
+                        });
+                    }
+                    else if (action == "dragend")
+                    {
+                        _isDragging = false;
+
+                        // Stop the timer
+                        _dragHoverTimer?.Stop();
+
+                        // Restore original total if showing preview
+                        if (_isShowingHoverPreview && _targetDataGridView != null)
+                        {
+                            var totalRowIndex = _targetDataGridView.Rows.Count - 1;
+                            _targetDataGridView.Rows[totalRowIndex].Cells["Total"].Value = _originalGrandTotal;
+                            _targetDataGridView.Rows[totalRowIndex].Cells["Total"].Style.ForeColor = Color.Black;
+                            _isShowingHoverPreview = false;
+                        }
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            if (_targetStatusText != null)
+                            {
+                                _targetStatusText.Text = "Ready";
+                            }
+                            StatusText.Text = "Ready";
+                        });
+                    }
+                    else if (action == "drop" && _targetDataGridView != null)
+                    {
+                        // Handle double-click in source - add directly to target
+                        var rowData = ParseRowDataFromJson(message);
+
+                        // Invoke on UI thread
+                        Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                AddRowToDataGrid(_targetDataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice);
+                                StatusText.Text = $"Added: {rowData.Description}";
+                            }
+                            catch (Exception addEx)
+                            {
+                                StatusText.Text = $"Error adding: {addEx.Message}";
+                            }
+                        });
+                    }
                 }
             }
             catch (Exception ex)
             {
                 // Log error with full details for debugging
-                Console.WriteLine($"[WebMessage] Error processing message: {ex}");
+                System.Diagnostics.Debug.WriteLine($"[WebMessage] Error processing message: {ex}");
                 Dispatcher.Invoke(() =>
                 {
                     StatusText.Text = $"Error: {ex.Message}";
                 });
             }
+        }
+
+        /// <summary>
+        /// Parses row data from JSON string with robust error handling
+        /// </summary>
+        /// <param name="jsonString">JSON string containing row data</param>
+        /// <returns>Parsed row data</returns>
+        /// <exception cref="FormatException">Thrown when JSON is invalid or missing required properties</exception>
+        private static RowData ParseRowDataFromJson(string jsonString)
+        {
+            using var json = System.Text.Json.JsonDocument.Parse(jsonString);
+            var root = json.RootElement;
+
+            // Use TryGetProperty for better error handling
+            if (!root.TryGetProperty("description", out var descProp))
+            {
+                throw new FormatException("Missing 'description' property in JSON");
+            }
+            var description = descProp.GetString() ?? "";
+
+            if (!root.TryGetProperty("quantity", out var quantityProp))
+            {
+                throw new FormatException("Missing 'quantity' property in JSON");
+            }
+
+            // Handle quantity - can be number or string in JSON
+            int quantity = 0;
+            if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+            {
+                quantity = quantityProp.GetInt32();
+            }
+            else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                if (!int.TryParse(quantityProp.GetString(), out quantity))
+                {
+                    throw new FormatException($"Invalid quantity value: {quantityProp.GetString()}");
+                }
+            }
+            else
+            {
+                throw new FormatException($"Quantity must be a number or string, got {quantityProp.ValueKind}");
+            }
+
+            if (!root.TryGetProperty("unitPrice", out var unitPriceProp))
+            {
+                throw new FormatException("Missing 'unitPrice' property in JSON");
+            }
+
+            // Handle unitPrice - can be number or string in JSON
+            decimal unitPrice = 0;
+            if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+            {
+                unitPrice = unitPriceProp.GetDecimal();
+            }
+            else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                if (!decimal.TryParse(unitPriceProp.GetString(), out unitPrice))
+                {
+                    throw new FormatException($"Invalid unit price value: {unitPriceProp.GetString()}");
+                }
+            }
+            else
+            {
+                throw new FormatException($"UnitPrice must be a number or string, got {unitPriceProp.ValueKind}");
+            }
+
+            return new RowData
+            {
+                Description = description,
+                Quantity = quantity,
+                UnitPrice = unitPrice
+            };
         }
 
         private string? FindPublicFolder()

@@ -216,12 +216,6 @@
   <script type="module">
     import { HybridCommunicationManager } from './hybrid-communication.js';
 
-    // Detect WebView2 context
-    console.log('[HTML] Script loaded');
-    console.log('[HTML] window.chrome:', typeof window.chrome);
-    console.log('[HTML] window.chrome.webview:', typeof window.chrome?.webview);
-    console.log('[HTML] Is WebView2:', !!(window.chrome && window.chrome.webview));
-
     // Initialize communication manager
     const commManager = new HybridCommunicationManager({
       windowId: 'source-table-webcomponent'
@@ -252,7 +246,6 @@
       
       // If running in WebView2 (C# host), also send to native code
       if (window.chrome && window.chrome.webview) {
-        console.log('[HTML] Sending dragstart message to WebView2:', rowData);
         try {
           window.chrome.webview.postMessage(JSON.stringify({
             action: 'dragstart',
@@ -260,7 +253,6 @@
             quantity: parseInt(row.dataset.qty),
             unitPrice: parseFloat(row.dataset.price)
           }));
-          console.log('[HTML] Dragstart message sent');
         } catch (err) {
           console.error('[HTML] Error sending dragstart:', err);
         }
@@ -276,12 +268,10 @@
       
       // Notify WebView2 that drag ended
       if (window.chrome && window.chrome.webview) {
-        console.log('[HTML] Sending dragend message to WebView2');
         try {
           window.chrome.webview.postMessage(JSON.stringify({
             action: 'dragend'
           }));
-          console.log('[HTML] Dragend message sent');
         } catch (err) {
           console.error('[HTML] Error sending dragend:', err);
         }
@@ -296,17 +286,14 @@
       // Deselect previous
       if (selectedRow) {
         selectedRow.classList.remove('selected');
-        console.log('[HTML] Deselected previous row');
       }
 
       // Select new row
       selectedRow = row;
       row.classList.add('selected');
-      console.log('[HTML] ✓ Selected row:', row.dataset.desc, 'Ready for Ctrl+C');
       
       // If double-click in WebView2, send directly to DataGridView
       if (e.detail === 2 && window.chrome && window.chrome.webview) {
-        console.log('[HTML] Double-click detected, sending drop message:', row.dataset.desc);
         try {
           window.chrome.webview.postMessage(JSON.stringify({
             action: 'drop',
@@ -314,7 +301,6 @@
             quantity: parseInt(row.dataset.qty),
             unitPrice: parseFloat(row.dataset.price)
           }));
-          console.log('[HTML] Drop message sent');
         } catch (err) {
           console.error('[HTML] Error sending drop:', err);
         }
@@ -322,37 +308,14 @@
     });
 
     // Keyboard shortcuts
-    console.log('[HTML] ========================================');
-    console.log('[HTML] INITIALIZING KEYBOARD EVENT LISTENER');
-    console.log('[HTML] ========================================');
-    console.log('[HTML] Setting up keydown listener for copy...');
-    
-    // Add focus tracking to help debug
-    window.addEventListener('focus', () => {
-      console.log('[HTML] >>> WINDOW GAINED FOCUS <<<');
-    });
-    window.addEventListener('blur', () => {
-      console.log('[HTML] >>> WINDOW LOST FOCUS <<<');
-    });
-    
     document.addEventListener('keydown', (e) => {
-      // Log EVERY key event to help debug focus issues
-      if (e.ctrlKey || e.key === 'c' || e.key === 'C') {
-        console.log(`[HTML] >>> Keydown event: key='${e.key}', ctrlKey=${e.ctrlKey}, code=${e.code}, selectedRow=${selectedRow ? selectedRow.dataset.desc : 'NULL'}`);
-      }
-      
       // Ctrl+C to copy selected row
       if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
-        console.log('[HTML] --- CTRL+C DETECTED ---');
-        console.log(`[HTML] selectedRow is: ${selectedRow ? 'SET (' + selectedRow.dataset.desc + ')' : 'NULL (ERROR!)'}`);
-        
         if (!selectedRow) {
-          console.warn('[HTML] ✗ ABORT: No row selected! Click a row first, then press Ctrl+C while WebView2 has focus.');
           e.preventDefault();
           return;
         }
         
-        console.log('[HTML] Preparing copy for:', selectedRow.dataset.desc);
         const rowData = {
           description: selectedRow.dataset.desc,
           quantity: selectedRow.dataset.qty,
@@ -361,35 +324,23 @@
 
         // Store in local communication manager (for cross-window comms)
         commManager.copyToClipboard(rowData);
-        console.log('[HTML] ✓ Stored in commManager');
         
         // Visual feedback
         selectedRow.classList.add('copied');
         setTimeout(() => selectedRow.classList.remove('copied'), 500);
-        console.log('[HTML] ✓ Applied visual feedback animation');
         
         // If running in WebView2 (C# host), also send copy to native code
         if (window.chrome && window.chrome.webview) {
-          console.log('[HTML] ✓ WebView2 API detected (window.chrome.webview exists)');
           try {
-            const msg = JSON.stringify({
+            window.chrome.webview.postMessage(JSON.stringify({
               action: 'copy',
               description: selectedRow.dataset.desc,
               quantity: selectedRow.dataset.qty,
               unitPrice: selectedRow.dataset.price
-            });
-            console.log('[HTML] Message to send (stringified):', msg);
-            console.log('[HTML] About to call window.chrome.webview.postMessage()...');
-            window.chrome.webview.postMessage(msg);
-            console.log('[HTML] ✓✓✓ COPY MESSAGE SUCCESSFULLY SENT TO C# ✓✓✓');
+            }));
           } catch (err) {
-            console.error('[HTML] ✗✗✗ CRITICAL ERROR: postMessage failed!', err);
-            console.error('[HTML] Error name:', err.name);
-            console.error('[HTML] Error message:', err.message);
-            console.error('[HTML] Error stack:', err.stack);
+            console.error('[HTML] Error sending copy message:', err);
           }
-        } else {
-          console.warn('[HTML] ✗ WebView2 API NOT available. Is this running in WebView2? window.chrome:', window.chrome);
         }
         
         e.preventDefault();
@@ -400,16 +351,6 @@
     commManager.on('row-added', (data, sourceWindowId) => {
       console.log('Row added to target:', data);
     });
-    
-    console.log('[HTML] ========================================');
-    console.log('[HTML] ALL EVENT LISTENERS REGISTERED');
-    console.log('[HTML] - Click: Row selection');
-    console.log('[HTML] - Double-click: Send to DataGridView');
-    console.log('[HTML] - Dragstart: Send drag data');
-    console.log('[HTML] - Keydown: Ctrl+C to copy');
-    console.log('[HTML] - Focus/Blur: Track window focus');
-    console.log('[HTML] READY FOR TESTING');
-    console.log('[HTML] ========================================');
   </script>
 </body>
 </html>
