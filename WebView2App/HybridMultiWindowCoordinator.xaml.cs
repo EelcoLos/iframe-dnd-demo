@@ -11,7 +11,7 @@ namespace WebView2App
     /// <summary>
     /// Represents parsed row data from JSON
     /// </summary>
-    internal readonly struct RowData
+    public readonly struct RowData
     {
         public string Description { get; init; }
         public int Quantity { get; init; }
@@ -30,7 +30,7 @@ namespace WebView2App
         private string? _copiedRowDataJson; // Stores JSON string of copied row data for paste
         private string? _currentDragDataJson; // Stores JSON string of currently dragging row for hover preview
         private bool _isDragging = false; // Tracks if a drag operation is active
-        private readonly DispatcherTimer? _dragHoverTimer; // Timer to poll mouse position during drag
+        private DispatcherTimer? _dragHoverTimer; // Timer to poll mouse position during drag
         private DataGridView? _targetDataGridView; // Store reference to DataGridView
         private System.Windows.Controls.TextBlock? _targetStatusText; // Status bar in target window
         private int _dragHoverRowIndex = -1; // Track which row is being hovered during drag
@@ -652,7 +652,8 @@ namespace WebView2App
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DragHover] Error: {ex.Message}");
+                // Use Console.WriteLine for visibility in both debug and release builds
+                Console.WriteLine($"[DragHover] Error: {ex.Message}");
             }
         }
 
@@ -783,8 +784,8 @@ namespace WebView2App
             }
             catch (Exception ex)
             {
-                // Log error with full details for debugging
-                System.Diagnostics.Debug.WriteLine($"[WebMessage] Error processing message: {ex}");
+                // Use Console.WriteLine for visibility in both debug and release builds
+                Console.WriteLine($"[WebMessage] Error processing message: {ex}");
                 Dispatcher.Invoke(() =>
                 {
                     StatusText.Text = $"Error: {ex.Message}";
