@@ -11,11 +11,18 @@ namespace WebView2App
     {
         private string? _publicFolderPath;
         private DataGridView? _dataGridView;
+        private string? _copiedDescription;
+        private int _copiedQuantity;
+        private decimal _copiedUnitPrice;
+        private bool _hasCopiedData = false;
 
         public HybridModeWindow()
         {
             InitializeComponent();
             Loaded += HybridModeWindow_Loaded;
+
+            // Add window-level keyboard handler to catch Ctrl+V even when DataGridView doesn't have focus
+            PreviewKeyDown += HybridModeWindow_PreviewKeyDown;
         }
 
         private async void HybridModeWindow_Loaded(object sender, RoutedEventArgs e)
@@ -143,8 +150,12 @@ namespace WebView2App
             _dataGridView.DragEnter += DataGridView_DragEnter;
             _dataGridView.DragDrop += DataGridView_DragDrop;
 
-            // Handle key press for delete
+            // Handle keyboard events for Ctrl+V and Delete
             _dataGridView.KeyDown += DataGridView_KeyDown;
+            _dataGridView.PreviewKeyDown += DataGridView_PreviewKeyDown;
+
+            // Handle mouse enter to give focus for keyboard shortcuts
+            _dataGridView.MouseEnter += DataGridView_MouseEnter;
 
             // Add DataGridView to the host
             DataGridViewHost.Child = _dataGridView;
@@ -171,22 +182,69 @@ namespace WebView2App
         {
             try
             {
-                var message = e.TryGetWebMessageAsString();
+                string? message = null;
+                try
+                {
+                    message = e.TryGetWebMessageAsString();
+                }
+                catch (ArgumentException argEx)
+                {
+                    // Message is not a string, try getting it as JSON
+                    Console.WriteLine($"[WebMessage] TryGetWebMessageAsString failed: {argEx.Message}, retrying...");
+                    message = e.WebMessageAsJson;
+                    Console.WriteLine($"[WebMessage] Got message as JSON: {message}");
+                }
 
                 // Parse the message (expecting JSON format)
                 // Message format: {"action":"drop","description":"...","quantity":12,"unitPrice":450}
+                // or {"action":"copy","description":"...","quantity":"12","unitPrice":"450"}
                 if (!string.IsNullOrEmpty(message))
                 {
                     using var json = System.Text.Json.JsonDocument.Parse(message);
                     var root = json.RootElement;
 
-                    if (root.TryGetProperty("action", out var actionProp) && actionProp.GetString() == "drop")
+                    if (root.TryGetProperty("action", out var actionProp))
                     {
-                        var description = root.GetProperty("description").GetString() ?? "";
-                        var quantity = root.GetProperty("quantity").GetInt32();
-                        var unitPrice = root.GetProperty("unitPrice").GetDecimal();
+                        var action = actionProp.GetString();
 
-                        AddRowToDataGrid(description, quantity, unitPrice);
+                        if (action == "drop")
+                        {
+                            var description = root.GetProperty("description").GetString() ?? "";
+                            var quantity = root.GetProperty("quantity").GetInt32();
+                            var unitPrice = root.GetProperty("unitPrice").GetDecimal();
+
+                            AddRowToDataGrid(description, quantity, unitPrice);
+                        }
+                        else if (action == "copy")
+                        {
+                            // Store the copied data for later paste
+                            _copiedDescription = root.GetProperty("description").GetString() ?? "";
+
+                            // Handle quantity - can be number or string in JSON
+                            var quantityProp = root.GetProperty("quantity");
+                            if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                            {
+                                _copiedQuantity = quantityProp.GetInt32();
+                            }
+                            else if (quantityProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                int.TryParse(quantityProp.GetString(), out _copiedQuantity);
+                            }
+
+                            // Handle unitPrice - can be number or string in JSON
+                            var unitPriceProp = root.GetProperty("unitPrice");
+                            if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+                            {
+                                _copiedUnitPrice = unitPriceProp.GetDecimal();
+                            }
+                            else if (unitPriceProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                decimal.TryParse(unitPriceProp.GetString(), out _copiedUnitPrice);
+                            }
+
+                            _hasCopiedData = true;
+                            StatusText.Text = $"Copied: {_copiedDescription} - Press Ctrl+V in target to paste";
+                        }
                     }
                 }
             }
@@ -304,6 +362,24 @@ namespace WebView2App
         {
             if (_dataGridView == null) return;
 
+            // Handle Ctrl+V for paste
+            if (e.Control && e.KeyCode == Keys.V)
+            {
+                if (_hasCopiedData && _copiedDescription != null)
+                {
+                    AddRowToDataGrid(_copiedDescription, _copiedQuantity, _copiedUnitPrice);
+                    StatusText.Text = $"Pasted: {_copiedDescription}";
+                }
+                else
+                {
+                    StatusText.Text = "No data to paste - Copy a row from the source table first (Ctrl+C)";
+                }
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+
+            // Handle Delete for row removal
             if (e.KeyCode == Keys.Delete && _dataGridView.SelectedRows.Count > 0)
             {
                 var selectedRow = _dataGridView.SelectedRows[0];
@@ -315,6 +391,38 @@ namespace WebView2App
                     _dataGridView.Rows.RemoveAt(selectedRow.Index);
                     UpdateGrandTotal();
                     StatusText.Text = "Row deleted";
+                }
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void DataGridView_PreviewKeyDown(object? sender, PreviewKeyDownEventArgs e)
+        {
+            // Mark Ctrl+V and Delete as input keys so they're passed to KeyDown event
+            if ((e.Control && e.KeyCode == Keys.V) || e.KeyCode == Keys.Delete)
+            {
+                e.IsInputKey = true;
+            }
+        }
+
+        private void DataGridView_MouseEnter(object? sender, EventArgs e)
+        {
+            // Give focus to DataGridView when mouse enters for keyboard shortcuts
+            _dataGridView?.Focus();
+        }
+
+        private void HybridModeWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            // Handle Ctrl+V at window level to ensure it works even if DataGridView doesn't have focus
+            if (e.Key == System.Windows.Input.Key.V &&
+                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+            {
+                if (_hasCopiedData && _copiedDescription != null)
+                {
+                    AddRowToDataGrid(_copiedDescription, _copiedQuantity, _copiedUnitPrice);
+                    StatusText.Text = $"Pasted: {_copiedDescription}";
+                    e.Handled = true;
                 }
             }
         }
