@@ -246,12 +246,16 @@
       
       // If running in WebView2 (C# host), also send to native code
       if (window.chrome && window.chrome.webview) {
-        window.chrome.webview.postMessage({
-          action: 'dragstart',
-          description: row.dataset.desc,
-          quantity: parseInt(row.dataset.qty),
-          unitPrice: parseFloat(row.dataset.price)
-        });
+        try {
+          window.chrome.webview.postMessage(JSON.stringify({
+            action: 'dragstart',
+            description: row.dataset.desc,
+            quantity: parseInt(row.dataset.qty),
+            unitPrice: parseFloat(row.dataset.price)
+          }));
+        } catch (err) {
+          console.error('[HTML] Error sending dragstart:', err);
+        }
       }
     });
 
@@ -261,6 +265,17 @@
         row.classList.remove('dragging');
       }
       commManager.broadcast('drag-end', {});
+      
+      // Notify WebView2 that drag ended
+      if (window.chrome && window.chrome.webview) {
+        try {
+          window.chrome.webview.postMessage(JSON.stringify({
+            action: 'dragend'
+          }));
+        } catch (err) {
+          console.error('[HTML] Error sending dragend:', err);
+        }
+      }
     });
 
     // Click selection for keyboard copy
@@ -279,29 +294,54 @@
       
       // If double-click in WebView2, send directly to DataGridView
       if (e.detail === 2 && window.chrome && window.chrome.webview) {
-        window.chrome.webview.postMessage({
-          action: 'drop',
-          description: row.dataset.desc,
-          quantity: parseInt(row.dataset.qty),
-          unitPrice: parseFloat(row.dataset.price)
-        });
+        try {
+          window.chrome.webview.postMessage(JSON.stringify({
+            action: 'drop',
+            description: row.dataset.desc,
+            quantity: parseInt(row.dataset.qty),
+            unitPrice: parseFloat(row.dataset.price)
+          }));
+        } catch (err) {
+          console.error('[HTML] Error sending drop:', err);
+        }
       }
     });
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       // Ctrl+C to copy selected row
-      if (e.ctrlKey && e.key === 'c' && selectedRow) {
+      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+        if (!selectedRow) {
+          e.preventDefault();
+          return;
+        }
+        
         const rowData = {
           description: selectedRow.dataset.desc,
           quantity: selectedRow.dataset.qty,
           unitPrice: selectedRow.dataset.price
         };
 
+        // Store in local communication manager (for cross-window comms)
         commManager.copyToClipboard(rowData);
         
+        // Visual feedback
         selectedRow.classList.add('copied');
         setTimeout(() => selectedRow.classList.remove('copied'), 500);
+        
+        // If running in WebView2 (C# host), also send copy to native code
+        if (window.chrome && window.chrome.webview) {
+          try {
+            window.chrome.webview.postMessage(JSON.stringify({
+              action: 'copy',
+              description: selectedRow.dataset.desc,
+              quantity: selectedRow.dataset.qty,
+              unitPrice: selectedRow.dataset.price
+            }));
+          } catch (err) {
+            console.error('[HTML] Error sending copy message:', err);
+          }
+        }
         
         e.preventDefault();
       }
