@@ -212,11 +212,24 @@ namespace WebView2App
                 DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
             });
 
-            // Add total row (DBNull for numeric cells so sorting doesn't cause type-mismatch exceptions)
+            // Add total row
             _targetDataGridView.Rows.Add("TOTAL", DBNull.Value, DBNull.Value, 0m);
             var lastRow = _targetDataGridView.Rows[_targetDataGridView.Rows.Count - 1];
             lastRow.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             lastRow.DefaultCellStyle.BackColor = Color.FromArgb(241, 245, 249);
+
+            // Handle null/DBNull cell values during sort so typed columns (int, decimal) don't
+            // throw ArgumentException when the TOTAL row's empty cells are compared.
+            _targetDataGridView.SortCompare += (s, e) =>
+            {
+                bool v1Null = e.CellValue1 == null || e.CellValue1 == DBNull.Value;
+                bool v2Null = e.CellValue2 == null || e.CellValue2 == DBNull.Value;
+                if (v1Null || v2Null)
+                {
+                    e.SortResult = v1Null == v2Null ? 0 : v1Null ? 1 : -1;
+                    e.Handled = true;
+                }
+            };
 
             // Set up drag and drop
             _targetDataGridView.DragEnter += DataGridView_DragEnter;
