@@ -59,6 +59,17 @@
       border-color: #5a67d8;
     }
     
+    .webview2-note {
+      text-align: center;
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    
+    .webview2-note a {
+      color: rgba(255,255,255,0.95);
+    }
+    
     .container {
       display: flex;
       gap: 20px;
@@ -115,8 +126,8 @@
     <button class="demo-button active" data-demo="basic">Basic Items Demo</button>
     <button class="demo-button" data-demo="table">Table Rows Demo</button>
     <button class="demo-button" data-demo="cross-window">Cross-Window Mode</button>
-    <button class="demo-button" data-demo="webview2">WebView2 Mock App</button>
   </div>
+  <p class="webview2-note">🖥️ <strong>WebView2 Native App</strong>: Windows-only desktop app — clone the repo and run <code>cd WebView2App &amp;&amp; dotnet run</code>. See <a href="https://github.com/EelcoLos/iframe-dnd-demo/blob/main/WEBVIEW2.md" target="_blank" rel="noopener noreferrer">WEBVIEW2.md</a> for details.</p>
   <div class="container" id="iframe-container">
     <div class="iframe-wrapper">
       <div class="iframe-header" id="header-a">Frame A - Draggable Items</div>
@@ -155,18 +166,6 @@
       if (demo === 'cross-window') {
         // Open cross-window coordinator in a new window
         window.open('parent-windows.html', 'CrossWindowCoordinator', 'width=700,height=800,left=200,top=100');
-        
-        // Switch back to basic demo after opening the window
-        setTimeout(() => {
-          const basicButton = document.querySelector('[data-demo="basic"]');
-          if (basicButton) {
-            document.querySelectorAll('.demo-button').forEach(btn => btn.classList.remove('active'));
-            basicButton.classList.add('active');
-          }
-        }, 100);
-      } else if (demo === 'webview2') {
-        // Open WebView2 mock app in a new window
-        window.open('webview2-mock.html', 'WebView2MockApp', 'width=1200,height=800,left=100,top=100');
         
         // Switch back to basic demo after opening the window
         setTimeout(() => {
