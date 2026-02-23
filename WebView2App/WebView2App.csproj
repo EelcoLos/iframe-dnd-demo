@@ -13,6 +13,7 @@
     <Authors>EelcoLos</Authors>
     <Company>EelcoLos</Company>
     <Description>WebView2 application demonstrating drag and drop between multiple web views</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
