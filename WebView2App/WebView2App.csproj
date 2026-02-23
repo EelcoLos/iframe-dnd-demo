@@ -20,11 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy all public HTML/JS files to output -->
-    <None Update="../public/**/*.*">
+    <!-- Copy all public HTML/JS files to build output and publish output -->
+    <Content Include="../public/**/*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <Link>public/%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </None>
+    </Content>
   </ItemGroup>
 
 </Project>
