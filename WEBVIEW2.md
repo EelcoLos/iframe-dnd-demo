@@ -17,7 +17,17 @@ A fully functional Windows desktop application in the `WebView2App/` directory t
 - **All Demo Modes**: Basic Items, Table Rows, and HTML5 Drag & Drop
 - **Full Documentation**: Quick start, features, and architecture guides
 
-## Quick Start
+## Download (Pre-built)
+
+Download the latest Windows release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases/latest)**:
+
+1. Download `DragDropWebView2Demo-win-x64.zip`
+2. Extract the zip to a folder of your choice
+3. Run `DragDropWebView2Demo.exe`
+
+> **Requirements:** Windows 10/11 (version 1803+). WebView2 Runtime is pre-installed on most Windows 10/11 systems. If missing, install from [https://go.microsoft.com/fwlink/p/?LinkId=2124703](https://go.microsoft.com/fwlink/p/?LinkId=2124703).
+
+## Quick Start (Build from Source)
 
 ### Prerequisites
 

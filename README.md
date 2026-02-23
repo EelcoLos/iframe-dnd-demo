@@ -24,7 +24,17 @@ A full native Windows WPF application is included that demonstrates all the drag
 **⚡ See [WebView2App/CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md) to get started**  
 **📚 See [WebView2App/CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md) for building and running instructions**
 
-### Quick Start (Windows only)
+### ⬇️ Download (Windows)
+
+Download the latest pre-built release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases/latest)**:
+
+1. Download `DragDropWebView2Demo-win-x64.zip`
+2. Extract the zip to a folder of your choice
+3. Run `DragDropWebView2Demo.exe`
+
+> **Requirements:** Windows 10/11 (version 1803+). WebView2 Runtime is pre-installed on most Windows 10/11 systems. If missing, install from [https://go.microsoft.com/fwlink/p/?LinkId=2124703](https://go.microsoft.com/fwlink/p/?LinkId=2124703).
+
+### Quick Start (build from source, Windows only)
 
 ```bash
 cd WebView2App
