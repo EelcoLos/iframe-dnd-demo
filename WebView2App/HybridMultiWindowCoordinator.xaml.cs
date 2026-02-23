@@ -545,7 +545,17 @@ namespace WebView2App
                     try
                     {
                         var rowData = ParseRowDataFromJson(_copiedRowDataJson);
-                        AddRowToDataGrid(dataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice);
+
+                        // Insert after selected row if one is selected, otherwise before TOTAL row
+                        int totalRowIndex = dataGridView.Rows.Count - 1;
+                        int insertIndex = totalRowIndex;
+                        if (dataGridView.SelectedRows.Count > 0)
+                        {
+                            int selectedIndex = dataGridView.SelectedRows[0].Index;
+                            insertIndex = Math.Min(selectedIndex + 1, totalRowIndex);
+                        }
+
+                        AddRowToDataGridAtIndex(dataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice, insertIndex);
                     }
                     catch (Exception ex)
                     {
@@ -683,7 +693,17 @@ namespace WebView2App
                 try
                 {
                     var rowData = ParseRowDataFromJson(_copiedRowDataJson);
-                    AddRowToDataGrid(_targetDataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice);
+
+                    // Insert after selected row if one is selected, otherwise before TOTAL row
+                    int totalRowIndex = _targetDataGridView.Rows.Count - 1;
+                    int insertIndex = totalRowIndex;
+                    if (_targetDataGridView.SelectedRows.Count > 0)
+                    {
+                        int selectedIndex = _targetDataGridView.SelectedRows[0].Index;
+                        insertIndex = Math.Min(selectedIndex + 1, totalRowIndex);
+                    }
+
+                    AddRowToDataGridAtIndex(_targetDataGridView, rowData.Description, rowData.Quantity, rowData.UnitPrice, insertIndex);
                     StatusText.Text = $"Pasted: {rowData.Description}";
                     e.Handled = true;
                 }
