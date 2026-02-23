@@ -64,6 +64,15 @@ jobs:
             2. Run `DragDropWebView2Demo.exe`
             3. Choose a demo mode from the toolbar (Basic Items, Table Rows, HTML5 DnD)
 
+            ### Windows SmartScreen Warning
+            The first time you run the downloaded executable, Windows Defender SmartScreen may show a **"Windows protected your PC"** warning because the app is not yet code-signed.
+
+            To proceed:
+            1. Click **"More info"** in the dialog
+            2. Click **"Run anyway"**
+
+            Alternatively, right-click `DragDropWebView2Demo.exe` → **Properties** → **General** tab → check **"Unblock"** → click **OK** before running.
+
       - name: Update rolling latest-build pre-release (main branch)
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
@@ -89,3 +98,12 @@ jobs:
             1. Extract the zip file to a folder of your choice
             2. Run `DragDropWebView2Demo.exe`
             3. Choose a demo mode from the toolbar (Basic Items, Table Rows, HTML5 DnD)
+
+            ### Windows SmartScreen Warning
+            The first time you run the downloaded executable, Windows Defender SmartScreen may show a **"Windows protected your PC"** warning because the app is not yet code-signed.
+
+            To proceed:
+            1. Click **"More info"** in the dialog
+            2. Click **"Run anyway"**
+
+            Alternatively, right-click `DragDropWebView2Demo.exe` → **Properties** → **General** tab → check **"Unblock"** → click **OK** before running.

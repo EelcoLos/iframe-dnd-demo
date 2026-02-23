@@ -183,6 +183,19 @@ Size: ~80-100 MB (single .exe file)
 
 ## Troubleshooting
 
+### Windows Defender SmartScreen Warning
+
+When you first run the downloaded executable, Windows Defender SmartScreen may show a **"Windows protected your PC"** warning. This happens because the executable is not yet code-signed with a trusted certificate.
+
+To run the application:
+
+1. Click **"More info"** in the SmartScreen dialog
+2. Click **"Run anyway"**
+
+This warning appears only on first launch for downloaded executables. It is safe to proceed — the application is open source and you can review the full source code in this repository.
+
+> **For advanced users**: You can also right-click `DragDropWebView2Demo.exe`, select **Properties**, check the **"Unblock"** checkbox in the General tab, and click **OK** before running.
+
 ### WebView2 Runtime Not Found
 
 Install the runtime:
