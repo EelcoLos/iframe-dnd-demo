@@ -188,7 +188,8 @@ namespace WebView2App
                 Name = "Quantity",
                 HeaderText = "Qty",
                 FillWeight = 15,
-                ReadOnly = true
+                ReadOnly = true,
+                ValueType = typeof(int)
             });
 
             _targetDataGridView.Columns.Add(new DataGridViewTextBoxColumn
@@ -197,6 +198,7 @@ namespace WebView2App
                 HeaderText = "Unit Price",
                 FillWeight = 20,
                 ReadOnly = true,
+                ValueType = typeof(decimal),
                 DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
             });
 
@@ -206,11 +208,12 @@ namespace WebView2App
                 HeaderText = "Total",
                 FillWeight = 25,
                 ReadOnly = true,
+                ValueType = typeof(decimal),
                 DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
             });
 
-            // Add total row
-            _targetDataGridView.Rows.Add("TOTAL", "", "", 0m);
+            // Add total row (DBNull for numeric cells so sorting doesn't cause type-mismatch exceptions)
+            _targetDataGridView.Rows.Add("TOTAL", DBNull.Value, DBNull.Value, 0m);
             var lastRow = _targetDataGridView.Rows[_targetDataGridView.Rows.Count - 1];
             lastRow.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             lastRow.DefaultCellStyle.BackColor = Color.FromArgb(241, 245, 249);
