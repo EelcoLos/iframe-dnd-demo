@@ -69,6 +69,35 @@
     .webview2-note a {
       color: rgba(255,255,255,0.95);
     }
+
+    .download-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.6);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .download-btn:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: white;
+    }
     
     .container {
       display: flex;
@@ -127,7 +156,10 @@
     <button class="demo-button" data-demo="table">Table Rows Demo</button>
     <button class="demo-button" data-demo="cross-window">Cross-Window Mode</button>
   </div>
-  <p class="webview2-note">🖥️ <strong>WebView2 Native App</strong>: Windows-only desktop app — clone the repo and run <code>cd WebView2App &amp;&amp; dotnet run</code>. See <a href="https://github.com/EelcoLos/iframe-dnd-demo/blob/main/WEBVIEW2.md" target="_blank" rel="noopener noreferrer">WEBVIEW2.md</a> for details.</p>
+  <div class="download-bar">
+    <a class="download-btn" href="https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropWebView2Demo-win-x64.zip" target="_blank" rel="noopener noreferrer">⬇️ Download Windows App (.zip)</a>
+    <span class="webview2-note">🖥️ <strong>WebView2 Native App</strong> — extract and run <code>DragDropWebView2Demo.exe</code>. See <a href="https://github.com/EelcoLos/iframe-dnd-demo/blob/main/WEBVIEW2.md" target="_blank" rel="noopener noreferrer">WEBVIEW2.md</a> for details.</span>
+  </div>
   <div class="container" id="iframe-container">
     <div class="iframe-wrapper">
       <div class="iframe-header" id="header-a">Frame A - Draggable Items</div>
