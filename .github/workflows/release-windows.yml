@@ -2,6 +2,8 @@ name: Windows Desktop Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -36,7 +38,7 @@ jobs:
           name: DragDropWebView2Demo-win-x64
           path: DragDropWebView2Demo-win-x64.zip
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (versioned tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
@@ -55,6 +57,32 @@ jobs:
             ### Contents
             - `DragDropWebView2Demo.exe` — self-contained single-file executable (no .NET installation needed)
             - `public/` — web assets served by the WebView2 controls
+
+            ### Usage
+            1. Extract the zip file to a folder of your choice
+            2. Run `DragDropWebView2Demo.exe`
+            3. Choose a demo mode from the toolbar (Basic Items, Table Rows, HTML5 DnD)
+
+      - name: Update rolling latest-build pre-release (main branch)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-build
+          name: Latest Build (main)
+          prerelease: true
+          files: DragDropWebView2Demo-win-x64.zip
+          body: |
+            ## Latest Windows Desktop Build (WebView2)
+
+            This pre-release is automatically updated on every push to `main`.
+            For a stable versioned release, see the [Releases page](https://github.com/EelcoLos/iframe-dnd-demo/releases).
+
+            Download and extract `DragDropWebView2Demo-win-x64.zip`, then run `DragDropWebView2Demo.exe`.
+
+            ### Requirements
+            - Windows 10/11 (version 1803 or later)
+            - WebView2 Runtime (pre-installed on most Windows 10/11 systems)
+              - If not installed: https://go.microsoft.com/fwlink/p/?LinkId=2124703
 
             ### Usage
             1. Extract the zip file to a folder of your choice

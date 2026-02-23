@@ -26,9 +26,9 @@ A full native Windows WPF application is included that demonstrates all the drag
 
 ### ⬇️ Download (Windows)
 
-Download the latest pre-built release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases/latest)**:
+Download the latest pre-built release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases)**:
 
-1. Download `DragDropWebView2Demo-win-x64.zip`
+1. Download [`DragDropWebView2Demo-win-x64.zip`](https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropWebView2Demo-win-x64.zip)
 2. Extract the zip to a folder of your choice
 3. Run `DragDropWebView2Demo.exe`
 

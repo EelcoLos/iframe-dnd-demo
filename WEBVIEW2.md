@@ -19,9 +19,9 @@ A fully functional Windows desktop application in the `WebView2App/` directory t
 
 ## Download (Pre-built)
 
-Download the latest Windows release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases/latest)**:
+Download the latest Windows release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases)**:
 
-1. Download `DragDropWebView2Demo-win-x64.zip`
+1. Download [`DragDropWebView2Demo-win-x64.zip`](https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropWebView2Demo-win-x64.zip)
 2. Extract the zip to a folder of your choice
 3. Run `DragDropWebView2Demo.exe`
 
