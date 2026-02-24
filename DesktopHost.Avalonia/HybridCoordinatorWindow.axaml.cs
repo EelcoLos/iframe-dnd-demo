@@ -39,7 +39,9 @@ public partial class HybridCoordinatorWindow : Window
         // web page directly as WebMessageReceived events — no shim injection needed.
         _sourceWebView.WebMessageReceived += OnWebMessageReceived;
         _sourceWebView.NavigationCompleted += OnNavigationCompleted;
-        _sourceWebView.Url = new Uri(_baseUrl + "/webcomponent-table-source-html5.html");
+
+        // Set URL after window is shown so the WebView is fully attached to the visual tree.
+        Opened += (_, _) => _sourceWebView.Url = new Uri(_baseUrl + "/webcomponent-table-source-html5.html");
     }
 
     private void OnNavigationCompleted(object? sender, WebViewUrlLoadedEventArg e)

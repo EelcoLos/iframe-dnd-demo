@@ -1,30 +1,24 @@
 using System.Diagnostics;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using AvaloniaWebView;
 
 namespace DragDropAvaloniaDemo;
 
-/// <summary>
-/// Main application window. Hosts the embedded web view pointed at the local
-/// static assets served by the built-in <see cref="LocalAssetServer"/>.
-/// </summary>
 public partial class MainWindow : Window
 {
     private readonly LocalAssetServer _server;
-    private WebView _mainWebView = null!;
+    private TextBlock _serverUrlLabel = null!;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        _mainWebView = this.FindControl<WebView>("MainWebView")!;
+        _serverUrlLabel = this.FindControl<TextBlock>("ServerUrlLabel")!;
 
         _server = new LocalAssetServer();
         _server.Start();
 
-        _mainWebView.Url = new Uri(_server.BaseUrl + "/parent.html");
+        _serverUrlLabel.Text = $"Local server: {_server.BaseUrl}";
 
         Closing += (_, _) => _server.Stop();
     }
@@ -40,11 +34,25 @@ public partial class MainWindow : Window
         var url = _server.BaseUrl + "/parent.html";
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            // In WSL, use wslview or cmd.exe to open the Windows browser
+            if (IsWsl())
+            {
+                var wslview = Process.Start(new ProcessStartInfo("wslview", url) { UseShellExecute = false });
+                if (wslview == null)
+                    Process.Start(new ProcessStartInfo("cmd.exe", $"/c start {url}") { UseShellExecute = false });
+            }
+            else
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[MainWindow] Failed to open browser: {ex.Message}");
         }
     }
+
+    private static bool IsWsl() =>
+        File.Exists("/proc/version") &&
+        File.ReadAllText("/proc/version").Contains("microsoft", StringComparison.OrdinalIgnoreCase);
 }
