@@ -20,10 +20,12 @@
       <Button x:Name="BtnHybridMode"
               Content="🔀  Open WebView → Native Coordinator (Hybrid Demo)"
               HorizontalAlignment="Stretch" Height="48" FontSize="15"
+              Background="#4f46e5" Foreground="White"
               Click="OnOpenHybridCoordinator" />
       <Button x:Name="BtnBrowserMode"
               Content="🌐  Open Demo in Browser"
               HorizontalAlignment="Stretch" Height="48" FontSize="15"
+              Background="#0f172a" Foreground="White"
               Click="OnOpenInBrowser" />
       <TextBlock x:Name="ServerUrlLabel" Text="Starting server…"
                  Foreground="#94a3b8" FontSize="12" Margin="0,8,0,0"

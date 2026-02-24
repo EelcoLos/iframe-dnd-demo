@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using AvaloniaWebView;
 using WebViewCore.Events;
@@ -8,9 +11,9 @@ using WebViewCore.Events;
 namespace DragDropAvaloniaDemo;
 
 /// <summary>
-/// Hybrid coordinator window: source is the web-based Available Items table
-/// (HTML/JS inside an embedded WebView), target is a native Avalonia DataGrid.
-/// Implements the Desktop Bridge Contract between the web source and native target.
+/// Hybrid coordinator window: source is the web-based Available Items table,
+/// target is a native Avalonia DataGrid.
+/// On WSL a native browser-link panel replaces the embedded WebView.
 /// </summary>
 public partial class HybridCoordinatorWindow : Window
 {
@@ -18,30 +21,54 @@ public partial class HybridCoordinatorWindow : Window
     private readonly ObservableCollection<RowItem> _rows = [];
     private RowItem? _pendingDragRow;
 
-    private WebView _sourceWebView = null!;
+    // Only set when running with an embedded WebView (non-WSL)
+    private WebView? _sourceWebView;
+
+    private ContentControl _sourceContent = null!;
     private DataGrid _targetGrid = null!;
     private TextBlock _statusLabel = null!;
     private TextBlock _totalLabel = null!;
 
-    public HybridCoordinatorWindow(string baseUrl)
+    public HybridCoordinatorWindow(string baseUrl, LocalAssetServer? server = null)
     {
         _baseUrl = baseUrl;
         InitializeComponent();
 
-        _sourceWebView = this.FindControl<WebView>("SourceWebView")!;
+        _sourceContent = this.FindControl<ContentControl>("SourceContent")!;
         _targetGrid    = this.FindControl<DataGrid>("TargetGrid")!;
         _statusLabel   = this.FindControl<TextBlock>("StatusLabel")!;
         _totalLabel    = this.FindControl<TextBlock>("TotalLabel")!;
 
         _targetGrid.ItemsSource = _rows;
 
-        // WebView.Avalonia surfaces window.chrome.webview.postMessage calls from the
-        // web page directly as WebMessageReceived events — no shim injection needed.
-        _sourceWebView.WebMessageReceived += OnWebMessageReceived;
-        _sourceWebView.NavigationCompleted += OnNavigationCompleted;
+        if (PlatformHelper.IsWsl)
+        {
+            // In WSL the web page runs in a Windows browser; bridge messages
+            // arrive via POST /bridge handled by the LocalAssetServer.
+            if (server != null)
+                server.BridgeMessage += json => ProcessBridgeMessage(json);
 
-        // Set URL after window is shown so the WebView is fully attached to the visual tree.
-        Opened += (_, _) => _sourceWebView.Url = new Uri(_baseUrl + "/webcomponent-table-source-html5.html");
+            _sourceContent.Content = BuildWslFallbackPanel();
+            _statusLabel.Text = "Open the source page in your browser, then drag or Ctrl+C rows — they'll appear here.";
+        }
+        else
+        {
+            InitWebView();
+        }
+    }
+
+    // ── WebView (non-WSL) ────────────────────────────────────────────────────
+
+    private void InitWebView()
+    {
+        var webView = new WebView();
+        _sourceWebView = webView;
+        webView.WebMessageReceived += OnWebMessageReceived;
+        webView.NavigationCompleted += OnNavigationCompleted;
+        _sourceContent.Content = webView;
+
+        // Navigate after the window is shown so the WebView is fully attached.
+        Opened += (_, _) => webView.Url = new Uri(_baseUrl + "/webcomponent-table-source-html5.html");
     }
 
     private void OnNavigationCompleted(object? sender, WebViewUrlLoadedEventArg e)
@@ -55,6 +82,55 @@ public partial class HybridCoordinatorWindow : Window
         var json = e.Message ?? e.MessageAsJson;
         if (!string.IsNullOrWhiteSpace(json))
             ProcessBridgeMessage(json);
+    }
+
+    // ── WSL fallback panel ───────────────────────────────────────────────────
+
+    private Panel BuildWslFallbackPanel()
+    {
+        var sourceUrl = _baseUrl + "/webcomponent-table-source-html5.html";
+
+        var panel = new StackPanel
+        {
+            Spacing = 10,
+            Margin = new Avalonia.Thickness(16),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "WSL detected — WebView embedding is not supported under WSL.",
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Open the web source in your Windows browser to use the copy bridge:",
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        panel.Children.Add(new SelectableTextBlock
+        {
+            Text = sourceUrl,
+            FontFamily = new FontFamily("Courier New,Consolas,monospace"),
+            Foreground = new SolidColorBrush(Color.Parse("#3730a3")),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        var btn = new Button { Content = "🌐  Open Source Page in Windows Browser", HorizontalAlignment = HorizontalAlignment.Left };
+        btn.Click += (_, _) => PlatformHelper.OpenInBrowser(sourceUrl);
+        panel.Children.Add(btn);
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "In the browser, press Ctrl+C on a row — it will appear in the DataGrid below via the clipboard bridge.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush(Color.Parse("#64748b")),
+            FontStyle = Avalonia.Media.FontStyle.Italic
+        });
+
+        return panel;
     }
 
     /// <summary>

@@ -7,11 +7,11 @@
 
   <Grid RowDefinitions="Auto,*,Auto">
 
-    <!-- Source web view (top) -->
+    <!-- Source panel: WebView on Windows/Linux desktop, native fallback on WSL -->
     <StackPanel Grid.Row="0" Margin="8,8,8,4" Spacing="2">
       <TextBlock Text="📦 Source — Available Items (Web)" FontWeight="SemiBold"/>
       <Border BorderBrush="#cbd5e1" BorderThickness="1">
-        <WebView x:Name="SourceWebView" Height="280" />
+        <ContentControl x:Name="SourceContent" Height="280" />
       </Border>
     </StackPanel>
 
@@ -36,7 +36,7 @@
 
     <!-- Status bar -->
     <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" Margin="8,4,8,8">
-      <TextBlock x:Name="StatusLabel" Text="Ready. Drag a row from the web view or press Ctrl+C." />
+      <TextBlock x:Name="StatusLabel" Text="Ready." />
       <TextBlock x:Name="TotalLabel" Text="TOTAL: €0.00" FontWeight="Bold" />
     </StackPanel>
 

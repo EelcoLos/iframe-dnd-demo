@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
@@ -25,34 +24,10 @@ public partial class MainWindow : Window
 
     private void OnOpenHybridCoordinator(object? sender, RoutedEventArgs e)
     {
-        var coordinator = new HybridCoordinatorWindow(_server.BaseUrl);
+        var coordinator = new HybridCoordinatorWindow(_server.BaseUrl, _server);
         coordinator.Show();
     }
 
-    private void OnOpenInBrowser(object? sender, RoutedEventArgs e)
-    {
-        var url = _server.BaseUrl + "/parent.html";
-        try
-        {
-            // In WSL, use wslview or cmd.exe to open the Windows browser
-            if (IsWsl())
-            {
-                var wslview = Process.Start(new ProcessStartInfo("wslview", url) { UseShellExecute = false });
-                if (wslview == null)
-                    Process.Start(new ProcessStartInfo("cmd.exe", $"/c start {url}") { UseShellExecute = false });
-            }
-            else
-            {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[MainWindow] Failed to open browser: {ex.Message}");
-        }
-    }
-
-    private static bool IsWsl() =>
-        File.Exists("/proc/version") &&
-        File.ReadAllText("/proc/version").Contains("microsoft", StringComparison.OrdinalIgnoreCase);
+    private void OnOpenInBrowser(object? sender, RoutedEventArgs e) =>
+        PlatformHelper.OpenInBrowser(_server.BaseUrl + "/parent.html");
 }
