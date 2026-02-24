@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DragDropAvaloniaDemo.MainWindow"
+        Title="Drag &amp; Drop Demo — Cross-Platform"
+        Width="700" Height="400"
+        CanResize="False">
+
+  <DockPanel Background="#1e1b4b">
+
+    <!-- Header -->
+    <StackPanel DockPanel.Dock="Top" Margin="32,32,32,16">
+      <TextBlock Text="🎯 Drag &amp; Drop Demo" FontSize="28" FontWeight="Bold"
+                 Foreground="White" />
+      <TextBlock Text="Cross-Platform Desktop App (Avalonia)" FontSize="14"
+                 Foreground="#a5b4fc" Margin="0,4,0,0"/>
+    </StackPanel>
+
+    <!-- Buttons -->
+    <StackPanel Margin="32,8,32,32" Spacing="12">
+      <Button x:Name="BtnHybridMode"
+              Content="🔀  Open WebView → Native Coordinator (Hybrid Demo)"
+              HorizontalAlignment="Stretch" Height="48" FontSize="15"
+              Background="#4f46e5" Foreground="White"
+              Click="OnOpenHybridCoordinator" />
+      <Button x:Name="BtnBrowserMode"
+              Content="🌐  Open Demo in Browser"
+              HorizontalAlignment="Stretch" Height="48" FontSize="15"
+              Background="#0f172a" Foreground="White"
+              Click="OnOpenInBrowser" />
+      <TextBlock x:Name="ServerUrlLabel" Text="Starting server…"
+                 Foreground="#94a3b8" FontSize="12" Margin="0,8,0,0"
+                 HorizontalAlignment="Center"/>
+    </StackPanel>
+
+  </DockPanel>
+
+</Window>
