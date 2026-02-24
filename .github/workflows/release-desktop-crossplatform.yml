@@ -120,6 +120,31 @@ jobs:
             DragDropAvaloniaDemo-osx-x64.zip
             DragDropAvaloniaDemo-osx-arm64.zip
           generate_release_notes: false
+          body: |
+            ## DragDropAvaloniaDemo for macOS
+
+            This release contains self-contained builds of DragDropAvaloniaDemo for macOS:
+
+            - `DragDropAvaloniaDemo-osx-x64.zip` — Intel (x64) macOS
+            - `DragDropAvaloniaDemo-osx-arm64.zip` — Apple Silicon (arm64) macOS
+
+            ### Requirements
+            - macOS 12 (Monterey) or later is recommended.
+            - Use the x64 build on Intel-based Macs.
+            - Use the arm64 build on Apple Silicon-based Macs.
+
+            ### Installation
+            1. Download the ZIP file that matches your Mac's architecture.
+            2. Extract the ZIP archive to a folder of your choice.
+            3. Locate the `DragDropAvaloniaDemo` executable inside the extracted folder.
+
+            ### Usage
+            - Double-click the `DragDropAvaloniaDemo` application to run it.
+            - On first launch, macOS Gatekeeper may block the app because it is not notarized.
+              - If this happens, open **System Settings** → **Privacy & Security** and allow the app to run.
+              - Then try launching the app again.
+
+            For more details, refer to the project documentation or README in the repository.
 
       - name: Update rolling latest-build pre-release (main branch)
         if: github.ref == 'refs/heads/main'
