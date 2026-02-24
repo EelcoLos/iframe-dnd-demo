@@ -72,18 +72,28 @@ public class LocalAssetServer
             if (localPath == "/") localPath = "/parent.html";
 
             var filePath = Path.Combine(PublicRoot, localPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            var publicRootFullPath = Path.GetFullPath(PublicRoot);
+            var fileFullPath = Path.GetFullPath(filePath);
 
-            if (!File.Exists(filePath))
+            // Ensure the resolved path stays within the public root to prevent directory traversal.
+            if (!fileFullPath.StartsWith(publicRootFullPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             {
                 resp.StatusCode = 404;
                 resp.Close();
                 return;
             }
 
-            resp.ContentType = GetMimeType(filePath);
+            if (!File.Exists(fileFullPath))
+            {
+                resp.StatusCode = 404;
+                resp.Close();
+                return;
+            }
+
+            resp.ContentType = GetMimeType(fileFullPath);
             resp.StatusCode = 200;
 
-            using var fs = File.OpenRead(filePath);
+            using var fs = File.OpenRead(fileFullPath);
             fs.CopyTo(resp.OutputStream);
         }
         catch (Exception ex)
