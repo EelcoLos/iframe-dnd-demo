@@ -427,12 +427,18 @@ export class HybridCommunicationManager {
    * Copy row data to a shared clipboard storage
    */
   copyToClipboard(data) {
-    // Store locally for same-window paste
+    // Store in localStorage for immediate cross-window access (shared across all same-origin windows)
+    try {
+      localStorage.setItem('clipboard-data', JSON.stringify(data));
+    } catch (e) {
+      console.error('[HybridComm] Failed to copy to localStorage:', e);
+    }
+
+    // Also store in sessionStorage for same-window fallback
     try {
       sessionStorage.setItem('clipboard-data', JSON.stringify(data));
-      console.log('[HybridComm] Copied to local clipboard:', data);
     } catch (e) {
-      console.error('[HybridComm] Failed to copy to local clipboard:', e);
+      console.error('[HybridComm] Failed to copy to sessionStorage:', e);
     }
     
     // Broadcast to other windows for cross-window paste
@@ -448,20 +454,29 @@ export class HybridCommunicationManager {
   pasteFromClipboard(callback) {
     // First check instance variable (from cross-window clipboard-copy message)
     if (this.clipboardData) {
-      console.log('[HybridComm] Pasted from cross-window clipboard:', this.clipboardData);
       callback(this.clipboardData);
       return;
     }
     
+    // Check localStorage (shared across all same-origin windows, written synchronously on copy)
+    try {
+      const data = localStorage.getItem('clipboard-data');
+      if (data) {
+        const rowData = JSON.parse(data);
+        callback(rowData);
+        return;
+      }
+    } catch (e) {
+      console.error('[HybridComm] Failed to read from localStorage:', e);
+    }
+
     // Fallback to sessionStorage (same-window clipboard)
     try {
       const data = sessionStorage.getItem('clipboard-data');
       if (data) {
         const rowData = JSON.parse(data);
-        console.log('[HybridComm] Pasted from local clipboard:', rowData);
         callback(rowData);
       } else {
-        console.log('[HybridComm] Clipboard is empty');
         callback(null);
       }
     } catch (e) {
@@ -473,6 +488,12 @@ export class HybridCommunicationManager {
   close() {
     if (this.channel) {
       this.channel.close();
+    }
+    // Clear localStorage clipboard entry to avoid stale data persisting across sessions
+    try {
+      localStorage.removeItem('clipboard-data');
+    } catch (e) {
+      // Ignore cleanup errors
     }
     this.messageHandlers.clear();
     this.knownWindows.clear();
