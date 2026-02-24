@@ -76,7 +76,7 @@ public class LocalAssetServer
             var fileFullPath = Path.GetFullPath(filePath);
 
             // Ensure the resolved path stays within the public root to prevent directory traversal.
-            if (!fileFullPath.StartsWith(publicRootFullPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            if (!IsUnderDirectory(publicRootFullPath, fileFullPath))
             {
                 resp.StatusCode = 404;
                 resp.Close();
@@ -105,6 +105,21 @@ public class LocalAssetServer
         {
             resp.Close();
         }
+    }
+
+    private static bool IsUnderDirectory(string baseDirectory, string path)
+    {
+        var baseFullPath = Path.GetFullPath(baseDirectory);
+        var targetFullPath = Path.GetFullPath(path);
+
+        if (string.Equals(baseFullPath, targetFullPath, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var prefix = baseFullPath.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+            ? baseFullPath
+            : baseFullPath + Path.DirectorySeparatorChar;
+
+        return targetFullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GetMimeType(string path) =>
