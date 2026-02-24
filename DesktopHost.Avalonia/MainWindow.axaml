@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DragDropAvaloniaDemo.MainWindow"
+        Title="Drag &amp; Drop Demo — Cross-Platform"
+        Width="1200" Height="800"
+        MinWidth="800" MinHeight="600">
+
+  <DockPanel>
+
+    <!-- Toolbar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8"
+                Background="#3730a3" Height="48">
+      <Button x:Name="BtnHybridMode" Content="🔀 Open WebView → Native Coordinator"
+              Margin="12,8,0,8" Click="OnOpenHybridCoordinator" />
+      <Button x:Name="BtnBrowserMode" Content="🌐 Open in Browser"
+              Margin="4,8,0,8" Click="OnOpenInBrowser" />
+    </StackPanel>
+
+    <!-- Main content: embedded web view (fills remaining space) -->
+    <WebView x:Name="MainWebView" />
+
+  </DockPanel>
+
+</Window>

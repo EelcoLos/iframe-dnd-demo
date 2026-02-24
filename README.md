@@ -13,42 +13,59 @@ This demo implements cross-iframe and cross-window drag-and-drop systems:
 **iFrame Mode** - Classic drag-and-drop between two same-origin iframes
 **Cross-Window Mode** - Drag and drop between separate browser windows/tabs
 **WebView2 Native App** - Native Windows application hosting all demos in WebView2 controls
+**Avalonia Native App** - Cross-platform desktop app (Linux, macOS) using Avalonia + WebView
 
 Both modes use custom Pointer Events for precise control and cross-context coordinate conversion.
 
-## 🖥️ WebView2 Native Application
+## 🖥️ Desktop Native Applications
 
-A full native Windows WPF application is included that demonstrates all the drag-and-drop capabilities using Microsoft's WebView2 control. This provides a real desktop application experience with all the web-based demos.
+### Windows — WebView2 (WPF)
+
+A full native Windows WPF application is included that demonstrates all the drag-and-drop capabilities using Microsoft's WebView2 control.
 
 **📖 See [WEBVIEW2.md](WEBVIEW2.md) for complete overview**  
-**⚡ See [WebView2App/CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md) to get started**  
-**📚 See [WebView2App/CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md) for building and running instructions**
+**⚡ See [WebView2App/CONSOLIDATED-README.md](WebView2App/CONSOLIDATED-README.md) to get started**
 
-### ⬇️ Download (Windows)
-
-Download the latest pre-built release from **[GitHub Releases](https://github.com/EelcoLos/iframe-dnd-demo/releases)**:
+#### ⬇️ Download (Windows)
 
 1. Download [`DragDropWebView2Demo-win-x64.zip`](https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropWebView2Demo-win-x64.zip)
-2. Extract the zip to a folder of your choice
-3. Run `DragDropWebView2Demo.exe`
+2. Extract and run `DragDropWebView2Demo.exe`
 
-> **Requirements:** Windows 10/11 (version 1803+). WebView2 Runtime is pre-installed on most Windows 10/11 systems. If missing, install from [https://go.microsoft.com/fwlink/p/?LinkId=2124703](https://go.microsoft.com/fwlink/p/?LinkId=2124703).
+> **Requirements:** Windows 10/11 (version 1803+). WebView2 Runtime is pre-installed on most systems. If missing, install from [https://go.microsoft.com/fwlink/p/?LinkId=2124703](https://go.microsoft.com/fwlink/p/?LinkId=2124703).
 
-### Quick Start (build from source, Windows only)
+#### Quick Start (Windows, build from source)
 
 ```bash
 cd WebView2App
-dotnet build
+dotnet run
+```
+
+### Linux & macOS — Avalonia
+
+A cross-platform desktop app built with [Avalonia UI](https://avaloniaui.net/) that provides the same hybrid WebView ↔ native grid demo on Linux and macOS.
+
+#### ⬇️ Download
+
+| Platform | Download |
+|---|---|
+| Linux x64 | [`DragDropAvaloniaDemo-linux-x64.zip`](https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropAvaloniaDemo-linux-x64.zip) |
+| macOS arm64 | [`DragDropAvaloniaDemo-osx-arm64.zip`](https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropAvaloniaDemo-osx-arm64.zip) |
+| macOS x64 | [`DragDropAvaloniaDemo-osx-x64.zip`](https://github.com/EelcoLos/iframe-dnd-demo/releases/download/latest-build/DragDropAvaloniaDemo-osx-x64.zip) |
+
+> **Linux requirement:** `libwebkit2gtk-4.0` — install with `sudo apt install libwebkit2gtk-4.0-dev` on Debian/Ubuntu.
+
+#### Quick Start (Linux/macOS, build from source)
+
+```bash
+cd DesktopHost.Avalonia
 dotnet run
 ```
 
 Features:
-- ✅ Native Windows WPF application
-- ✅ All three demo modes (Basic Items, Table Rows, HTML5 DnD)
-- ✅ Horizontal and vertical layout options
-- ✅ Built-in Edge DevTools for debugging
-- ✅ Navigation controls (back, forward, refresh)
-- ✅ Serves all HTML/JS demos from the public folder
+- ✅ Cross-platform: Linux x64, macOS x64 and arm64
+- ✅ WebView ↔ native DataGrid bridge (drag-to-drop and copy-paste)
+- ✅ Hybrid coordinator window: web source + native construction-calc grid
+- ✅ Local asset server — no external hosting needed
 
 ## 🏗️ Architecture
 

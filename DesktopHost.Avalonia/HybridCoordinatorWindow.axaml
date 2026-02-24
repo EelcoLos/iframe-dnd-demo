@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DragDropAvaloniaDemo.HybridCoordinatorWindow"
+        Title="WebView → Native Coordinator"
+        Width="1000" Height="700"
+        MinWidth="700" MinHeight="500">
+
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <!-- Source web view (top) -->
+    <StackPanel Grid.Row="0" Margin="8,8,8,4" Spacing="2">
+      <TextBlock Text="📦 Source — Available Items (Web)" FontWeight="SemiBold"/>
+      <Border BorderBrush="#cbd5e1" BorderThickness="1">
+        <WebView x:Name="SourceWebView" Height="280" />
+      </Border>
+    </StackPanel>
+
+    <!-- Native target grid (bottom) -->
+    <StackPanel Grid.Row="1" Margin="8,4,8,4" Spacing="2">
+      <TextBlock Text="🏗️ Target — Construction Calc (Native)" FontWeight="SemiBold"/>
+      <Border BorderBrush="#cbd5e1" BorderThickness="1">
+      <DataGrid x:Name="TargetGrid"
+                AutoGenerateColumns="False"
+                CanUserSortColumns="True"
+                CanUserResizeColumns="True"
+                IsReadOnly="True">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+          <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="60" />
+          <DataGridTextColumn Header="Unit Price" Binding="{Binding UnitPrice, StringFormat=\{0:N2\}}" Width="100" />
+          <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat=\{0:N2\}}" Width="100" />
+        </DataGrid.Columns>
+      </DataGrid>
+      </Border>
+    </StackPanel>
+
+    <!-- Status bar -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12" Margin="8,4,8,8">
+      <TextBlock x:Name="StatusLabel" Text="Ready. Drag a row from the web view or press Ctrl+C." />
+      <TextBlock x:Name="TotalLabel" Text="TOTAL: €0.00" FontWeight="Bold" />
+    </StackPanel>
+
+  </Grid>
+
+</Window>
