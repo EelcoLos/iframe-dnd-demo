@@ -10,7 +10,7 @@ namespace DragDropAvaloniaDemo;
 /// <summary>
 /// Hybrid coordinator window: source is the web-based Available Items table
 /// (HTML/JS inside an embedded WebView), target is a native Avalonia DataGrid.
-/// Implements the Desktop Bridge Contract (see docs/desktop-bridge-contract.md).
+/// Implements the Desktop Bridge Contract between the web source and native target.
 /// </summary>
 public partial class HybridCoordinatorWindow : Window
 {
@@ -127,7 +127,7 @@ public partial class HybridCoordinatorWindow : Window
         decimal unitPrice = 0m;
         if (root.TryGetProperty("unitPrice", out var u))
             unitPrice = u.ValueKind == JsonValueKind.Number
-                ? (decimal)u.GetDouble()
+                ? u.GetDecimal()
                 : decimal.TryParse(u.GetString(), System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var ud) ? ud : 0m;
 

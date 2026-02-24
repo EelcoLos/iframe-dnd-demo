@@ -322,6 +322,16 @@ iframe-dnd-demo/
 │   ├── App.xaml                         # Application entry
 │   ├── App.xaml.cs                      # Application code
 │   └── README.md                        # Build and run instructions
+├── DesktopHost.Avalonia/               # Cross-platform Avalonia application (Linux, macOS)
+│   ├── DesktopHost.Avalonia.csproj     # .NET project file
+│   ├── MainWindow.axaml                # Main window UI
+│   ├── MainWindow.axaml.cs             # Main window logic
+│   ├── HybridCoordinatorWindow.axaml   # Hybrid coordinator UI
+│   ├── HybridCoordinatorWindow.axaml.cs # Hybrid coordinator logic
+│   ├── LocalAssetServer.cs             # Local HTTP asset server
+│   ├── App.axaml                       # Application entry
+│   ├── App.axaml.cs                    # Application code
+│   └── Program.cs                      # Program entry point
 ├── src/
 │   └── ...                              # React app (not used in this demo)
 ├── e2e/
